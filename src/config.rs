@@ -21,7 +21,7 @@ impl Default for AppConfig {
             locale: String::from("en_US"),
             user_agent: String::from("Mozilla/5.0 (Windows NT 10.0; Win64; x64)"),
             default_output_dir: String::from("./downloads"),
-            limit_per_page: 50,
+            limit_per_page: 100,
             max_retries: 5,
         }
     }

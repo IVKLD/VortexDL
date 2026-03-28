@@ -3,6 +3,7 @@ use futures::stream::{self, StreamExt};
 use indicatif::{ProgressBar, ProgressStyle};
 use soundcloud_rs::{Client, Identifier, StreamType};
 use std::error::Error;
+use std::str;
 use std::time::Duration;
 use url::Url;
 
@@ -39,6 +40,7 @@ pub async fn download_playlist(
                 .and_then(|u| u.username)
                 .unwrap_or_else(|| "Unknown".to_string());
             let title = t.title.unwrap_or_else(|| "Unknown".to_string());
+
             Some((id, format!("{} - {}", author, title)))
         })
         .collect();
@@ -76,6 +78,7 @@ pub async fn download_likes(
                 &endpoint,
                 Some(&TrackLikesQuery {
                     offset: current_offset.clone(),
+                    limit: _config.limit_per_page,
                 }),
             )
             .await?;
@@ -85,6 +88,14 @@ pub async fn download_likes(
         }
 
         for item in likes_res.collection {
+            if storage.tracks.contains_key(&item.track.id) {
+                println!(
+                    "{} Skipping: {}",
+                    "[SKIP]".yellow().bold(),
+                    &item.track.title
+                );
+            }
+
             all_tracks.push((item.track.id, item.track.title));
         }
 
@@ -97,12 +108,6 @@ pub async fn download_likes(
             break;
         }
     }
-
-    println!(
-        "{} Found {} liked tracks.",
-        "[INFO]".blue().bold(),
-        all_tracks.len()
-    );
 
     process_tracks_concurrently(storage, client, all_tracks, output).await;
 
@@ -132,19 +137,9 @@ async fn process_tracks_concurrently(
             .replace(">", "_")
             .replace("|", "_");
 
-        if storage.tracks.contains_key(&id) {
-            println!("{} Skipping: {}", "[SKIP]".yellow().bold(), filename);
-        } else {
+        if !storage.tracks.contains_key(&id) {
             to_download.push((id, filename));
         }
-    }
-
-    if to_download.is_empty() {
-        println!(
-            "{} All tracks are already downloaded.",
-            "[SUCCESS]".green().bold()
-        );
-        return;
     }
 
     let total_tracks = to_download.len() as u64;
@@ -164,7 +159,7 @@ async fn process_tracks_concurrently(
             .progress_chars("#>-"),
     );
 
-    let concurrency_limit = 10;
+    let concurrency_limit = 1;
 
     stream::iter(to_download)
         .for_each_concurrent(concurrency_limit, |(id, filename)| {
@@ -205,14 +200,33 @@ async fn perform_track_download(task: TrackDownloadTask<'_>) {
 
     progress_bar.set_message(format!("Downloading: {}", filename));
 
-    let result = client
-        .download_track(
-            &Identifier::Id(id),
-            Some(&StreamType::Progressive),
-            Some(output_dir),
-            Some(&filename),
-        )
-        .await;
+    let result = match client.get_track(&Identifier::Id(id)).await {
+        Ok(track) => {
+            let transcodings = track
+                .media
+                .as_ref()
+                .expect("Missing media")
+                .transcodings
+                .as_ref()
+                .expect("Missing transcodings");
+
+            let stream = transcodings
+                .last()
+                .and_then(|value| value.format.as_ref())
+                .and_then(|value| value.protocol.as_ref());
+
+            client
+                .download_track(
+                    &track,
+                    &Identifier::Id(id),
+                    stream,
+                    Some(output_dir),
+                    Some(&filename),
+                )
+                .await
+        }
+        Err(e) => Err(e),
+    };
 
     if result.is_ok() {
         let file_path = format!("{}/{}.mp3", output_dir, filename);
