@@ -17,4 +17,12 @@ pub struct Args {
 
     #[arg(short, long)]
     pub output: Option<String>,
+
+    /// Start the HTTP REST API server instead of running the CLI downloader.
+    #[arg(long, default_value_t = false)]
+    pub serve: bool,
+
+    /// Port to bind the HTTP server to (only used with --serve).
+    #[arg(long, default_value_t = 3000)]
+    pub port: u16,
 }

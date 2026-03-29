@@ -23,6 +23,10 @@ soundcloud-rs = { version = "0.14.0", path = "../soundcloud-rs" }
 colored = "3.1.1"
 indicatif = "0.18.4"
 id3 = "1.16.4"
+axum = { version = "0.8", features = ["macros"] }
+tower-http = { version = "0.6", features = ["cors", "trace"] }
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 
 [dev-dependencies]
 tempfile = "3.8"
