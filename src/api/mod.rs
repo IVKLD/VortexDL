@@ -17,7 +17,7 @@ pub fn build_router(state: state::AppState) -> Router {
         .route("/download/playlist", post(download_playlist))
         .route("/download/likes", post(download_likes))
         .route("/downloads", get(list_downloads))
-        .route("/downloads/:filename", delete(delete_download))
+        .route("/downloads/{filename}", delete(delete_download))
         .with_state(state)
         .layer(CorsLayer::permissive())
 }
@@ -27,11 +27,10 @@ mod tests {
     use super::*;
     use axum::http::{Request, StatusCode};
     use axum::body::Body;
-    use tower::ServiceExt;
+    use tower::util::ServiceExt;
     use crate::config::AppConfig;
     use crate::api::state::AppState;
     use soundcloud_rs::ClientBuilder;
-    use std::sync::Arc;
     use tempfile::tempdir;
 
     async fn setup() -> Router {
