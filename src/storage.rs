@@ -1,10 +1,13 @@
-use std::{collections::HashMap, fs, path::Path};
+use colored::Colorize;
+use std::collections::{HashMap, HashSet};
+use std::error::Error;
+use std::{fs, path::{Path, PathBuf}};
 
 use crate::utils::audio_file_manipulator::get_mp3_custom_field;
 
 #[derive(Default)]
 pub struct MusicStorage {
-    pub tracks: HashMap<i64, String>,
+    pub tracks: HashMap<i64, PathBuf>,
 }
 
 impl MusicStorage {
@@ -26,13 +29,7 @@ impl MusicStorage {
                         if let Some(path_str) = path.to_str() {
                             if let Some(content) = get_mp3_custom_field(path_str, "sc-identifier") {
                                 if let Ok(id) = content.parse::<i64>() {
-                                    let file_name = path
-                                        .file_name()
-                                        .unwrap_or_default()
-                                        .to_string_lossy()
-                                        .into_owned();
-
-                                    self.tracks.insert(id, file_name);
+                                    self.tracks.insert(id, path);
                                 }
                             }
                         }
@@ -40,5 +37,61 @@ impl MusicStorage {
                 }
             }
         }
+    }
+
+    pub async fn sync_storage(
+        &self,
+        remote_ids: &HashSet<i64>,
+        output_dir: &str,
+        mode: &str,
+    ) -> Result<(), Box<dyn Error>> {
+        let mut to_remove = Vec::new();
+
+        for (id, path) in &self.tracks {
+            if !remote_ids.contains(id) {
+                to_remove.push((id, path.clone()));
+            }
+        }
+
+        if to_remove.is_empty() {
+            return Ok(());
+        }
+
+        println!(
+            "{} Found {} orphaned tracks. Sync mode: {}",
+            "[SYNC]".cyan().bold(),
+            to_remove.len(),
+            mode
+        );
+
+        if mode == "full" {
+            for (_, path) in to_remove {
+                if let Some(file_name) = path.file_name() {
+                    println!(
+                        "{} Deleting: {}",
+                        "[DELETE]".red().bold(),
+                        file_name.to_string_lossy()
+                    );
+                    fs::remove_file(path)?;
+                }
+            }
+        } else {
+            let archive_dir = Path::new(output_dir).join("Archive");
+            fs::create_dir_all(&archive_dir)?;
+
+            for (_, path) in to_remove {
+                if let Some(file_name) = path.file_name() {
+                    let dest = archive_dir.join(file_name);
+                    println!(
+                        "{} Archiving: {}",
+                        "[ARCHIVE]".yellow().bold(),
+                        file_name.to_string_lossy()
+                    );
+                    fs::rename(path, dest)?;
+                }
+            }
+        }
+
+        Ok(())
     }
 }

@@ -8,6 +8,7 @@ pub struct ResolveQuery {
 #[derive(Deserialize, Debug)]
 pub struct ResolveResponse {
     pub id: i64,
+    pub kind: String,
 }
 
 #[derive(Deserialize, Debug)]

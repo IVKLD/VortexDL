@@ -61,30 +61,57 @@ async fn main() -> Result<(), Box<dyn Error>> {
         return Ok(());
     }
 
-    // ── CLI mode ─────────────────────────────────────────────────────────────
     let mut music_storage = MusicStorage::new();
     music_storage.indexing(Path::new(&output_dir));
 
-    if let Some(playlist_url) = args.playlist_url {
-        downloader::download_playlist(&mut music_storage, &client, &playlist_url, &output_dir)
+    if let Some(url) = args.url {
+        let resolve_res: ResolveResponse = client
+            .get(
+                "resolve",
+                Some(&ResolveQuery {
+                    url: Some(url.clone()),
+                }),
+            )
             .await?;
-    } else if let Some(user_url) = args.user_url {
-        downloader::download_likes(&mut music_storage, &client, &user_url, &output_dir, &config)
-            .await?;
-    } else if !output_dir.is_empty() {
-        sync(&client, &output_dir).await?;
+
+        let mut remote_ids = None;
+
+        match resolve_res.kind.as_str() {
+            "user" => {
+                if url.ends_with("/likes") {
+                    remote_ids = Some(
+                        downloader::download_likes(
+                            &music_storage,
+                            &client,
+                            &url,
+                            &output_dir,
+                            &config,
+                        )
+                        .await?,
+                    );
+                }
+            }
+            "playlist" => {
+                remote_ids = Some(
+                    downloader::download_playlist(&mut music_storage, &client, &url, &output_dir)
+                        .await?,
+                );
+            }
+            "track" => {
+                downloader::download_track(&music_storage, &client, resolve_res.id, &output_dir)
+                    .await?;
+            }
+            _ => {
+                tracing::error!("Unsupported resource kind: {}", resolve_res.kind);
+            }
+        }
+
+        if args.sync {
+            if let Some(ids) = remote_ids {
+                music_storage.sync_storage(&ids, &output_dir, &args.sync_mode).await?;
+            }
+        }
     }
-
-    Ok(())
-}
-
-async fn sync(client: &soundcloud_rs::Client, path: &str) -> Result<(), Box<dyn Error>> {
-    let query = ResolveQuery {
-        url: Some(String::from("https://soundcloud.com/user-316096540/likes")),
-    };
-
-    let res: ResolveResponse = client.get("resolve", Some(&query)).await?;
-    println!("{}", res.id);
 
     Ok(())
 }
