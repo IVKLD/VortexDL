@@ -5,7 +5,7 @@ use axum::{
 };
 use serde_json::json;
 
-/// Unified API error type that converts to a JSON error response.
+
 #[derive(Debug)]
 pub struct ApiError {
     pub status: StatusCode,

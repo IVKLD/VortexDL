@@ -1,20 +1,20 @@
 use serde::{Deserialize, Serialize};
 
-// ── Requests ─────────────────────────────────────────────────────────────────
+
 
 #[derive(Debug, Deserialize)]
 pub struct DownloadPlaylistRequest {
-    /// Full SoundCloud playlist URL.
+    
     pub url: String,
 }
 
 #[derive(Debug, Deserialize)]
 pub struct DownloadLikesRequest {
-    /// Full SoundCloud user profile URL.
+    
     pub url: String,
 }
 
-// ── Responses ─────────────────────────────────────────────────────────────────
+
 
 #[derive(Debug, Serialize)]
 pub struct DownloadQueuedResponse {

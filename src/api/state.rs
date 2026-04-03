@@ -4,14 +4,14 @@ use soundcloud_rs::Client;
 
 use crate::config::AppConfig;
 
-/// Shared application state injected into every Axum handler.
+
 #[derive(Clone)]
 pub struct AppState {
-    /// Authenticated SoundCloud API client.
+    
     pub client: Arc<Client>,
-    /// Application configuration.
+    
     pub config: Arc<AppConfig>,
-    /// Directory where downloaded tracks are stored.
+    
     pub output_dir: Arc<String>,
 }
 

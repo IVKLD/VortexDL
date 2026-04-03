@@ -45,12 +45,10 @@ async fn main() -> Result<(), Box<dyn Error>> {
         .build()
         .await?;
 
-    // ── Server mode ──────────────────────────────────────────────────────────
     if args.serve {
         let state = AppState::new(client, config, output_dir.clone());
         let router = api::build_router(state);
 
-        // Ensure the output directory exists before serving.
         std::fs::create_dir_all(&output_dir)?;
 
         let addr: SocketAddr = format!("0.0.0.0:{}", args.port).parse()?;

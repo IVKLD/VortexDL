@@ -16,13 +16,13 @@ use super::{
 };
 use crate::{downloader, storage::MusicStorage};
 
-// ── GET /health ───────────────────────────────────────────────────────────────
+
 
 pub async fn health() -> impl IntoResponse {
     (StatusCode::OK, Json(HealthResponse { status: "ok" }))
 }
 
-// ── POST /download/playlist ───────────────────────────────────────────────────
+
 
 pub async fn download_playlist(
     State(state): State<AppState>,
@@ -56,7 +56,7 @@ pub async fn download_playlist(
     ))
 }
 
-// ── POST /download/likes ──────────────────────────────────────────────────────
+
 
 pub async fn download_likes(
     State(state): State<AppState>,
@@ -90,7 +90,7 @@ pub async fn download_likes(
     ))
 }
 
-// ── GET /downloads ────────────────────────────────────────────────────────────
+
 
 pub async fn list_downloads(
     State(state): State<AppState>,
@@ -121,13 +121,13 @@ pub async fn list_downloads(
     Ok(Json(ListResponse { tracks }))
 }
 
-// ── DELETE /downloads/:filename ───────────────────────────────────────────────
+
 
 pub async fn delete_download(
     State(state): State<AppState>,
     Path(filename): Path<String>,
 ) -> Result<impl IntoResponse, ApiError> {
-    // Guard against path traversal.
+    
     if filename.contains('/') || filename.contains('\\') || filename.contains("..") {
         return Err(ApiError::bad_request("Invalid filename"));
     }

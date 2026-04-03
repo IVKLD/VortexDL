@@ -31,6 +31,5 @@ pub struct TrackInfo {
 #[derive(Serialize)]
 pub struct TrackLikesQuery {
     pub limit: u32,
-    // pub linked_partitioning: u8,
     pub offset: Option<String>,
 }
