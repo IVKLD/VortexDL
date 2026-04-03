@@ -1,10 +1,10 @@
 {
   "dist_version": "0.30.4",
   "announcement_tag": "v0.1.0",
-  "announcement_tag_is_implicit": false,
+  "announcement_tag_is_implicit": true,
   "announcement_is_prerelease": false,
   "announcement_title": "v0.1.0",
-  "announcement_github_body": "## Download VortexLD 0.1.0\n\n|  File  | Platform | Checksum |\n|--------|----------|----------|\n| [VortexLD-aarch64-apple-darwin.tar.xz](https://github.com/IVKLD/VortexDL/releases/download/v0.1.0/VortexLD-aarch64-apple-darwin.tar.xz) | Apple Silicon macOS | [checksum](https://github.com/IVKLD/VortexDL/releases/download/v0.1.0/VortexLD-aarch64-apple-darwin.tar.xz.sha256) |\n| [VortexLD-x86_64-apple-darwin.tar.xz](https://github.com/IVKLD/VortexDL/releases/download/v0.1.0/VortexLD-x86_64-apple-darwin.tar.xz) | Intel macOS | [checksum](https://github.com/IVKLD/VortexDL/releases/download/v0.1.0/VortexLD-x86_64-apple-darwin.tar.xz.sha256) |\n| [VortexLD-x86_64-pc-windows-msvc.zip](https://github.com/IVKLD/VortexDL/releases/download/v0.1.0/VortexLD-x86_64-pc-windows-msvc.zip) | x64 Windows | [checksum](https://github.com/IVKLD/VortexDL/releases/download/v0.1.0/VortexLD-x86_64-pc-windows-msvc.zip.sha256) |\n| [VortexLD-aarch64-unknown-linux-gnu.tar.xz](https://github.com/IVKLD/VortexDL/releases/download/v0.1.0/VortexLD-aarch64-unknown-linux-gnu.tar.xz) | ARM64 Linux | [checksum](https://github.com/IVKLD/VortexDL/releases/download/v0.1.0/VortexLD-aarch64-unknown-linux-gnu.tar.xz.sha256) |\n| [VortexLD-x86_64-unknown-linux-gnu.tar.xz](https://github.com/IVKLD/VortexDL/releases/download/v0.1.0/VortexLD-x86_64-unknown-linux-gnu.tar.xz) | x64 Linux | [checksum](https://github.com/IVKLD/VortexDL/releases/download/v0.1.0/VortexLD-x86_64-unknown-linux-gnu.tar.xz.sha256) |\n\n",
+  "announcement_github_body": "# VortexLD 0.1.0\n\n## Download VortexLD 0.1.0\n\n|  File  | Platform | Checksum |\n|--------|----------|----------|\n| [VortexLD-aarch64-apple-darwin.tar.xz](https://github.com/IVKLD/VortexDL/releases/download/v0.1.0/VortexLD-aarch64-apple-darwin.tar.xz) | Apple Silicon macOS | [checksum](https://github.com/IVKLD/VortexDL/releases/download/v0.1.0/VortexLD-aarch64-apple-darwin.tar.xz.sha256) |\n| [VortexLD-x86_64-apple-darwin.tar.xz](https://github.com/IVKLD/VortexDL/releases/download/v0.1.0/VortexLD-x86_64-apple-darwin.tar.xz) | Intel macOS | [checksum](https://github.com/IVKLD/VortexDL/releases/download/v0.1.0/VortexLD-x86_64-apple-darwin.tar.xz.sha256) |\n| [VortexLD-x86_64-pc-windows-msvc.zip](https://github.com/IVKLD/VortexDL/releases/download/v0.1.0/VortexLD-x86_64-pc-windows-msvc.zip) | x64 Windows | [checksum](https://github.com/IVKLD/VortexDL/releases/download/v0.1.0/VortexLD-x86_64-pc-windows-msvc.zip.sha256) |\n| [VortexLD-aarch64-unknown-linux-gnu.tar.xz](https://github.com/IVKLD/VortexDL/releases/download/v0.1.0/VortexLD-aarch64-unknown-linux-gnu.tar.xz) | ARM64 Linux | [checksum](https://github.com/IVKLD/VortexDL/releases/download/v0.1.0/VortexLD-aarch64-unknown-linux-gnu.tar.xz.sha256) |\n| [VortexLD-x86_64-unknown-linux-gnu.tar.xz](https://github.com/IVKLD/VortexDL/releases/download/v0.1.0/VortexLD-x86_64-unknown-linux-gnu.tar.xz) | x64 Linux | [checksum](https://github.com/IVKLD/VortexDL/releases/download/v0.1.0/VortexLD-x86_64-unknown-linux-gnu.tar.xz.sha256) |\n\n# vortex-dl 0.1.0\n\n## Install vortex-dl 0.1.0\n\n### Install prebuilt binaries via shell script\n\n```sh\ncurl --proto '=https' --tlsv1.2 -LsSf https://github.com/IVKLD/VortexDL/releases/download/v0.1.0/vortex-dl-installer.sh | sh\n```\n\n### Install prebuilt binaries via powershell script\n\n```sh\npowershell -ExecutionPolicy Bypass -c \"irm https://github.com/IVKLD/VortexDL/releases/download/v0.1.0/vortex-dl-installer.ps1 | iex\"\n```\n\n## Download vortex-dl 0.1.0\n\n|  File  | Platform | Checksum |\n|--------|----------|----------|\n| [vortex-dl-aarch64-apple-darwin.tar.xz](https://github.com/IVKLD/VortexDL/releases/download/v0.1.0/vortex-dl-aarch64-apple-darwin.tar.xz) | Apple Silicon macOS | [checksum](https://github.com/IVKLD/VortexDL/releases/download/v0.1.0/vortex-dl-aarch64-apple-darwin.tar.xz.sha256) |\n| [vortex-dl-x86_64-apple-darwin.tar.xz](https://github.com/IVKLD/VortexDL/releases/download/v0.1.0/vortex-dl-x86_64-apple-darwin.tar.xz) | Intel macOS | [checksum](https://github.com/IVKLD/VortexDL/releases/download/v0.1.0/vortex-dl-x86_64-apple-darwin.tar.xz.sha256) |\n| [vortex-dl-x86_64-pc-windows-msvc.zip](https://github.com/IVKLD/VortexDL/releases/download/v0.1.0/vortex-dl-x86_64-pc-windows-msvc.zip) | x64 Windows | [checksum](https://github.com/IVKLD/VortexDL/releases/download/v0.1.0/vortex-dl-x86_64-pc-windows-msvc.zip.sha256) |\n| [vortex-dl-aarch64-unknown-linux-gnu.tar.xz](https://github.com/IVKLD/VortexDL/releases/download/v0.1.0/vortex-dl-aarch64-unknown-linux-gnu.tar.xz) | ARM64 Linux | [checksum](https://github.com/IVKLD/VortexDL/releases/download/v0.1.0/vortex-dl-aarch64-unknown-linux-gnu.tar.xz.sha256) |\n| [vortex-dl-x86_64-unknown-linux-gnu.tar.xz](https://github.com/IVKLD/VortexDL/releases/download/v0.1.0/vortex-dl-x86_64-unknown-linux-gnu.tar.xz) | x64 Linux | [checksum](https://github.com/IVKLD/VortexDL/releases/download/v0.1.0/vortex-dl-x86_64-unknown-linux-gnu.tar.xz.sha256) |\n\n",
   "releases": [
     {
       "app_name": "VortexLD",
@@ -21,8 +21,6 @@
         "ghe_base_url_env_var": "VORTEXLD_INSTALLER_GHE_BASE_URL",
         "github_token_env_var": "VORTEXLD_GITHUB_TOKEN"
       },
-      "display_name": "VortexLD",
-      "display": true,
       "artifacts": [
         "source.tar.gz",
         "source.tar.gz.sha256",
@@ -37,6 +35,49 @@
         "VortexLD-x86_64-pc-windows-msvc.zip.sha256",
         "VortexLD-x86_64-unknown-linux-gnu.tar.xz",
         "VortexLD-x86_64-unknown-linux-gnu.tar.xz.sha256"
+      ],
+      "hosting": {
+        "github": {
+          "artifact_base_url": "https://github.com",
+          "artifact_download_path": "/IVKLD/VortexDL/releases/download/v0.1.0",
+          "owner": "IVKLD",
+          "repo": "VortexDL"
+        }
+      }
+    },
+    {
+      "app_name": "vortex-dl",
+      "app_version": "0.1.0",
+      "env": {
+        "install_dir_env_var": "VORTEX_DL_INSTALL_DIR",
+        "unmanaged_dir_env_var": "VORTEX_DL_UNMANAGED_INSTALL",
+        "disable_update_env_var": "VORTEX_DL_DISABLE_UPDATE",
+        "no_modify_path_env_var": "VORTEX_DL_NO_MODIFY_PATH",
+        "print_quiet_env_var": "VORTEX_DL_PRINT_QUIET",
+        "print_verbose_env_var": "VORTEX_DL_PRINT_VERBOSE",
+        "download_url_env_var": "VORTEX_DL_DOWNLOAD_URL",
+        "github_base_url_env_var": "VORTEX_DL_INSTALLER_GITHUB_BASE_URL",
+        "ghe_base_url_env_var": "VORTEX_DL_INSTALLER_GHE_BASE_URL",
+        "github_token_env_var": "VORTEX_DL_GITHUB_TOKEN"
+      },
+      "display_name": "vortex-dl",
+      "display": true,
+      "artifacts": [
+        "source.tar.gz",
+        "source.tar.gz.sha256",
+        "vortex-dl-installer.sh",
+        "vortex-dl-installer.ps1",
+        "sha256.sum",
+        "vortex-dl-aarch64-apple-darwin.tar.xz",
+        "vortex-dl-aarch64-apple-darwin.tar.xz.sha256",
+        "vortex-dl-aarch64-unknown-linux-gnu.tar.xz",
+        "vortex-dl-aarch64-unknown-linux-gnu.tar.xz.sha256",
+        "vortex-dl-x86_64-apple-darwin.tar.xz",
+        "vortex-dl-x86_64-apple-darwin.tar.xz.sha256",
+        "vortex-dl-x86_64-pc-windows-msvc.zip",
+        "vortex-dl-x86_64-pc-windows-msvc.zip.sha256",
+        "vortex-dl-x86_64-unknown-linux-gnu.tar.xz",
+        "vortex-dl-x86_64-unknown-linux-gnu.tar.xz.sha256"
       ],
       "hosting": {
         "github": {
@@ -226,11 +267,212 @@
     "source.tar.gz.sha256": {
       "name": "source.tar.gz.sha256",
       "kind": "checksum"
+    },
+    "vortex-dl-aarch64-apple-darwin.tar.xz": {
+      "name": "vortex-dl-aarch64-apple-darwin.tar.xz",
+      "kind": "executable-zip",
+      "target_triples": [
+        "aarch64-apple-darwin"
+      ],
+      "assets": [
+        {
+          "name": "LICENSE",
+          "path": "LICENSE",
+          "kind": "license"
+        },
+        {
+          "name": "README.md",
+          "path": "README.md",
+          "kind": "readme"
+        },
+        {
+          "id": "vortex-dl-aarch64-apple-darwin-exe-vortex-dl",
+          "name": "vortex-dl",
+          "path": "vortex-dl",
+          "kind": "executable"
+        }
+      ],
+      "checksum": "vortex-dl-aarch64-apple-darwin.tar.xz.sha256"
+    },
+    "vortex-dl-aarch64-apple-darwin.tar.xz.sha256": {
+      "name": "vortex-dl-aarch64-apple-darwin.tar.xz.sha256",
+      "kind": "checksum",
+      "target_triples": [
+        "aarch64-apple-darwin"
+      ]
+    },
+    "vortex-dl-aarch64-unknown-linux-gnu.tar.xz": {
+      "name": "vortex-dl-aarch64-unknown-linux-gnu.tar.xz",
+      "kind": "executable-zip",
+      "target_triples": [
+        "aarch64-unknown-linux-gnu"
+      ],
+      "assets": [
+        {
+          "name": "LICENSE",
+          "path": "LICENSE",
+          "kind": "license"
+        },
+        {
+          "name": "README.md",
+          "path": "README.md",
+          "kind": "readme"
+        },
+        {
+          "id": "vortex-dl-aarch64-unknown-linux-gnu-exe-vortex-dl",
+          "name": "vortex-dl",
+          "path": "vortex-dl",
+          "kind": "executable"
+        }
+      ],
+      "checksum": "vortex-dl-aarch64-unknown-linux-gnu.tar.xz.sha256"
+    },
+    "vortex-dl-aarch64-unknown-linux-gnu.tar.xz.sha256": {
+      "name": "vortex-dl-aarch64-unknown-linux-gnu.tar.xz.sha256",
+      "kind": "checksum",
+      "target_triples": [
+        "aarch64-unknown-linux-gnu"
+      ]
+    },
+    "vortex-dl-installer.ps1": {
+      "name": "vortex-dl-installer.ps1",
+      "kind": "installer",
+      "target_triples": [
+        "aarch64-pc-windows-msvc",
+        "x86_64-pc-windows-gnu",
+        "x86_64-pc-windows-msvc"
+      ],
+      "install_hint": "powershell -ExecutionPolicy Bypass -c \"irm https://github.com/IVKLD/VortexDL/releases/download/v0.1.0/vortex-dl-installer.ps1 | iex\"",
+      "description": "Install prebuilt binaries via powershell script"
+    },
+    "vortex-dl-installer.sh": {
+      "name": "vortex-dl-installer.sh",
+      "kind": "installer",
+      "target_triples": [
+        "aarch64-apple-darwin",
+        "aarch64-unknown-linux-gnu",
+        "x86_64-apple-darwin",
+        "x86_64-pc-windows-gnu",
+        "x86_64-unknown-linux-gnu"
+      ],
+      "install_hint": "curl --proto '=https' --tlsv1.2 -LsSf https://github.com/IVKLD/VortexDL/releases/download/v0.1.0/vortex-dl-installer.sh | sh",
+      "description": "Install prebuilt binaries via shell script"
+    },
+    "vortex-dl-x86_64-apple-darwin.tar.xz": {
+      "name": "vortex-dl-x86_64-apple-darwin.tar.xz",
+      "kind": "executable-zip",
+      "target_triples": [
+        "x86_64-apple-darwin"
+      ],
+      "assets": [
+        {
+          "name": "LICENSE",
+          "path": "LICENSE",
+          "kind": "license"
+        },
+        {
+          "name": "README.md",
+          "path": "README.md",
+          "kind": "readme"
+        },
+        {
+          "id": "vortex-dl-x86_64-apple-darwin-exe-vortex-dl",
+          "name": "vortex-dl",
+          "path": "vortex-dl",
+          "kind": "executable"
+        }
+      ],
+      "checksum": "vortex-dl-x86_64-apple-darwin.tar.xz.sha256"
+    },
+    "vortex-dl-x86_64-apple-darwin.tar.xz.sha256": {
+      "name": "vortex-dl-x86_64-apple-darwin.tar.xz.sha256",
+      "kind": "checksum",
+      "target_triples": [
+        "x86_64-apple-darwin"
+      ]
+    },
+    "vortex-dl-x86_64-pc-windows-msvc.zip": {
+      "name": "vortex-dl-x86_64-pc-windows-msvc.zip",
+      "kind": "executable-zip",
+      "target_triples": [
+        "x86_64-pc-windows-msvc"
+      ],
+      "assets": [
+        {
+          "name": "LICENSE",
+          "path": "LICENSE",
+          "kind": "license"
+        },
+        {
+          "name": "README.md",
+          "path": "README.md",
+          "kind": "readme"
+        },
+        {
+          "id": "vortex-dl-x86_64-pc-windows-msvc-exe-vortex-dl",
+          "name": "vortex-dl",
+          "path": "vortex-dl.exe",
+          "kind": "executable"
+        }
+      ],
+      "checksum": "vortex-dl-x86_64-pc-windows-msvc.zip.sha256"
+    },
+    "vortex-dl-x86_64-pc-windows-msvc.zip.sha256": {
+      "name": "vortex-dl-x86_64-pc-windows-msvc.zip.sha256",
+      "kind": "checksum",
+      "target_triples": [
+        "x86_64-pc-windows-msvc"
+      ]
+    },
+    "vortex-dl-x86_64-unknown-linux-gnu.tar.xz": {
+      "name": "vortex-dl-x86_64-unknown-linux-gnu.tar.xz",
+      "kind": "executable-zip",
+      "target_triples": [
+        "x86_64-unknown-linux-gnu"
+      ],
+      "assets": [
+        {
+          "name": "LICENSE",
+          "path": "LICENSE",
+          "kind": "license"
+        },
+        {
+          "name": "README.md",
+          "path": "README.md",
+          "kind": "readme"
+        },
+        {
+          "id": "vortex-dl-x86_64-unknown-linux-gnu-exe-vortex-dl",
+          "name": "vortex-dl",
+          "path": "vortex-dl",
+          "kind": "executable"
+        }
+      ],
+      "checksum": "vortex-dl-x86_64-unknown-linux-gnu.tar.xz.sha256"
+    },
+    "vortex-dl-x86_64-unknown-linux-gnu.tar.xz.sha256": {
+      "name": "vortex-dl-x86_64-unknown-linux-gnu.tar.xz.sha256",
+      "kind": "checksum",
+      "target_triples": [
+        "x86_64-unknown-linux-gnu"
+      ]
     }
   },
   "systems": {
     "host:create:all:": {
       "id": "host:create:all:",
+      "cargo_version_line": "cargo 1.94.1 (29ea6fb6a 2026-03-24)",
+      "build_environment": {
+        "linux": {
+          "glibc_version": {
+            "major": 2,
+            "series": 42
+          }
+        }
+      }
+    },
+    "plan:all:": {
+      "id": "plan:all:",
       "cargo_version_line": "cargo 1.94.1 (29ea6fb6a 2026-03-24)",
       "build_environment": {
         "linux": {
