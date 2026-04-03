@@ -1,7 +1,8 @@
 [package]
-name = "sora"
+name = "VortexLD"
 version = "1.0.0"
 edition = "2024"
+repository = "https://github.com/IVKLD/VortexDL"
 
 [dependencies]
 serde = { version = "1.0.188", features = ["derive"] }
@@ -30,3 +31,13 @@ tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 
 [dev-dependencies]
 tempfile = "3.8"
+
+[profile.release]
+strip = true
+opt-level = 3
+lto = true
+codegen-units = 1
+
+[profile.dist]
+inherits = "release"
+lto = "thin"

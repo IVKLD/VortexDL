@@ -1,6 +1,54 @@
 {
   "lockfile_version": "1",
   "packages": {
+    "cargo-dist@latest": {
+      "last_modified": "2026-03-21T07:29:51Z",
+      "resolved": "github:NixOS/nixpkgs/09061f748ee21f68a089cd5d91ec1859cd93d0be#cargo-dist",
+      "source": "devbox-search",
+      "version": "0.30.4",
+      "systems": {
+        "aarch64-darwin": {
+          "outputs": [
+            {
+              "name": "out",
+              "path": "/nix/store/0qsl6d8hvnxjywrqbfrmvrzw8wa4aqv4-cargo-dist-0.30.4",
+              "default": true
+            }
+          ],
+          "store_path": "/nix/store/0qsl6d8hvnxjywrqbfrmvrzw8wa4aqv4-cargo-dist-0.30.4"
+        },
+        "aarch64-linux": {
+          "outputs": [
+            {
+              "name": "out",
+              "path": "/nix/store/a30gc9nwa1crsk31g4j9g2kyipjamgwp-cargo-dist-0.30.4",
+              "default": true
+            }
+          ],
+          "store_path": "/nix/store/a30gc9nwa1crsk31g4j9g2kyipjamgwp-cargo-dist-0.30.4"
+        },
+        "x86_64-darwin": {
+          "outputs": [
+            {
+              "name": "out",
+              "path": "/nix/store/f281r7gxpzm6fl7qawd27pf0y76vp9gv-cargo-dist-0.30.4",
+              "default": true
+            }
+          ],
+          "store_path": "/nix/store/f281r7gxpzm6fl7qawd27pf0y76vp9gv-cargo-dist-0.30.4"
+        },
+        "x86_64-linux": {
+          "outputs": [
+            {
+              "name": "out",
+              "path": "/nix/store/7glglyf8gam5c53r6svwh8mvrp0yh3cg-cargo-dist-0.30.4",
+              "default": true
+            }
+          ],
+          "store_path": "/nix/store/7glglyf8gam5c53r6svwh8mvrp0yh3cg-cargo-dist-0.30.4"
+        }
+      }
+    },
     "github:NixOS/nixpkgs/nixpkgs-unstable": {
       "last_modified": "2026-03-16T02:27:38Z",
       "resolved": "github:NixOS/nixpkgs/f8573b9c935cfaa162dd62cc9e75ae2db86f85df?lastModified=1773628058&narHash=sha256-hpXH0z3K9xv0fHaje136KY872VT2T5uwxtezlAskQgY%3D"

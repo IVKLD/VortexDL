@@ -21,3 +21,39 @@ pub fn build_router(state: state::AppState) -> Router {
         .with_state(state)
         .layer(CorsLayer::permissive())
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use axum::http::{Request, StatusCode};
+    use axum::body::Body;
+    use tower::ServiceExt;
+    use crate::config::AppConfig;
+    use crate::api::state::AppState;
+    use soundcloud_rs::ClientBuilder;
+    use std::sync::Arc;
+    use tempfile::tempdir;
+
+    async fn setup() -> Router {
+        let config = AppConfig::default();
+        // Since ClientBuilder::new().build().await? might fail without internet/creds,
+        // we might need a way to mock it if it's too heavy.
+        // For now, let's try a minimal initialization.
+        let client = ClientBuilder::new().build().await.unwrap();
+        let dir = tempdir().unwrap();
+        let output_dir = dir.path().to_str().unwrap().to_string();
+        let state = AppState::new(client, config, output_dir);
+        build_router(state)
+    }
+
+    #[tokio::test]
+    async fn test_health_check() {
+        let router = setup().await;
+        let response = router
+            .oneshot(Request::builder().uri("/health").body(Body::empty()).unwrap())
+            .await
+            .unwrap();
+
+        assert_eq!(response.status(), StatusCode::OK);
+    }
+}

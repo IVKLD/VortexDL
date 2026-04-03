@@ -26,3 +26,24 @@ impl Default for AppConfig {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_default_config() {
+        let config = AppConfig::default();
+        assert_eq!(config.locale, "en_US");
+        assert_eq!(config.limit_per_page, 100);
+        assert_eq!(config.default_output_dir, "./downloads");
+    }
+
+    #[test]
+    fn test_serialization() {
+        let config = AppConfig::default();
+        let json = serde_json::to_string(&config).unwrap();
+        let deserialized: AppConfig = serde_json::from_str(&json).unwrap();
+        assert_eq!(deserialized.locale, config.locale);
+    }
+}
