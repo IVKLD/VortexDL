@@ -108,9 +108,6 @@ mod tests {
         let dir = tempdir().unwrap();
         let output_path = dir.path();
         
-        // We can't easily test indexing because it depends on id3 tags in mp3 files.
-        // But we can test the logic of sync_storage.
-        
         let mut storage = MusicStorage::new();
         let track1_path = output_path.join("track1.mp3");
         let track2_path = output_path.join("track2.mp3");
@@ -122,7 +119,7 @@ mod tests {
         storage.tracks.insert(2, track2_path.clone());
         
         let mut remote_ids = HashSet::new();
-        remote_ids.insert(1); // track 2 is orphaned
+        remote_ids.insert(1);
         
         storage.sync_storage(&remote_ids, output_path.to_str().unwrap(), "full").await.unwrap();
         
@@ -141,7 +138,7 @@ mod tests {
         
         storage.tracks.insert(1, track1_path.clone());
         
-        let remote_ids = HashSet::new(); // everything orphaned
+        let remote_ids = HashSet::new();
         
         storage.sync_storage(&remote_ids, output_path.to_str().unwrap(), "archive").await.unwrap();
         

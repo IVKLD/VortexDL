@@ -53,18 +53,15 @@ mod tests {
         let temp_file = NamedTempFile::new().unwrap();
         let path = temp_file.path().to_str().unwrap();
 
-        // set_audio_custom_field will create a new tag if none exists
         set_audio_custom_field(path, "test-key", "test-value").unwrap();
         
         let value = get_mp3_custom_field(path, "test-key");
         assert_eq!(value, Some("test-value".to_string()));
         
-        // Overwrite
         set_audio_custom_field(path, "test-key", "new-value").unwrap();
         let value = get_mp3_custom_field(path, "test-key");
         assert_eq!(value, Some("new-value".to_string()));
         
-        // Different field
         set_audio_custom_field(path, "other-key", "other-value").unwrap();
         assert_eq!(get_mp3_custom_field(path, "test-key"), Some("new-value".to_string()));
         assert_eq!(get_mp3_custom_field(path, "other-key"), Some("other-value".to_string()));

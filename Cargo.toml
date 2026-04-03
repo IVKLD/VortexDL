@@ -20,7 +20,7 @@ base64 = "0.22.1"
 rand = "0.9.1"
 url = { version = "2.5.4", features = ["serde"] }
 mimalloc = "0.1.48"
-soundcloud-rs = { version = "0.14.0", path = "../soundcloud-rs" }
+soundcloud-rs = { version = "0.14.0", git = "https://github.com/IVKLD/soundcloud-rs" }
 colored = "3.1.1"
 indicatif = "0.18.4"
 id3 = "1.16.4"

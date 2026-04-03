@@ -36,9 +36,6 @@ mod tests {
 
     async fn setup() -> Router {
         let config = AppConfig::default();
-        // Since ClientBuilder::new().build().await? might fail without internet/creds,
-        // we might need a way to mock it if it's too heavy.
-        // For now, let's try a minimal initialization.
         let client = ClientBuilder::new().build().await.unwrap();
         let dir = tempdir().unwrap();
         let output_dir = dir.path().to_str().unwrap().to_string();
