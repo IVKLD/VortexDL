@@ -1,0 +1,38 @@
+:host {
+  position: relative;
+  display: flex;
+  min-height: 100vh;
+
+  mat-drawer-container {
+    width: 100%;
+
+    mat-drawer {
+      position: fixed;
+      background: var(--mat-sys-surface);
+      display: flex;
+      flex-direction: column;
+      width: 320px;
+
+      div {
+        display: flex;
+        flex-direction: column;
+        gap: 1em;
+
+        padding: 1em;
+
+        button {
+          &.active {
+            background: #1e2129;
+          }
+
+          background: var(--mat-sys-surface);
+        }
+      }
+    }
+
+    mat-drawer-content {
+      padding: 1em;
+      padding-top: 0;
+    }
+  }
+}

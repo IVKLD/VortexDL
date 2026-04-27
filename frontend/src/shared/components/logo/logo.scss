@@ -1,0 +1,27 @@
+:host {
+  display: block;
+  width: 100%;
+}
+
+.logo-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 12px;
+  padding: 1.5rem 1rem;
+  user-select: none;
+}
+
+.logo-text {
+  font-weight: 700;
+  font-size: 1.25rem;
+  background: linear-gradient(135deg, #f50345 0%, #ac26fb 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  letter-spacing: -0.5px;
+}
+
+svg {
+  filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.1));
+}

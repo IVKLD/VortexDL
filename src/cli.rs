@@ -10,7 +10,7 @@ pub struct Args {
     #[arg(short, long)]
     pub output: Option<String>,
 
-    #[arg(short, long, default_value_t = false)]
+    #[arg(short, long, default_value_t = true)]
     pub sync: bool,
 
     #[arg(long, default_value = "silent")]
@@ -19,6 +19,6 @@ pub struct Args {
     #[arg(long, default_value_t = false)]
     pub serve: bool,
 
-    #[arg(long, default_value_t = 3000)]
+    #[arg(long, default_value_t = 3100)]
     pub port: u16,
 }

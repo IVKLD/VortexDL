@@ -1,0 +1,20 @@
+:host {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  max-height: calc(100vh - 72px);
+}
+
+rx-virtual-scroll-viewport {
+  display: block;
+  height: 100%;
+  overflow-anchor: none;
+
+  overflow: hidden;
+  border-radius: .4em;
+  background: var(--mat-sys-surface-container-low);
+
+  div {
+    width: 99%;
+  }
+}

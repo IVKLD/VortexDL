@@ -1,0 +1,33 @@
+@let items = tracking.activeDownloads();
+
+@if (items.length > 0) {
+    <div class="active-downloads">
+        <header>
+            <span>Active Downloads</span>
+            <mark>{{ items.length }}</mark>
+        </header>
+
+        <rx-virtual-scroll-viewport [itemSize]="52">
+            <div class="virtual-scroll-item-container">
+                <div *rxVirtualFor="let item of items; trackBy: 'id'"
+                     class="item">
+                    <div class="img-container">
+                        @if (item.artwork_url) {
+                            <img [alt]="item.title" [ngSrc]="item.artwork_url" fill>
+                        } @else {
+                            <span>♪</span>
+                        }
+                    </div>
+
+                    <div class="info">
+                        <strong>{{ item.title }}</strong>
+                        <small>{{ item.status }}</small>
+                        @if (item.status === 'downloading') {
+                            <mat-progress-bar mode="indeterminate"></mat-progress-bar>
+                        }
+                    </div>
+                </div>
+            </div>
+        </rx-virtual-scroll-viewport>
+    </div>
+}

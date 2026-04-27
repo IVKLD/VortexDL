@@ -1,0 +1,75 @@
+.download-dialog {
+  min-width: 400px;
+  padding: 16px;
+
+  h2 {
+    font-weight: 500;
+  }
+
+  .url-form {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+
+    mat-form-field {
+      width: 100%;
+    }
+  }
+
+  .history-section {
+    margin-top: 24px;
+
+    h3 {
+      font-size: 0.9rem;
+      color: rgba(255, 255, 255, 0.6);
+      margin-bottom: 8px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    mat-list {
+       max-height: 200px;
+       overflow-y: auto;
+       border-radius: 4px;
+       background: rgba(255, 255, 255, 0.05);
+
+       mat-list-item {
+         cursor: pointer;
+         transition: background 0.2s;
+
+         &:hover {
+           background: rgba(255, 255, 255, 0.1);
+         }
+
+         .history-item {
+           display: flex;
+           justify-content: space-between;
+           align-items: center;
+           width: 100%;
+           font-size: 0.85rem;
+
+           .url-text {
+             overflow: hidden;
+             text-overflow: ellipsis;
+             white-space: nowrap;
+             margin-right: 8px;
+           }
+
+           mat-icon {
+             font-size: 18px;
+             height: 18px;
+             width: 18px;
+             opacity: 0.5;
+           }
+         }
+       }
+    }
+  }
+
+  .dialog-actions {
+    margin-top: 24px;
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+  }
+}

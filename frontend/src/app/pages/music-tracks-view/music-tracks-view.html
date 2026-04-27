@@ -1,0 +1,9 @@
+@defer () {
+    <rx-virtual-scroll-viewport [itemSize]="82">
+        <div *rxVirtualFor="let track of tracks(); trackBy: 'id'">
+            <app-music-card
+                    (onDeleteMusic)="deleteMusic(track)"
+                    [track]="track"/>
+        </div>
+    </rx-virtual-scroll-viewport>
+}

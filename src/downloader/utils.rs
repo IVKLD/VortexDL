@@ -10,6 +10,16 @@ pub fn clean_filename(filename: &str) -> String {
         .replace("|", "_")
 }
 
+pub fn ensure_likes_suffix(url_str: &str) -> String {
+    let mut base = url_str.trim_end_matches('/');
+
+    if let Some(stripped) = base.strip_suffix("likes") {
+        base = stripped.trim_end_matches('/');
+    }
+
+    format!("{}/likes", base)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

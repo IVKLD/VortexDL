@@ -1,0 +1,37 @@
+<div class="download-dialog">
+    <h2 mat-dialog-title>Download Music</h2>
+
+    <mat-dialog-content>
+        <div class="url-form">
+            <mat-form-field appearance="outline">
+                <mat-label>SoundCloud URL</mat-label>
+                <input (keyup.enter)="onDownload()" [formControl]="url" matInput
+                       placeholder="Paste link (track, playlist, or user)">
+                <mat-hint>Liked, Playlist, or Track URL</mat-hint>
+            </mat-form-field>
+        </div>
+
+        @if (history.length > 0) {
+            <div class="history-section">
+                <h3>Recent URLs</h3>
+                <mat-list>
+                    @for (item of history; track item) {
+                        <mat-list-item (click)="selectHistory(item)">
+                            <div class="history-item">
+                                <span class="url-text">{{ item }}</span>
+                                <button (click)="removeFromHistory(item)" mat-icon-button>
+                                    <svg lucideXCircle/>
+                                </button>
+                            </div>
+                        </mat-list-item>
+                    }
+                </mat-list>
+            </div>
+        }
+    </mat-dialog-content>
+
+    <mat-dialog-actions class="dialog-actions">
+        <button mat-button mat-dialog-close>Cancel</button>
+        <button (click)="onDownload()" [disabled]="url.invalid" mat-flat-button>Download</button>
+    </mat-dialog-actions>
+</div>

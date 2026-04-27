@@ -1,0 +1,18 @@
+<mat-drawer-container>
+    <mat-drawer disableClose mode="side" opened>
+        <app-logo />
+        <div>
+            @for (router of routers; track $index) {
+            <button [routerLinkActiveOptions]="{exact: (router.path === '/' || router.path === '')}"
+                [routerLink]="router.path" mat-button routerLinkActive="active">
+                {{ router.data.text }}
+            </button>
+            }
+        </div>
+
+        <app-active-downloads />
+    </mat-drawer>
+    <mat-drawer-content>
+        <ng-content />
+    </mat-drawer-content>
+</mat-drawer-container>

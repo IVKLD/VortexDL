@@ -1,41 +1,42 @@
 use serde::{Deserialize, Serialize};
 
-
-
 #[derive(Debug, Deserialize)]
-pub struct DownloadPlaylistRequest {
-    
+pub struct DownloadRequest {
     pub url: String,
 }
-
-#[derive(Debug, Deserialize)]
-pub struct DownloadLikesRequest {
-    
-    pub url: String,
-}
-
-
 
 #[derive(Debug, Serialize)]
-pub struct DownloadQueuedResponse {
+pub struct ActionStatus {
     pub status: &'static str,
     pub message: String,
 }
 
-#[derive(Debug, Serialize)]
-pub struct DownloadedTrack {
-    pub filename: String,
+#[derive(Eq, PartialEq)]
+pub enum TrackExtension {
+    MP3,
+    FLAC,
+    WAV,
+    Unknown
 }
 
-#[derive(Debug, Serialize)]
-pub struct ListResponse {
-    pub tracks: Vec<DownloadedTrack>,
-}
+pub const KNOWN_EXTENSIONS: [TrackExtension; 3] = [
+    TrackExtension::MP3,
+    TrackExtension::FLAC,
+    TrackExtension::WAV,
+];
 
 #[derive(Debug, Serialize)]
-pub struct DeleteResponse {
-    pub deleted: bool,
+pub struct TrackRecord {
+    pub id: u32,
     pub filename: String,
+    pub album: String,
+    pub format: String,
+    pub artwork_url: Option<String>,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct DeleteQuery {
+    pub id: u32,
 }
 
 #[derive(Debug, Serialize)]

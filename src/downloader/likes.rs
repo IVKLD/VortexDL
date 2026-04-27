@@ -1,27 +1,38 @@
-use colored::Colorize;
+use std::sync::Arc;
+use tokio::sync::RwLock;
 use soundcloud_rs::Client;
 use std::collections::HashSet;
-use std::error::Error;
 use url::Url;
+use colored::Colorize;
 
+use super::core::process_tracks_concurrently;
 use crate::config::AppConfig;
+use crate::downloader::utils::ensure_likes_suffix;
 use crate::models::{ResolveQuery, ResolveResponse, TrackLikesQuery, TrackLikesResponse};
 use crate::storage::MusicStorage;
-use super::core::process_tracks_concurrently;
+use crate::api::download_manager::DownloadManager;
 
 pub async fn download_likes(
-    storage: &MusicStorage,
-    client: &Client,
+    storage: Arc<RwLock<MusicStorage>>,
+    client: &Arc<Client>,
     url_str: &str,
     output: &str,
-    _config: &AppConfig,
-) -> Result<HashSet<i64>, Box<dyn Error>> {
+    config: Arc<AppConfig>,
+    download_manager: Option<Arc<DownloadManager>>,
+) -> crate::models::Result<HashSet<i64>> {
     println!("{} Resolving user URL...", "[INFO]".blue().bold());
+    if let Some(ref dm) = download_manager {
+        dm.broadcast_event(crate::api::download_manager::ServerEvent::Message {
+            message: "Resolving user URL...".to_string(),
+            level: "info".to_string(),
+        });
+    }
+
     let resolve_res: ResolveResponse = client
         .get(
             "resolve",
             Some(&ResolveQuery {
-                url: Some(url_str.to_string()),
+                url: Some(ensure_likes_suffix(url_str)),
             }),
         )
         .await?;
@@ -30,7 +41,13 @@ pub async fn download_likes(
     let endpoint = format!("users/{}/track_likes", resolve_res.id);
 
     println!("{} Fetching track list...", "[INFO]".blue().bold());
-    let mut all_tracks = Vec::new();
+    if let Some(ref dm) = download_manager {
+        dm.broadcast_event(crate::api::download_manager::ServerEvent::Message {
+            message: "Fetching track list...".to_string(),
+            level: "info".to_string(),
+        });
+    }
+    let mut all_tracks: Vec<(i64, String, Option<String>)> = Vec::new();
     let mut track_ids = HashSet::new();
 
     loop {
@@ -39,7 +56,7 @@ pub async fn download_likes(
                 &endpoint,
                 Some(&TrackLikesQuery {
                     offset: current_offset.clone(),
-                    limit: _config.limit_per_page,
+                    limit: config.limit_per_page,
                 }),
             )
             .await?;
@@ -48,18 +65,17 @@ pub async fn download_likes(
             break;
         }
 
-        for item in likes_res.collection {
-            track_ids.insert(item.track.id);
+        {
+            let storage_read = storage.read().await;
+            for item in likes_res.collection {
+                track_ids.insert(item.track.id);
 
-            if storage.tracks.contains_key(&item.track.id) {
-                println!(
-                    "{} {}",
-                    "[SKIP]".yellow().bold(),
-                    &item.track.title
-                );
+                if !storage_read.tracks.contains_key(&item.track.id) {
+                    all_tracks.push((item.track.id, item.track.title.clone(), item.track.artwork_url.clone()));
+                } else {
+                    println!("{} Skipping: {}", "[SKIP]".yellow().bold(), item.track.title);
+                }
             }
-
-            all_tracks.push((item.track.id, item.track.title));
         }
 
         if let Some(next_href) = likes_res.next_href {
@@ -72,7 +88,13 @@ pub async fn download_likes(
         }
     }
 
-    process_tracks_concurrently(storage, client, all_tracks, output).await;
+    if let Some(ref dm) = download_manager {
+        for (id, filename, artwork_url) in &all_tracks {
+            dm.add_task(*id, filename.clone(), artwork_url.clone()).await;
+        }
+    }
+
+    process_tracks_concurrently(storage, client, all_tracks, output, download_manager).await;
 
     Ok(track_ids)
 }
