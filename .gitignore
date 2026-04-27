@@ -31,3 +31,5 @@ downloads
 target
 
 /static/*
+
+frontend/node_modules
