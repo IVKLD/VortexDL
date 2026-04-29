@@ -11,7 +11,7 @@ use axum::{
 use tower_http::cors::CorsLayer;
 
 use handlers::{
-    download::{download_events, get_download_queue, process_download, queue_likes, queue_playlist, queue_track},
+    download::{download_events, get_download_queue, enqueue_download},
     health::health,
     tracks::{get_tracks, remove_track},
 };
@@ -24,10 +24,7 @@ pub async fn build_router(state: state::AppState) -> Router {
 
     Router::new()
         .route("/health", get(health))
-        .route("/download", post(process_download))
-        .route("/download/track", post(queue_track))
-        .route("/download/playlist", post(queue_playlist))
-        .route("/download/likes", post(queue_likes))
+        .route("/download", post(enqueue_download))
         .route("/download/queue", get(get_download_queue))
         .route("/download/events", get(download_events))
         .route("/downloads", get(get_tracks).delete(remove_track))

@@ -12,7 +12,7 @@ futures = "0.3.28"
 clap = { version = "4.5.41", features = ["derive"] }
 url = { version = "2.5.4", features = ["serde"] }
 mimalloc = "0.1.48"
-soundcloud-rs = { version = "0.14.0", git = "https://github.com/IVKLD/soundcloud-rs" }
+soundcloud-rs = { version = "0.14.0", path = "/mnt/f450d8ee-cfcd-4d49-af5e-c18cfab65a09/projects/soundcloud-rs" }
 colored = "3.1.1"
 indicatif = "0.18.4"
 id3 = "1.16.4"

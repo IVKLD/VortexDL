@@ -48,15 +48,17 @@ pub struct DownloadManager {
     tx: broadcast::Sender<ServerEvent>,
 }
 
-impl DownloadManager {
-    pub fn new() -> Self {
+impl Default for DownloadManager {
+    fn default() -> Self {
         let (tx, _) = broadcast::channel(100);
         Self {
             tasks: RwLock::new(HashMap::new()),
             tx,
         }
     }
+}
 
+impl DownloadManager {
     pub async fn add_task(&self, id: i64, title: String, artwork_url: Option<String>) {
         let item = DownloadItem {
             id,

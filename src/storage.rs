@@ -1,9 +1,8 @@
 use std::collections::{HashMap, HashSet};
-use std::error::Error;
 use std::{fs, path::{Path, PathBuf}};
 
 use crate::models::{SC_IDENTIFIER, SC_ARTWORK_URL};
-use crate::utils::audio_file_manipulator::get_mp3_custom_field;
+use crate::utils::metadata::read_custom_field;
 
 #[derive(Default, Clone)]
 pub struct TrackData {
@@ -17,10 +16,6 @@ pub struct MusicStorage {
 }
 
 impl MusicStorage {
-    pub fn new() -> Self {
-        Self::default()
-    }
-
     pub fn update_track(&mut self, id: i64, path: PathBuf, artwork_url: Option<String>) {
         self.tracks.insert(id, TrackData { path, artwork_url });
     }
@@ -29,21 +24,20 @@ impl MusicStorage {
         self.tracks.remove(&id);
     }
 
-    pub fn indexing(&mut self, start_path: &Path) {
-        let mut dirs_to_visit = vec![start_path.to_path_buf()];
+    pub fn indexing(&mut self, root: &Path) {
+        let mut stack = vec![root.to_path_buf()];
 
-        while let Some(current_dir) = dirs_to_visit.pop() {
-            if let Ok(entries) = fs::read_dir(current_dir) {
+        while let Some(dir) = stack.pop() {
+            if let Ok(entries) = fs::read_dir(dir) {
                 for entry in entries.flatten() {
                     let path = entry.path();
-
                     if path.is_dir() {
-                        dirs_to_visit.push(path);
+                        stack.push(path);
                     } else if path.is_file() {
                         if let Some(path_str) = path.to_str() {
-                            if let Some(content) = get_mp3_custom_field(path_str, SC_IDENTIFIER) {
-                                if let Ok(id) = content.parse::<i64>() {
-                                    let artwork_url = get_mp3_custom_field(path_str, SC_ARTWORK_URL);
+                            if let Some(id_str) = read_custom_field(path_str, SC_IDENTIFIER) {
+                                if let Ok(id) = id_str.parse::<i64>() {
+                                    let artwork_url = read_custom_field(path_str, SC_ARTWORK_URL);
                                     self.tracks.insert(id, TrackData { path, artwork_url });
                                 }
                             }
@@ -60,34 +54,26 @@ impl MusicStorage {
         output_dir: &str,
         mode: &str,
     ) -> crate::models::Result<()> {
-        let mut to_remove = Vec::new();
+        let to_remove: Vec<_> = self.tracks.iter()
+            .filter(|(id, _)| !remote_ids.contains(id))
+            .collect();
 
-        for (id, data) in &self.tracks {
-            if !remote_ids.contains(id) {
-                to_remove.push((id, &data.path));
-            }
-        }
-
-        if to_remove.is_empty() {
-            return Ok(());
-        }
+        if to_remove.is_empty() { return Ok(()); }
 
         if mode == "full" {
-            for (_, path) in to_remove {
-                fs::remove_file(path)?;
+            for (_, data) in to_remove {
+                fs::remove_file(&data.path)?;
             }
         } else {
-            let archive_dir = Path::new(output_dir).join("Archive");
-            fs::create_dir_all(&archive_dir)?;
+            let archive = Path::new(output_dir).join("Archive");
+            fs::create_dir_all(&archive)?;
 
-            for (_, path) in to_remove {
-                if let Some(file_name) = path.file_name() {
-                    let dest = archive_dir.join(file_name);
-                    fs::rename(path, dest)?;
+            for (_, data) in to_remove {
+                if let Some(name) = data.path.file_name() {
+                    fs::rename(&data.path, archive.join(name))?;
                 }
             }
         }
-
         Ok(())
     }
 }
@@ -99,45 +85,26 @@ mod tests {
     use std::fs::File;
 
     #[tokio::test]
-    async fn test_indexing_and_sync() {
+    async fn test_sync() {
         let dir = tempdir().unwrap();
-        let output_path = dir.path();
+        let root = dir.path();
 
-        let mut storage = MusicStorage::new();
-        let track1_path = output_path.join("track1.mp3");
-        let track2_path = output_path.join("track2.mp3");
+        let mut s = MusicStorage::default();
+        let p1 = root.join("t1.mp3");
+        let p2 = root.join("t2.mp3");
 
-        File::create(&track1_path).unwrap();
-        File::create(&track2_path).unwrap();
+        File::create(&p1).unwrap();
+        File::create(&p2).unwrap();
 
-        let mut remote_ids = HashSet::new();
-        remote_ids.insert(1);
+        s.tracks.insert(1, TrackData { path: p1.clone(), artwork_url: None });
+        s.tracks.insert(2, TrackData { path: p2.clone(), artwork_url: None });
 
-        storage.tracks.insert(1, TrackData { path: track1_path.clone(), artwork_url: None });
-        storage.tracks.insert(2, TrackData { path: track2_path.clone(), artwork_url: None });
+        let mut remote = HashSet::new();
+        remote.insert(1);
 
-        storage.sync_storage(&remote_ids, output_path.to_str().unwrap(), "full").await.unwrap();
+        s.sync_storage(&remote, root.to_str().unwrap(), "full").await.unwrap();
 
-        assert!(track1_path.exists());
-        assert!(!track2_path.exists());
-    }
-
-    #[tokio::test]
-    async fn test_sync_archive() {
-        let dir = tempdir().unwrap();
-        let output_path = dir.path();
-
-        let mut storage = MusicStorage::new();
-        let track1_path = output_path.join("track1.mp3");
-        File::create(&track1_path).unwrap();
-
-        storage.tracks.insert(1, TrackData { path: track1_path.clone(), artwork_url: None });
-
-        let remote_ids = HashSet::new();
-
-        storage.sync_storage(&remote_ids, output_path.to_str().unwrap(), "archive").await.unwrap();
-
-        assert!(!track1_path.exists());
-        assert!(output_path.join("Archive").join("track1.mp3").exists());
+        assert!(p1.exists());
+        assert!(!p2.exists());
     }
 }

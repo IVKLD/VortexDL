@@ -6,7 +6,8 @@
       "version": "latest",
       "outputs": ["out", "dev"]
     },
-    "cargo-dist": "latest"
+    "cargo-dist": "latest",
+    "gcc": "latest"
   },
   "env": {
     "PKG_CONFIG_PATH": "$DEVBOX_PACKAGES_DIR/lib/pkgconfig"

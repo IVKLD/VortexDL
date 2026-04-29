@@ -23,8 +23,8 @@ impl AppState {
             client,
             config,
             output_dir: Arc::new(output_dir),
-            storage: Arc::new(RwLock::new(MusicStorage::new())),
-            download_manager: Arc::new(DownloadManager::new()),
+            storage: Arc::new(RwLock::new(MusicStorage::default())),
+            download_manager: Arc::new(DownloadManager::default()),
         }
     }
 }
