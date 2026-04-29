@@ -1562,6 +1562,7 @@ dependencies = [
 [[package]]
 name = "soundcloud-rs"
 version = "0.14.0"
+source = "git+https://github.com/IVKLD/soundcloud-rs.git#cc4a7b700bec5280d310902d87cc0f0f2b7cb8f3"
 dependencies = [
  "ffmpeg-sidecar",
  "regex",
@@ -1976,7 +1977,7 @@ checksum = "accd4ea62f7bb7a82fe23066fb0957d48ef677f6eeb8215f372f52e48bb32426"
 
 [[package]]
 name = "vortex-dl"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "async-stream",
  "axum",
