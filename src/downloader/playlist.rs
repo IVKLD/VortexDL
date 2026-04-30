@@ -15,7 +15,7 @@ pub async fn download_playlist(
     url: &str,
     output: &str,
     dm: Option<Arc<DownloadManager>>,
-) -> crate::models::Result<HashSet<i64>> {
+) -> anyhow::Result<HashSet<i64>> {
     println!("{} Resolving playlist URL...", "[INFO]".blue().bold());
     
     if let Some(ref manager) = dm {
@@ -42,7 +42,7 @@ pub async fn download_playlist(
 
     {
         let storage_read = storage.read().await;
-        let tracks = playlist.tracks.ok_or("No tracks found in playlist")?;
+        let tracks = playlist.tracks.ok_or_else(|| anyhow::anyhow!("No tracks found in playlist"))?;
 
         for track in tracks {
             let id = match track.id {

@@ -119,7 +119,8 @@ pub async fn download_one(task: DownloadTask) {
 
     let res = async {
         let track = client.get_track(&Identifier::Id(id)).await?;
-        let transcodings = track.media.as_ref().ok_or("No media")?.transcodings.as_ref().ok_or("No transcodings")?;
+        let transcodings = track.media.as_ref().ok_or_else(|| anyhow::anyhow!("No media"))?
+            .transcodings.as_ref().ok_or_else(|| anyhow::anyhow!("No transcodings"))?;
         let stream = transcodings.last().and_then(|t| t.format.as_ref()).and_then(|f| f.protocol.as_ref());
 
         let id_obj = Identifier::Id(id);
@@ -136,7 +137,7 @@ pub async fn download_one(task: DownloadTask) {
             let mut s = storage.write().await;
             s.update_track(id, PathBuf::from(&file_path), artwork_url);
         }
-        Ok::<(), Box<dyn std::error::Error + Send + Sync>>(())
+        Ok::<(), anyhow::Error>(())
     }.await;
 
     if res.is_ok() {

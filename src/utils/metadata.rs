@@ -1,14 +1,14 @@
 use id3::frame::{ExtendedText, Frame, Picture, PictureType};
 use id3::{Content, Tag, TagLike, Version};
 
-fn get_tag(path: &str) -> crate::models::Result<Tag> {
+fn get_tag(path: &str) -> anyhow::Result<Tag> {
     match Tag::read_from_path(path) {
         Ok(tag) => Ok(tag),
         Err(id3::Error {
             kind: id3::ErrorKind::NoTag,
             ..
         }) => Ok(Tag::new()),
-        Err(e) => Err(Box::new(e)),
+        Err(e) => Err(e.into()),
     }
 }
 
@@ -17,7 +17,7 @@ pub fn save_track_info(
     sc_id: &str,
     artwork_url: Option<&str>,
     artwork_data: Option<Vec<u8>>,
-) -> crate::models::Result<()> {
+) -> anyhow::Result<()> {
     let mut tag = get_tag(path)?;
 
     let id_frame = Frame::with_content(

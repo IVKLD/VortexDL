@@ -8,13 +8,15 @@ use crate::storage::MusicStorage;
 use crate::api::download_manager::DownloadManager;
 use super::core::{download_one, DownloadTask};
 
+use std::collections::HashSet;
+
 pub async fn download_track(
     storage: Arc<RwLock<MusicStorage>>,
     client: &Arc<Client>,
     id: i64,
     output: &str,
     dm: Option<Arc<DownloadManager>>,
-) -> crate::models::Result<()> {
+) -> anyhow::Result<HashSet<i64>> {
     let track = client.get_track(&Identifier::Id(id)).await?;
 
     let author = track.user
@@ -37,7 +39,9 @@ pub async fn download_track(
         let storage_read = storage.read().await;
         if storage_read.tracks.contains_key(&id) {
             println!("{} Skipping: {}", "[SKIP]".yellow().bold(), filename);
-            return Ok(());
+            let mut ids = HashSet::new();
+            ids.insert(id);
+            return Ok(ids);
         }
     }
 
@@ -61,5 +65,7 @@ pub async fn download_track(
 
     download_one(task).await;
 
-    Ok(())
+    let mut ids = HashSet::new();
+    ids.insert(id);
+    Ok(ids)
 }

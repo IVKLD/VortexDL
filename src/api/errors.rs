@@ -33,8 +33,14 @@ impl IntoResponse for ApiError {
     }
 }
 
-impl<E: std::fmt::Display> From<E> for ApiError {
-    fn from(err: E) -> Self {
+impl From<anyhow::Error> for ApiError {
+    fn from(err: anyhow::Error) -> Self {
+        Self::internal(format!("{:#}", err))
+    }
+}
+
+impl From<std::io::Error> for ApiError {
+    fn from(err: std::io::Error) -> Self {
         Self::internal(err.to_string())
     }
 }

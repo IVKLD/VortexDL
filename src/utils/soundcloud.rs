@@ -1,9 +1,8 @@
 use soundcloud_rs::Client;
-use std::error::Error;
 
 use crate::models::{ResolveQuery, ResolveResponse};
 
-pub async fn resolve_url(client: &Client, url: &str) -> crate::models::Result<ResolveResponse> {
+pub async fn resolve_url(client: &Client, url: &str) -> anyhow::Result<ResolveResponse> {
     let response: ResolveResponse = client
         .get(
             "resolve",

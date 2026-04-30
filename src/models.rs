@@ -3,8 +3,6 @@ use serde::{Deserialize, Serialize};
 pub const SC_IDENTIFIER: &str = "sc-identifier";
 pub const SC_ARTWORK_URL: &str = "sc-artwork-url";
 
-pub type Result<T> = std::result::Result<T, Box<dyn std::error::Error + Send + Sync>>;
-
 #[derive(Serialize)]
 pub struct ResolveQuery {
     pub url: Option<String>,

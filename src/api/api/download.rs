@@ -4,13 +4,13 @@ use crate::api::{
     state::AppState,
     download_manager::ServerEvent,
 };
-use crate::{downloader, utils};
+use crate::downloader;
 use axum::response::sse::{Event, Sse};
 use axum::{Json, extract::State, http::StatusCode, response::IntoResponse};
 use futures_util::stream::Stream;
 use std::convert::Infallible;
 
-pub async fn enqueue_download(
+pub async fn start_download(
     State(state): State<AppState>,
     Json(body): Json<DownloadRequest>,
 ) -> Result<impl IntoResponse, ApiError> {
@@ -30,10 +30,14 @@ pub async fn enqueue_download(
     let u = url.clone();
 
     tokio::spawn(async move {
-        let res = match utils::soundcloud::resolve_url(&s.client, &u).await {
-            Ok(res) => run_download(&s, &u, &res.kind).await,
-            Err(e) => Err(e),
-        };
+        let res = downloader::dispatch_download(
+            &u,
+            s.storage.clone(),
+            &s.client,
+            &s.output_dir,
+            s.config.clone(),
+            Some(s.download_manager.clone()),
+        ).await;
 
         let status = if res.is_ok() { "finished" } else { "failed" };
         
@@ -57,42 +61,6 @@ pub async fn enqueue_download(
     ))
 }
 
-async fn run_download(state: &AppState, url: &str, kind: &str) -> crate::models::Result<()> {
-    match kind {
-        "track" => {
-            let res = utils::soundcloud::resolve_url(&state.client, url).await?;
-            downloader::download_track(
-                state.storage.clone(),
-                &state.client,
-                res.id,
-                &state.output_dir,
-                Some(state.download_manager.clone()),
-            ).await
-        }
-        "playlist" => {
-            downloader::download_playlist(
-                state.storage.clone(),
-                &state.client,
-                url,
-                &state.output_dir,
-                Some(state.download_manager.clone()),
-            ).await?;
-            Ok(())
-        }
-        "user" | "likes" => {
-            downloader::download_likes(
-                state.storage.clone(),
-                &state.client,
-                url,
-                &state.output_dir,
-                state.config.clone(),
-                Some(state.download_manager.clone()),
-            ).await?;
-            Ok(())
-        }
-        _ => Err(format!("Unsupported kind: {kind}").into()),
-    }
-}
 
 pub async fn get_download_queue(State(state): State<AppState>) -> impl IntoResponse {
     Json(state.download_manager.get_queue().await)

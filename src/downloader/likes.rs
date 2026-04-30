@@ -19,7 +19,7 @@ pub async fn download_likes(
     output: &str,
     config: Arc<AppConfig>,
     dm: Option<Arc<DownloadManager>>,
-) -> crate::models::Result<HashSet<i64>> {
+) -> anyhow::Result<HashSet<i64>> {
     println!("{} Resolving user URL...", "[INFO]".blue().bold());
     
     if let Some(ref manager) = dm {

@@ -1,8 +1,8 @@
 pub mod errors;
-pub mod handlers;
 pub mod models;
 pub mod state;
 pub mod download_manager;
+pub mod api;
 
 use axum::{
     Router,
@@ -10,8 +10,8 @@ use axum::{
 };
 use tower_http::cors::CorsLayer;
 
-use handlers::{
-    download::{download_events, get_download_queue, enqueue_download},
+use api::{
+    download::{download_events, get_download_queue, start_download},
     health::health,
     tracks::{get_tracks, remove_track},
 };
@@ -24,7 +24,7 @@ pub async fn build_router(state: state::AppState) -> Router {
 
     Router::new()
         .route("/health", get(health))
-        .route("/download", post(enqueue_download))
+        .route("/download", post(start_download))
         .route("/download/queue", get(get_download_queue))
         .route("/download/events", get(download_events))
         .route("/downloads", get(get_tracks).delete(remove_track))

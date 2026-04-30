@@ -53,7 +53,7 @@ impl MusicStorage {
         remote_ids: &HashSet<i64>,
         output_dir: &str,
         mode: &str,
-    ) -> crate::models::Result<()> {
+    ) -> anyhow::Result<()> {
         let to_remove: Vec<_> = self.tracks.iter()
             .filter(|(id, _)| !remote_ids.contains(id))
             .collect();
