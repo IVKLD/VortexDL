@@ -1,0 +1,98 @@
+:host {
+  display: block;
+  width: 100%;
+}
+
+.error-plate {
+  display: flex;
+  flex-direction: column;
+  background: rgba(255, 82, 82, 0.08);
+  border: 1px solid rgba(255, 82, 82, 0.15);
+  border-radius: 12px;
+  backdrop-filter: blur(12px);
+  animation: slideIn 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  overflow: hidden;
+
+  .error-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 16px;
+    background: rgba(255, 82, 82, 0.05);
+    border-bottom: 1px solid rgba(255, 82, 82, 0.1);
+
+    span {
+      font-size: 0.75rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: #ff8a80;
+    }
+
+    .clear-all-btn {
+      background: transparent;
+      border: none;
+      color: rgba(255, 255, 255, 0.4);
+      font-size: 0.7rem;
+      font-weight: 600;
+      cursor: pointer;
+      padding: 4px 8px;
+      border-radius: 4px;
+      transition: all 0.2s;
+
+      &:hover {
+        background: rgba(255, 255, 255, 0.05);
+        color: white;
+      }
+    }
+  }
+
+  .error-list {
+    display: flex;
+    flex-direction: column;
+    padding: 8px 0;
+    max-height: 200px;
+    overflow-y: auto;
+
+    .error-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      padding: 8px 16px;
+      transition: background 0.2s;
+
+      &:hover {
+        background: rgba(255, 255, 255, 0.02);
+      }
+
+      mat-icon {
+        font-size: 16px;
+        width: 16px;
+        height: 16px;
+        color: #ff5252;
+        margin-top: 2px;
+      }
+
+      .error-message {
+        flex: 1;
+        font-size: 0.8rem;
+        font-weight: 450;
+        line-height: 1.5;
+        color: rgba(255, 255, 255, 0.8);
+        word-break: break-word;
+      }
+    }
+  }
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}

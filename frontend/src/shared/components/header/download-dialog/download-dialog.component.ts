@@ -7,8 +7,10 @@ import {MatInput} from '@angular/material/input';
 import {MatList, MatListItem} from '@angular/material/list';
 import {MusicTracksViewService} from "@app/pages/music-tracks-view/music-tracks-view.service";
 import {DialogRef} from "@angular/cdk/dialog";
-import {LucideCircleX} from "@lucide/angular";
 import {urlValidator} from "@shared/validators/url.validator";
+import {DownloadProgressSnackbar} from "@shared/components/download-progress-snackbar/download-progress-snackbar";
+import {MatSnackBar} from "@angular/material/snack-bar";
+import {MatIcon} from "@angular/material/icon";
 
 const STORAGE_KEY = 'vortexdl_download_history';
 
@@ -27,8 +29,8 @@ const STORAGE_KEY = 'vortexdl_download_history';
         MatDialogActions,
         MatButton,
         MatInput,
-        LucideCircleX,
-        MatIconButton
+        MatIconButton,
+        MatIcon
     ],
     templateUrl: './download-dialog.component.html',
     styleUrl: './download-dialog.component.scss',
@@ -37,6 +39,7 @@ const STORAGE_KEY = 'vortexdl_download_history';
 export class DownloadDialogComponent implements OnInit {
     private readonly _trackService = inject(MusicTracksViewService);
     private readonly _dialogRef = inject(DialogRef);
+    private readonly _snackBar = inject(MatSnackBar);
 
     public url = new FormControl<string>('', [Validators.required, urlValidator()]);
     public history: string[] = [];
@@ -79,6 +82,13 @@ export class DownloadDialogComponent implements OnInit {
         this._trackService.download(url).subscribe({
             next: () => {
                 this._dialogRef.close();
+
+                this._snackBar.openFromComponent(DownloadProgressSnackbar, {
+                    duration: 5000,
+                    panelClass: 'download-snackbar',
+                    horizontalPosition: 'right',
+                    verticalPosition: 'bottom'
+                });
             },
             error: (err: any) => {
                 console.error('Download failed', err);

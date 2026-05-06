@@ -6,7 +6,7 @@ use crate::api::{
 };
 use crate::downloader;
 use axum::response::sse::{Event, Sse};
-use axum::{Json, extract::State, http::StatusCode, response::IntoResponse};
+use axum::{Json, extract::{State, Path}, http::StatusCode, response::IntoResponse};
 use futures_util::stream::Stream;
 use std::convert::Infallible;
 
@@ -21,11 +21,6 @@ pub async fn start_download(
 
     tracing::info!("Download request: {url}");
 
-    state.download_manager.broadcast_event(ServerEvent::OperationStarted {
-        url: url.clone(),
-        kind: "universal".to_string(),
-    });
-
     let s = state.clone();
     let u = url.clone();
 
@@ -39,17 +34,9 @@ pub async fn start_download(
             Some(s.download_manager.clone()),
         ).await;
 
-        let status = if res.is_ok() { "finished" } else { "failed" };
-        
         if let Err(ref e) = res {
             tracing::error!("Download failed for {u}: {e}");
         }
-
-        s.download_manager.broadcast_event(ServerEvent::OperationFinished {
-            url: u,
-            kind: "universal".to_string(),
-            status: status.to_string(),
-        });
     });
 
     Ok((
@@ -61,9 +48,16 @@ pub async fn start_download(
     ))
 }
 
-
 pub async fn get_download_queue(State(state): State<AppState>) -> impl IntoResponse {
     Json(state.download_manager.get_queue().await)
+}
+
+pub async fn remove_from_queue(
+    State(state): State<AppState>,
+    Path(id): Path<i64>,
+) -> impl IntoResponse {
+    state.download_manager.remove_task(id).await;
+    StatusCode::OK
 }
 
 pub async fn download_events(State(state): State<AppState>) -> Sse<impl Stream<Item = Result<Event, Infallible>>> {

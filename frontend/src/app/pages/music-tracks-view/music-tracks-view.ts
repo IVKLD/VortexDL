@@ -1,15 +1,15 @@
-import {ChangeDetectionStrategy, Component, computed, inject, OnInit, ViewChild, viewChild} from '@angular/core';
-import {MatPaginator} from '@angular/material/paginator';
-import {MatSort} from '@angular/material/sort';
-import {MusicTracksViewService, Track} from "./music-tracks-view.service";
-import {MusicCard} from "./music-card/music-card";
-import {MusicTracksViewState} from "./music-tracks-view.state";
+import { ChangeDetectionStrategy, Component, inject, OnInit } from '@angular/core';
+import { MusicTracksViewService, Track } from "./music-tracks-view.service";
+import { MusicCard } from "./music-card/music-card";
+import { MusicTracksViewState } from "./music-tracks-view.state";
 import {
-    AutoSizeVirtualScrollStrategy, FixedSizeVirtualScrollStrategy,
+    FixedSizeVirtualScrollStrategy,
     RxVirtualFor,
     RxVirtualScrollViewportComponent
 } from "@rx-angular/template/virtual-scrolling";
-import {DownloadTrackingService} from "../../services/download-tracking.service";
+import { MatDialog } from "@angular/material/dialog";
+import { MusicDetailModal } from "./music-detail-modal/music-detail-modal";
+import { MatIcon } from "@angular/material/icon";
 
 @Component({
     selector: 'app-music-tracks-view',
@@ -18,6 +18,7 @@ import {DownloadTrackingService} from "../../services/download-tracking.service"
         RxVirtualScrollViewportComponent,
         RxVirtualFor,
         FixedSizeVirtualScrollStrategy,
+        MatIcon,
     ],
     providers: [MusicTracksViewService],
     templateUrl: './music-tracks-view.html',
@@ -27,20 +28,23 @@ import {DownloadTrackingService} from "../../services/download-tracking.service"
 export class MusicTracksView implements OnInit {
     private readonly _api = inject(MusicTracksViewService);
     private readonly _state = inject(MusicTracksViewState);
-    private readonly _downloadTracking = inject(DownloadTrackingService);
+    private readonly _dialog = inject(MatDialog);
 
-    protected readonly tracks = computed(() => {
-        const tracks = this._state.getTracks();
-        return Array.isArray(tracks) ? [...tracks] : [];
-    });
-
-    private readonly viewport = viewChild(RxVirtualScrollViewportComponent)
+    protected readonly tracks = this._state.sortedTracks;
 
     protected deleteMusic(track: Track) {
         this._api.delete(track.id).subscribe({
             next: () => {
                 this._state.removeTrack(track);
             }
+        });
+    }
+
+    protected openDetail(track: Track) {
+        this._dialog.open(MusicDetailModal, {
+            data: track,
+            maxWidth: '500px',
+            width: '100%'
         });
     }
 

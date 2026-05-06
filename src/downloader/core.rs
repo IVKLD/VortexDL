@@ -42,30 +42,30 @@ pub async fn download_collection(
 ) {
     if tracks.is_empty() { return; }
 
-    let mut to_download = Vec::new();
-    let mut skipped = 0;
-
-    {
+    let (to_download, skipped) = {
         let s = storage.read().await;
-        for (id, name, art) in tracks {
-            let clean_name = clean_filename(&name);
-            if s.tracks.contains_key(&id) { skipped += 1; }
-            else { to_download.push((id, clean_name, art)); }
-        }
-    }
+        let mut skipped = 0;
+        let filtered = tracks.into_iter().filter_map(|(id, name, art)| {
+            if s.tracks.contains_key(&id) {
+                skipped += 1;
+                None
+            } else {
+                Some((id, clean_filename(&name), art))
+            }
+        }).collect::<Vec<_>>();
+        (filtered, skipped)
+    };
 
     if skipped > 0 {
-        println!("{} Skipped {} tracks (already in storage).", "[INFO]".blue().bold(), skipped);
+        println!("{} Skipped {} tracks.", "[INFO]".blue().bold(), skipped);
     }
 
     if to_download.is_empty() {
-        println!("{} Everything is already synced!", "[INFO]".blue().bold());
+        println!("{} Everything synced!", "[INFO]".blue().bold());
         return;
     }
 
     let total = to_download.len() as u64;
-    println!("{} Starting download of {} tracks.", "[INFO]".blue().bold(), total);
-
     let mp = MultiProgress::new();
     let master = mp.add(ProgressBar::new(total));
     master.enable_steady_tick(Duration::from_millis(500));
@@ -119,34 +119,40 @@ pub async fn download_one(task: DownloadTask) {
 
     let res = async {
         let track = client.get_track(&Identifier::Id(id)).await?;
+        let source_url = track.permalink_url.clone();
+        
         let transcodings = track.media.as_ref().ok_or_else(|| anyhow::anyhow!("No media"))?
             .transcodings.as_ref().ok_or_else(|| anyhow::anyhow!("No transcodings"))?;
         let stream = transcodings.last().and_then(|t| t.format.as_ref()).and_then(|f| f.protocol.as_ref());
 
         let id_obj = Identifier::Id(id);
-        let dl_fut = client.download_track(&track, &id_obj, stream, Some(&output_dir), Some(&filename));
-        let art_fut = fetch_artwork(artwork_url.as_deref());
-
-        let (dl_res, art_data) = tokio::join!(dl_fut, art_fut);
-        dl_res?;
-
+        client.download_track(&track, &id_obj, stream, Some(&output_dir), Some(&filename)).await?;
+        
+        let art_data = fetch_artwork(artwork_url.as_deref()).await;
         let file_path = format!("{}/{}.mp3", output_dir, filename);
-        crate::utils::metadata::save_track_info(&file_path, &id.to_string(), artwork_url.as_deref(), art_data)?;
+        
+        crate::utils::metadata::save_track_info(&file_path, &id.to_string(), artwork_url.as_deref(), source_url.as_deref(), art_data)?;
 
-        {
-            let mut s = storage.write().await;
-            s.update_track(id, PathBuf::from(&file_path), artwork_url);
-        }
-        Ok::<(), anyhow::Error>(())
+        storage.write().await.update_track(id, PathBuf::from(&file_path), artwork_url, source_url.clone());
+        Ok::<Option<String>, anyhow::Error>(source_url)
     }.await;
 
-    if res.is_ok() {
-        if let Some(ref m) = dm { m.update_status(id, DownloadStatus::Finished).await; }
-        pb.println(format!("{} Done: {}", "[OK]".green().bold(), filename));
-    } else {
-        if let Some(ref m) = dm { m.update_status(id, DownloadStatus::Failed).await; }
-        pb.println(format!("{} Failed: {}", "[ERROR]".red().bold(), filename));
-        if let Err(e) = res { pb.println(format!("Details: {:#?}", e)); }
+    match res {
+        Ok(source_url) => {
+            if let Some(ref m) = dm { 
+                let created_at = std::time::SystemTime::now()
+                    .duration_since(std::time::UNIX_EPOCH)
+                    .unwrap_or_default()
+                    .as_secs();
+                m.update_finished(id, "mp3".to_string(), created_at, source_url).await; 
+            }
+            pb.println(format!("{} Done: {}", "[OK]".green().bold(), filename));
+        }
+        Err(e) => {
+            if let Some(ref m) = dm { m.update_status(id, DownloadStatus::Failed).await; }
+            pb.println(format!("{} Failed: {}", "[ERROR]".red().bold(), filename));
+            pb.println(format!("Details: {:#?}", e));
+        }
     }
 
     if let Some(m) = master_pb { m.inc(1); }
@@ -156,6 +162,5 @@ pub async fn download_one(task: DownloadTask) {
 async fn fetch_artwork(url: Option<&str>) -> Option<Vec<u8>> {
     let url = url?.replace("-large.jpg", "-t500x500.jpg");
     let resp = reqwest::get(&url).await.ok()?;
-    let bytes = resp.bytes().await.ok()?;
-    Some(bytes.to_vec())
+    resp.bytes().await.ok().map(|b| b.to_vec())
 }

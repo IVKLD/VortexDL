@@ -1,16 +1,15 @@
 import {ChangeDetectionStrategy, Component, computed, input, output} from "@angular/core";
 import {Track} from "../music-tracks-view.service";
-import {MatButton, MatIconButton} from "@angular/material/button";
-import {LucideTrash} from "@lucide/angular";
-import {MatPrefix} from "@angular/material/input";
+import {MatIconButton} from "@angular/material/button";
+import {NgOptimizedImage} from "@angular/common";
+import {MatIcon} from "@angular/material/icon";
 
 @Component({
     selector: "app-music-card",
     imports: [
-        MatButton,
-        LucideTrash,
         MatIconButton,
-        MatPrefix
+        NgOptimizedImage,
+        MatIcon,
     ],
     templateUrl: "./music-card.html",
     styleUrl: "./music-card.scss",
@@ -19,6 +18,7 @@ import {MatPrefix} from "@angular/material/input";
 export class MusicCard {
     public track = input.required<Track>()
     public onDeleteMusic = output()
+    public onTrackClick = output()
 
     public displayTitle = computed(() => {
         const item = this.track();

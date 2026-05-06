@@ -16,6 +16,7 @@ pub fn save_track_info(
     path: &str,
     sc_id: &str,
     artwork_url: Option<&str>,
+    source_url: Option<&str>,
     artwork_data: Option<Vec<u8>>,
 ) -> anyhow::Result<()> {
     let mut tag = get_tag(path)?;
@@ -40,6 +41,18 @@ pub fn save_track_info(
         );
         tag.remove_extended_text(Some(crate::models::SC_ARTWORK_URL), None);
         tag.add_frame(url_frame);
+    }
+
+    if let Some(url) = source_url {
+        let source_frame = Frame::with_content(
+            "TXXX",
+            Content::ExtendedText(ExtendedText {
+                description: crate::models::SC_SOURCE_URL.to_string(),
+                value: url.to_string(),
+            }),
+        );
+        tag.remove_extended_text(Some(crate::models::SC_SOURCE_URL), None);
+        tag.add_frame(source_frame);
     }
 
     if let Some(data) = artwork_data {

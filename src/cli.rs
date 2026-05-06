@@ -19,6 +19,9 @@ pub struct Args {
     #[arg(long, default_value_t = false)]
     pub serve: bool,
 
-    #[arg(long, default_value_t = 3100)]
+    #[arg(long, default_value = "0.0.0.0")]
+    pub host: String,
+
+    #[arg(long, default_value_t = 3200)]
     pub port: u16,
 }

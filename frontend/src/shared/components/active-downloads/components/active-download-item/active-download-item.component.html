@@ -1,0 +1,34 @@
+@let data = item();
+
+<div [class.failed]="data.status === DownloadStatus.Failed" class="item">
+    <div class="img-container">
+        @if (data.artwork_url) {
+            <img [alt]="data.title" [ngSrc]="data.artwork_url" fill>
+        } @else {
+            <mat-icon>music_note</mat-icon>
+        }
+        @if (data.status === DownloadStatus.Failed) {
+            <div class="item-error-badge">
+                <mat-icon>close</mat-icon>
+            </div>
+        }
+    </div>
+
+    <div class="info">
+        <strong>{{ data.title }}</strong>
+
+        @if (data.status != DownloadStatus.Downloading) {
+            <small [class.error-text]="data.status === DownloadStatus.Failed">
+                {{ data.status }}
+            </small>
+        }
+
+        @if (data.status === DownloadStatus.Downloading) {
+            <mat-progress-bar mode="indeterminate"></mat-progress-bar>
+        }
+    </div>
+
+    <button class="item-remove-btn" (click)="onRemove()">
+        <mat-icon>close</mat-icon>
+    </button>
+</div>

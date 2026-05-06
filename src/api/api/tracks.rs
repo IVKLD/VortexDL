@@ -7,6 +7,11 @@ use crate::api::{
 };
 
 pub async fn get_tracks(State(state): State<AppState>) -> Result<impl IntoResponse, ApiError> {
+    {
+        let mut storage = state.storage.write().await;
+        storage.indexing(std::path::Path::new(state.output_dir.as_str()));
+    }
+    
     let storage = state.storage.read().await;
     
     let tracks = storage.tracks.iter()
@@ -36,6 +41,11 @@ pub async fn get_tracks(State(state): State<AppState>) -> Result<impl IntoRespon
                         .unwrap_or_default()
                         .to_string(),
                     artwork_url: data.artwork_url.clone(),
+                    source_url: data.source_url.clone(),
+                    created_at: path.metadata()
+                        .and_then(|m| m.created())
+                        .map(|t| t.duration_since(std::time::UNIX_EPOCH).unwrap_or_default().as_secs())
+                        .unwrap_or(0),
                 })
             } else {
                 None

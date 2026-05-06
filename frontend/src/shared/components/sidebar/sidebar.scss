@@ -11,7 +11,7 @@
       background: var(--mat-sys-surface);
       display: flex;
       flex-direction: column;
-      width: 320px;
+      width: 240px;
 
       div {
         display: flex;
@@ -20,19 +20,26 @@
 
         padding: 1em;
 
-        button {
+        a {
+          background: var(--mat-sys-surface);
+          text-transform: capitalize;
+          justify-content: flex-start;
+
           &.active {
             background: #1e2129;
           }
 
-          background: var(--mat-sys-surface);
+          mat-icon {
+            font-size: 1.5rem;
+            height: 1.5rem;
+            width: 1.5rem;
+          }
         }
       }
     }
 
     mat-drawer-content {
-      padding: 1em;
-      padding-top: 0;
+      padding: 0 1em 1em;
     }
   }
 }

@@ -1,170 +1,166 @@
-import { inject, Injectable, NgZone, signal } from '@angular/core';
-import { NotificationService } from './notification.service';
-import { MusicTracksViewService } from '../pages/music-tracks-view/music-tracks-view.service';
-import { MusicTracksViewState } from '../pages/music-tracks-view/music-tracks-view.state';
+import {computed, inject, Injectable, NgZone, signal} from '@angular/core';
+import {HttpClient} from '@angular/common/http';
+import {MusicTracksViewService} from '../pages/music-tracks-view/music-tracks-view.service';
+import {MusicTracksViewState} from '../pages/music-tracks-view/music-tracks-view.state';
 
 export enum DownloadStatus {
-  Queued = 'queued',
-  Downloading = 'downloading',
-  Finished = 'finished',
-  Failed = 'failed',
+    Queued = 'queued',
+    Downloading = 'downloading',
+    Finished = 'finished',
+    Failed = 'failed',
 }
 
 export interface DownloadItem {
-  id: number;
-  title: string;
-  status: DownloadStatus;
-  artwork_url?: string;
+    id: number;
+    title: string;
+    status: DownloadStatus;
+    artwork_url?: string;
+    format?: 'mp3' | 'wav' | 'flac';
+    created_at?: number;
+    source_url?: string;
+    error?: string;
 }
 
 export enum ServerEventType {
-  TrackUpdate = 'trackupdate',
-  OperationStarted = 'operationstarted',
-  OperationFinished = 'operationfinished',
-  Error = 'error',
-  Message = 'message',
+    TrackUpdate = 'trackupdate',
+    SyncFinished = 'syncfinished',
+    Error = 'error',
+    Message = 'message',
 }
 
-export type ServerEvent = 
-  | { type: ServerEventType.TrackUpdate, item: DownloadItem }
-  | { type: ServerEventType.OperationStarted, url: string, kind: string }
-  | { type: ServerEventType.OperationFinished, url: string, kind: string, status: string }
-  | { type: ServerEventType.Error, message: string }
-  | { type: ServerEventType.Message, message: string, level: string };
+export type ServerEvent =
+    | { type: ServerEventType.TrackUpdate, item: DownloadItem }
+    | { type: ServerEventType.SyncFinished }
+    | { type: ServerEventType.Error, message: string }
+    | { type: ServerEventType.Message, message: string, level: string };
 
 @Injectable({
-  providedIn: 'root'
+    providedIn: 'root'
 })
 export class DownloadTrackingService {
-  private readonly _notification = inject(NotificationService);
-  private readonly _musicApi = inject(MusicTracksViewService);
-  private readonly _musicState = inject(MusicTracksViewState);
-  private readonly _zone = inject(NgZone);
+    private readonly _http = inject(HttpClient);
+    private readonly _musicApi = inject(MusicTracksViewService);
+    private readonly _musicState = inject(MusicTracksViewState);
+    private readonly _zone = inject(NgZone);
 
-  public readonly activeDownloads = signal<DownloadItem[]>([]);
-  private _dismissTimeout?: any;
-
-  constructor() {
-    this.initializeEventSource();
-  }
-
-  private initializeEventSource(): void {
-    const eventSource = new EventSource(`${process.env.NG_APP_API_URL}/download/events`);
-
-    eventSource.onmessage = (event) => {
-      this._zone.run(() => {
-        try {
-          const serverEvent: ServerEvent = JSON.parse(event.data);
-          this.handleServerEvent(serverEvent);
-        } catch (e) {
-          console.error('Failed to parse SSE event:', e, event.data);
-        }
-      });
-    };
-
-    eventSource.onerror = (error) => {
-      console.error('SSE Error:', error);
-    };
-  }
-
-  private handleServerEvent(event: ServerEvent): void {
-    switch (event.type) {
-      case ServerEventType.TrackUpdate:
-        this.handleTrackUpdate(event.item);
-        break;
-      case ServerEventType.OperationStarted:
-        this._notification.showInfo(`Operation started: ${event.kind}`);
-        break;
-      case ServerEventType.OperationFinished:
-        if (event.status === DownloadStatus.Finished) {
-          this._notification.showSuccess(`Operation finished: ${event.kind}`);
-        } else {
-          this._notification.showError(`Operation failed: ${event.kind}`);
-        }
-        break;
-      case ServerEventType.Message:
-        this.handleMessage(event.message, event.level);
-        break;
-      case ServerEventType.Error:
-        this._notification.showError(event.message);
-        break;
-    }
-  }
-
-  private handleTrackUpdate(item: DownloadItem): void {
-    this.updateActiveDownloads(item);
-
-    if (item.status === DownloadStatus.Finished) {
-      this.refreshMusicList();
-    }
-
-    this.updateNotification();
-  }
-
-  private handleMessage(message: string, level: string): void {
-    switch (level) {
-      case 'success':
-        this._notification.showSuccess(message);
-        break;
-      case 'error':
-        this._notification.showError(message);
-        break;
-      case 'info':
-      default:
-        this._notification.showInfo(message);
-        break;
-    }
-  }
-
-  private updateActiveDownloads(item: DownloadItem): void {
-    this.activeDownloads.update(downloads => {
-      const index = downloads.findIndex(d => d.id === item.id);
-      if (item.status === DownloadStatus.Finished || item.status === DownloadStatus.Failed) {
-        return downloads.filter(d => d.id !== item.id);
-      }
-      if (index !== -1) {
-        const newDownloads = [...downloads];
-        newDownloads[index] = item;
-        return newDownloads;
-      } else {
-        return [...downloads, item];
-      }
+    public readonly activeDownloads = signal<DownloadItem[]>([]);
+    public readonly sortedActiveDownloads = computed(() => {
+        return [...this.activeDownloads()].sort((a, b) => {
+            if (a.status === DownloadStatus.Downloading && b.status !== DownloadStatus.Downloading) return -1;
+            if (a.status !== DownloadStatus.Downloading && b.status === DownloadStatus.Downloading) return 1;
+            return 0;
+        });
     });
-  }
+    public readonly errors = signal<string[]>([]);
 
-  private updateNotification(): void {
-    const active = this.activeDownloads();
-    
-    if (this._dismissTimeout) {
-      clearTimeout(this._dismissTimeout);
-      this._dismissTimeout = undefined;
+    constructor() {
+        this.initializeEventSource();
     }
 
-    if (active.length === 0) {
-      this._notification.showStatus('All downloads finished');
-      this._dismissTimeout = setTimeout(() => {
-        this._notification.dismissStatus();
-      }, 5000);
-      return;
+    private initializeEventSource(): void {
+        const eventSource = new EventSource(`${process.env.NG_APP_API_URL}/download/events`);
+
+        eventSource.onmessage = (event) => {
+            this._zone.run(() => {
+                try {
+                    const serverEvent: ServerEvent = JSON.parse(event.data);
+                    this.handleServerEvent(serverEvent);
+                } catch (e) {
+                    console.error('Failed to parse SSE event:', e, event.data);
+                }
+            });
+        };
+
+        eventSource.onerror = (error) => {
+            console.error('SSE Error:', error);
+            this.addError('Connection lost. Real-time updates may be unavailable.');
+        };
     }
 
-    const current = active[0];
-    let message = '';
-    
-    if (active.length > 1) {
-      message = `Downloading ${active.length} songs... Current: ${current.title}`;
-    } else {
-      message = `Downloading: ${current.title}`;
+    private handleServerEvent(event: ServerEvent): void {
+        switch (event.type) {
+            case ServerEventType.TrackUpdate:
+                this.handleTrackUpdate(event.item);
+                break;
+            case ServerEventType.SyncFinished:
+                this.refreshMusicList();
+                break;
+            case ServerEventType.Message:
+                this.handleMessage(event.message, event.level);
+                break;
+            case ServerEventType.Error:
+                this.addError(event.message);
+                break;
+        }
     }
 
-    this._notification.showStatus(message);
-  }
+    private handleMessage(message: string, level: string): void {
+        if (level === 'error') {
+            this.addError(message);
+        }
+    }
 
-  private refreshMusicList(): void {
-    this._musicApi.getAll().subscribe({
-      next: (tracks) => {
-        this._musicState.setTracks = tracks;
-      }
-    });
-  }
+    public removeFromQueue(id: number): void {
+        this._http.delete(`/download/queue/${id}`).subscribe({
+            next: () => this.activeDownloads.update(items => items.filter(i => i.id !== id)),
+            error: (err) => {
+                console.error('Failed to remove from queue:', err);
+                this.addError('Failed to remove track from queue.');
+            }
+        });
+    }
+
+    private handleTrackUpdate(item: DownloadItem): void {
+        this.updateActiveDownloads(item);
+
+        if (item.status === DownloadStatus.Finished) {
+            this._musicState.addTrack({
+                id: item.id,
+                filename: item.title,
+                album: '',
+                format: item.format || 'mp3',
+                artwork_url: item.artwork_url,
+                source_url: item.source_url,
+                created_at: item.created_at || Math.floor(Date.now() / 1000)
+            });
+        }
+
+        if (item.status === DownloadStatus.Failed) {
+            this.addError(`Failed to download "${item.title}": ${item.error || 'Unknown error'}`);
+        }
+    }
+
+    private addError(message: string): void {
+        this.errors.update(prev => {
+            if (prev.includes(message)) return prev;
+            return [message, ...prev].slice(0, 5);
+        });
+    }
+
+    private updateActiveDownloads(item: DownloadItem): void {
+        this.activeDownloads.update(downloads => {
+            if (item.status === DownloadStatus.Finished) {
+                return downloads.filter(d => d.id !== item.id);
+            }
+
+            const index = downloads.findIndex(d => d.id === item.id);
+            if (index !== -1) {
+                const newDownloads = [...downloads];
+                newDownloads[index] = item;
+                return newDownloads;
+            } else {
+                return [...downloads, item];
+            }
+        });
+    }
+
+    public clearError(): void {
+        this.errors.set([]);
+    }
+
+    private refreshMusicList(): void {
+        this._musicApi.getAll().subscribe({
+            next: (tracks) => this._musicState.setTracks = tracks
+        });
+    }
 }

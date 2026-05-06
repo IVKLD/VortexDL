@@ -33,6 +33,7 @@
               }
             ],
             "styles": [
+              "node_modules/material-symbols/rounded.css",
               "src/styles.scss"
             ]
           },
@@ -68,7 +69,8 @@
         "serve": {
           "builder": "@ngx-env/builder:dev-server",
           "options": {
-            "hmr": true
+            "hmr": true,
+            "proxyConfig": "proxy.conf.json"
           },
           "configurations": {
             "production": {

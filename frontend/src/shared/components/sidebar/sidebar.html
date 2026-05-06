@@ -1,18 +1,24 @@
 <mat-drawer-container>
     <mat-drawer disableClose mode="side" opened>
-        <app-logo />
+        <app-logo/>
+
         <div>
-            @for (router of routers; track $index) {
-            <button [routerLinkActiveOptions]="{exact: (router.path === '/' || router.path === '')}"
-                [routerLink]="router.path" mat-button routerLinkActive="active">
-                {{ router.data.text }}
-            </button>
+            @for (item of navItems; track item.path) {
+                <a [routerLinkActiveOptions]="{exact: item.exact || false}"
+                   [routerLink]="item.path"
+                   mat-button
+                   routerLinkActive="active"
+                >
+                    <mat-icon>{{ item.icon }}</mat-icon>
+                    {{ item.label }}
+                </a>
             }
         </div>
 
-        <app-active-downloads />
+        <app-active-downloads/>
     </mat-drawer>
+
     <mat-drawer-content>
-        <ng-content />
+        <ng-content/>
     </mat-drawer-content>
 </mat-drawer-container>

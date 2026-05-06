@@ -7,6 +7,8 @@ export type Track = {
     album: string;
     format: 'wav' | 'flac' | 'mp3';
     artwork_url?: string;
+    source_url?: string;
+    created_at: number;
 }
 
 export type Tracks = Track[]

@@ -1,3 +1,67 @@
-<div>
-    <button mat-flat-button color="primary" (click)="openDownloadDialog()">download</button>
-</div>
+<header>
+    <div class="page-info">
+        <div class="stats-label">
+            <label>Storage</label>
+            <span>{{ config()?.title || 'System' }}</span>
+        </div>
+        
+        @if (hasFeature(Feature.Stats)) {
+            <span class="separator">//</span>
+            <div class="stats-value">
+                <label>Tracks</label>
+                <span>{{ musicState.sortedTracks().length }}</span>
+            </div>
+        }
+    </div>
+
+    @if (hasFeature(Feature.Search)) {
+        <div class="search-area">
+            <mat-form-field appearance="outline" subscriptSizing="dynamic">
+                <mat-icon matPrefix>search</mat-icon>
+                <input matInput 
+                       placeholder="Search..." 
+                       [ngModel]="musicState.searchQuery()"
+                       (ngModelChange)="onSearch($event)">
+            </mat-form-field>
+        </div>
+    }
+
+    <div class="actions">
+        @if (hasFeature(Feature.Sort)) {
+            <div class="context-actions">
+                <button mat-button [matMenuTriggerFor]="sortMenu">
+                    <mat-icon>sort</mat-icon>
+                    <span>
+                        @switch (musicState.sortOption()) {
+                            @case (SortOption.NAME_ASC) { A-Z }
+                            @case (SortOption.NAME_DESC) { Z-A }
+                            @case (SortOption.DATE) { Recent }
+                        }
+                    </span>
+                </button>
+                
+                <mat-menu #sortMenu="matMenu">
+                    <button mat-menu-item (click)="setSort(SortOption.NAME_ASC)">
+                        <mat-icon>sort_by_alpha</mat-icon>
+                        <span>Alphabetical (A-Z)</span>
+                    </button>
+                    <button mat-menu-item (click)="setSort(SortOption.NAME_DESC)">
+                        <mat-icon>sort_by_alpha</mat-icon>
+                        <span>Alphabetical (Z-A)</span>
+                    </button>
+                    <button mat-menu-item (click)="setSort(SortOption.DATE)">
+                        <mat-icon>schedule</mat-icon>
+                        <span>Date Added</span>
+                    </button>
+                </mat-menu>
+            </div>
+        }
+
+        @if (hasFeature(Feature.Download)) {
+            <button mat-flat-button color="primary" (click)="openDownloadDialog()">
+                <mat-icon>add</mat-icon>
+                <span>Download</span>
+            </button>
+        }
+    </div>
+</header>

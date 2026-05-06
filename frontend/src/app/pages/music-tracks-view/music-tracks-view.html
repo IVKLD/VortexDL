@@ -1,9 +1,23 @@
-@defer () {
-    <rx-virtual-scroll-viewport [itemSize]="82">
-        <div *rxVirtualFor="let track of tracks(); trackBy: 'id'">
-            <app-music-card
-                    (onDeleteMusic)="deleteMusic(track)"
-                    [track]="track"/>
+<div class="music-container">
+    @defer (on idle) {
+        @if (tracks().length > 0) {
+            <rx-virtual-scroll-viewport [itemSize]="82">
+                <div *rxVirtualFor="let track of tracks(); trackBy: 'id'" class="music-list-item">
+                    <app-music-card (onDeleteMusic)="deleteMusic(track)" (onTrackClick)="openDetail(track)"
+                                    [track]="track"/>
+                </div>
+            </rx-virtual-scroll-viewport>
+        } @else {
+            <div class="empty-state">
+                <mat-icon>library_music</mat-icon>
+                <h3>No tracks yet</h3>
+                <p>Your library is empty. Go to Dashboard to start downloading music.</p>
+            </div>
+        }
+    } @placeholder (minimum 500ms) {
+        <div class="loading-placeholder">
+            <mat-icon class="spinner">sync</mat-icon>
+            <p>Loading library...</p>
         </div>
-    </rx-virtual-scroll-viewport>
-}
+    }
+</div>

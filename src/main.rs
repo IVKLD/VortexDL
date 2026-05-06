@@ -13,7 +13,6 @@ use soundcloud_rs::ClientBuilder;
 use std::{net::SocketAddr, path::Path, sync::Arc};
 use crate::api::state::AppState;
 
-
 #[global_allocator]
 static ALLOC: mimalloc::MiMalloc = mimalloc::MiMalloc;
 
@@ -45,14 +44,14 @@ async fn main() -> anyhow::Result<()> {
     }
 
     if args.serve {
-        let router = api::build_router(state.clone()).await;
+        let router = api::build_router(state.clone(), args.serve).await;
 
         std::fs::create_dir_all(&output_dir)?;
 
-        let addr: SocketAddr = format!("0.0.0.0:{}", args.port).parse()?;
+        let addr: SocketAddr = format!("{}:{}", args.host, args.port).parse()?;
         let listener = tokio::net::TcpListener::bind(addr).await?;
 
-        println!("REST API listening on http://0.0.0.0:{}", args.port);
+        println!("REST API listening on http://{}:{}", args.host, args.port);
 
         axum::serve(listener, router).await?;
 

@@ -1,0 +1,51 @@
+<div class="music-detail">
+    <header>
+        <div>
+            <label>Track Details</label>
+            <h2>{{ displayTitle() }}</h2>
+        </div>
+        <button mat-icon-button (click)="close()">
+            <mat-icon>close</mat-icon>
+        </button>
+    </header>
+
+    <main>
+        <figure>
+            @if (track.artwork_url) {
+                <img [src]="track.artwork_url" [alt]="track.filename">
+            } @else {
+                <mat-icon>music_note</mat-icon>
+            }
+            <div class="glow"></div>
+        </figure>
+
+        <section>
+            <div>
+                <label>Album</label>
+                <span>{{ track.album || 'Unknown Album' }}</span>
+            </div>
+            <div>
+                <label>Format</label>
+                <b [attr.data-format]="track.format">{{ track.format }}</b>
+            </div>
+            <div>
+                <label>Track ID</label>
+                <code class="primary">#{{ track.id }}</code>
+            </div>
+            <div>
+                <label>Filename</label>
+                <p>{{ track.filename }}</p>
+            </div>
+        </section>
+    </main>
+
+    <footer>
+        @if (track.source_url) {
+            <a [href]="track.source_url" target="_blank" mat-button color="accent" class="source-btn">
+                <mat-icon>open_in_new</mat-icon>
+                Open Original
+            </a>
+        }
+        <button mat-flat-button color="primary" (click)="close()">Done</button>
+    </footer>
+</div>

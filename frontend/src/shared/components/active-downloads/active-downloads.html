@@ -1,33 +1,38 @@
-@let items = tracking.activeDownloads();
+@let items = tracking.sortedActiveDownloads();
+@let errors = tracking.errors();
 
-@if (items.length > 0) {
-    <div class="active-downloads">
-        <header>
-            <span>Active Downloads</span>
-            <mark>{{ items.length }}</mark>
-        </header>
+<div class="downloads-container">
+    @if (items.length > 0 || errors.length > 0) {
+        <div class="active-downloads">
+            <header>
+                <span>Active Downloads</span>
+                @if (items.length > 0) {
+                    <mark>{{ items.length }}</mark>
+                }
+            </header>
 
-        <rx-virtual-scroll-viewport [itemSize]="52">
-            <div class="virtual-scroll-item-container">
-                <div *rxVirtualFor="let item of items; trackBy: 'id'"
-                     class="item">
-                    <div class="img-container">
-                        @if (item.artwork_url) {
-                            <img [alt]="item.title" [ngSrc]="item.artwork_url" fill>
-                        } @else {
-                            <span>♪</span>
-                        }
+            @if (items.length > 0) {
+                <rx-virtual-scroll-viewport [itemSize]="52">
+                    <div class="virtual-scroll-item-container">
+                        <app-active-download-item
+                                (remove)="tracking.removeFromQueue($event)"
+                                *rxVirtualFor="let item of items; trackBy: 'id'"
+                                [item]="item"
+                        />
                     </div>
-
-                    <div class="info">
-                        <strong>{{ item.title }}</strong>
-                        <small>{{ item.status }}</small>
-                        @if (item.status === 'downloading') {
-                            <mat-progress-bar mode="indeterminate"></mat-progress-bar>
-                        }
-                    </div>
+                </rx-virtual-scroll-viewport>
+            } @else if (errors.length > 0) {
+                <div class="empty-active-state">
+                    <p>No active tasks</p>
                 </div>
-            </div>
-        </rx-virtual-scroll-viewport>
-    </div>
-}
+            }
+        </div>
+    }
+
+    @if (errors.length > 0) {
+        <app-active-download-errors
+                (clear)="clearError()"
+                [errors]="errors"
+        />
+    }
+</div>

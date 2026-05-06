@@ -32,6 +32,8 @@ pub struct TrackRecord {
     pub album: String,
     pub format: String,
     pub artwork_url: Option<String>,
+    pub source_url: Option<String>,
+    pub created_at: u64,
 }
 
 #[derive(Debug, Deserialize)]
