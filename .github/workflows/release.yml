@@ -5,6 +5,9 @@ on:
     tags:
       - 'v*'
 
+permissions:
+  contents: write
+
 jobs:
   release:
     runs-on: ubuntu-latest
@@ -21,7 +24,14 @@ jobs:
           cache: 'yarn'
           cache-dependency-path: frontend/yarn.lock
 
-      - name: Build and Release
+      - name: Build Frontend
+        run: |
+          cd frontend
+          yarn install
+          yarn build
+          cd ..
+
+      - name: Build Backend
         run: cargo build --release
 
       - name: Upload Release Asset
