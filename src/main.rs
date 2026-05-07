@@ -45,7 +45,8 @@ async fn main() -> anyhow::Result<()> {
         .with_max_retries(config.max_retries)
         .with_retry_on_401(true)
         .build()
-        .await?);
+        .await?
+    );
         
     pb.finish_with_message("SC client initialized successfully");
 

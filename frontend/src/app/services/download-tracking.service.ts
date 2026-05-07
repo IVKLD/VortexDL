@@ -1,4 +1,4 @@
-import {computed, inject, Injectable, NgZone, signal} from '@angular/core';
+import {computed, inject, Injectable, NgZone, signal, OnDestroy} from '@angular/core';
 import {HttpClient} from '@angular/common/http';
 import {MusicTracksViewService} from '../pages/music-tracks-view/music-tracks-view.service';
 import {MusicTracksViewState} from '../pages/music-tracks-view/music-tracks-view.state';
@@ -37,11 +37,12 @@ export type ServerEvent =
 @Injectable({
     providedIn: 'root'
 })
-export class DownloadTrackingService {
+export class DownloadTrackingService implements OnDestroy {
     private readonly _http = inject(HttpClient);
     private readonly _musicApi = inject(MusicTracksViewService);
     private readonly _musicState = inject(MusicTracksViewState);
     private readonly _zone = inject(NgZone);
+    private eventSource: EventSource | null = null;
 
     public readonly activeDownloads = signal<DownloadItem[]>([]);
     public readonly sortedActiveDownloads = computed(() => {
@@ -57,10 +58,21 @@ export class DownloadTrackingService {
         this.initializeEventSource();
     }
 
-    private initializeEventSource(): void {
-        const eventSource = new EventSource('/api/download/events');
+    ngOnDestroy(): void {
+        if (this.eventSource) {
+            this.eventSource.close();
+            this.eventSource = null;
+        }
+    }
 
-        eventSource.onmessage = (event) => {
+    private initializeEventSource(): void {
+        if (this.eventSource) {
+            return;
+        }
+        
+        this.eventSource = new EventSource('/api/download/events');
+
+        this.eventSource.onmessage = (event) => {
             this._zone.run(() => {
                 try {
                     const serverEvent: ServerEvent = JSON.parse(event.data);
@@ -71,9 +83,15 @@ export class DownloadTrackingService {
             });
         };
 
-        eventSource.onerror = (error) => {
+        this.eventSource.onerror = (error) => {
             console.error('SSE Error:', error);
             this.addError('Connection lost. Real-time updates may be unavailable.');
+            
+            // Если соединение закрыто сервером, закрываем его на клиенте, чтобы избежать дублей
+            if (this.eventSource && this.eventSource.readyState === EventSource.CLOSED) {
+                this.eventSource.close();
+                this.eventSource = null;
+            }
         };
     }
 
