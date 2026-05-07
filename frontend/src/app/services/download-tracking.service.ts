@@ -58,8 +58,7 @@ export class DownloadTrackingService {
     }
 
     private initializeEventSource(): void {
-        const baseUrl = typeof process !== 'undefined' && process.env['NG_APP_API_URL'] ? process.env['NG_APP_API_URL'] : '';
-        const eventSource = new EventSource(`${baseUrl}/download/events`);
+        const eventSource = new EventSource('/api/download/events');
 
         eventSource.onmessage = (event) => {
             this._zone.run(() => {
