@@ -30,6 +30,8 @@ jobs:
           yarn install
           yarn build
           cd ..
+        env:
+          NG_APP_API_URL: ""
 
       - name: Build Backend
         run: cargo build --release
