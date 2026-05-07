@@ -83,8 +83,8 @@ pub async fn download_collection(
         out_dir: output_dir.to_string(),
     };
 
-    stream::iter(to_download)
-        .for_each_concurrent(4, |(id, name, art)| {
+    let results: Vec<bool> = stream::iter(to_download)
+        .map(|(id, name, art)| {
             let c = ctx.clone();
             async move {
                 let pb = c.mp.add(ProgressBar::new_spinner());
@@ -100,15 +100,21 @@ pub async fn download_collection(
                     master_pb: Some(c.master),
                     storage: c.storage,
                     dm: c.dm,
-                }).await;
+                }).await
             }
-        }).await;
+        })
+        .buffer_unordered(4)
+        .collect()
+        .await;
+
+    let success = results.into_iter().filter(|&x| x).count();
+    let failed = total as usize - success;
 
     master.finish_and_clear();
-    println!("{} Sync complete. {} new, {} skipped.", "[SUCCESS]".green().bold(), total, skipped);
+    println!("{} Sync complete. {} downloaded, {} failed, {} skipped.", "[SUCCESS]".green().bold(), success, failed, skipped);
 }
 
-pub async fn download_one(task: DownloadTask) {
+pub async fn download_one(task: DownloadTask) -> bool {
     let DownloadTask { client, id, filename, artwork_url, output_dir, pb, master_pb, storage, dm, .. } = task;
 
     if let Some(ref m) = dm {
@@ -137,7 +143,7 @@ pub async fn download_one(task: DownloadTask) {
         Ok::<Option<String>, anyhow::Error>(source_url)
     }.await;
 
-    match res {
+    let success = match res {
         Ok(source_url) => {
             if let Some(ref m) = dm { 
                 let created_at = std::time::SystemTime::now()
@@ -147,16 +153,19 @@ pub async fn download_one(task: DownloadTask) {
                 m.update_finished(id, "mp3".to_string(), created_at, source_url).await; 
             }
             pb.println(format!("{} Done: {}", "[OK]".green().bold(), filename));
+            true
         }
         Err(e) => {
             if let Some(ref m) = dm { m.update_status(id, DownloadStatus::Failed).await; }
             pb.println(format!("{} Failed: {}", "[ERROR]".red().bold(), filename));
             pb.println(format!("Details: {:#?}", e));
+            false
         }
-    }
+    };
 
     if let Some(m) = master_pb { m.inc(1); }
     pb.finish_and_clear();
+    success
 }
 
 async fn fetch_artwork(url: Option<&str>) -> Option<Vec<u8>> {

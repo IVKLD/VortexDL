@@ -1,7 +1,7 @@
-import {computed, inject, Injectable, NgZone, signal, OnDestroy} from '@angular/core';
-import {HttpClient} from '@angular/common/http';
-import {MusicTracksViewService} from '../pages/music-tracks-view/music-tracks-view.service';
-import {MusicTracksViewState} from '../pages/music-tracks-view/music-tracks-view.state';
+import { computed, inject, Injectable, NgZone, signal } from '@angular/core';
+import { HttpClient } from '@angular/common/http';
+import { MusicTracksViewService } from '../pages/music-tracks-view/music-tracks-view.service';
+import { MusicTracksViewState } from '../pages/music-tracks-view/music-tracks-view.state';
 
 export enum DownloadStatus {
     Queued = 'queued',
@@ -37,12 +37,11 @@ export type ServerEvent =
 @Injectable({
     providedIn: 'root'
 })
-export class DownloadTrackingService implements OnDestroy {
+export class DownloadTrackingService {
     private readonly _http = inject(HttpClient);
     private readonly _musicApi = inject(MusicTracksViewService);
     private readonly _musicState = inject(MusicTracksViewState);
     private readonly _zone = inject(NgZone);
-    private eventSource: EventSource | null = null;
 
     public readonly activeDownloads = signal<DownloadItem[]>([]);
     public readonly sortedActiveDownloads = computed(() => {
@@ -55,24 +54,14 @@ export class DownloadTrackingService implements OnDestroy {
     public readonly errors = signal<string[]>([]);
 
     constructor() {
+        console.log('DownloadTrackingService constructor');
         this.initializeEventSource();
     }
 
-    ngOnDestroy(): void {
-        if (this.eventSource) {
-            this.eventSource.close();
-            this.eventSource = null;
-        }
-    }
-
     private initializeEventSource(): void {
-        if (this.eventSource) {
-            return;
-        }
-        
-        this.eventSource = new EventSource('/api/download/events');
+        const eventSource = new EventSource('/api/download/events');
 
-        this.eventSource.onmessage = (event) => {
+        eventSource.onmessage = (event) => {
             this._zone.run(() => {
                 try {
                     const serverEvent: ServerEvent = JSON.parse(event.data);
@@ -83,15 +72,9 @@ export class DownloadTrackingService implements OnDestroy {
             });
         };
 
-        this.eventSource.onerror = (error) => {
+        eventSource.onerror = (error) => {
             console.error('SSE Error:', error);
             this.addError('Connection lost. Real-time updates may be unavailable.');
-            
-            // Если соединение закрыто сервером, закрываем его на клиенте, чтобы избежать дублей
-            if (this.eventSource && this.eventSource.readyState === EventSource.CLOSED) {
-                this.eventSource.close();
-                this.eventSource = null;
-            }
         };
     }
 

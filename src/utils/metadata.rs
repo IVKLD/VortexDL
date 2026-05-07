@@ -1,6 +1,8 @@
 use id3::frame::{ExtendedText, Frame, Picture, PictureType};
 use id3::{Content, Tag, TagLike, Version};
 
+use colored::Colorize;
+
 fn get_tag(path: &str) -> anyhow::Result<Tag> {
     match Tag::read_from_path(path) {
         Ok(tag) => Ok(tag),
@@ -8,7 +10,10 @@ fn get_tag(path: &str) -> anyhow::Result<Tag> {
             kind: id3::ErrorKind::NoTag,
             ..
         }) => Ok(Tag::new()),
-        Err(e) => Err(e.into()),
+        Err(e) => {
+            eprintln!("{} Failed to parse existing ID3 tags for {}: {}. Overwriting with a new tag.", "[WARN]".yellow().bold(), path, e);
+            Ok(Tag::new())
+        }
     }
 }
 
