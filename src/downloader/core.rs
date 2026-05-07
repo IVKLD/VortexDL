@@ -83,7 +83,7 @@ pub async fn download_collection(
         out_dir: output_dir.to_string(),
     };
 
-    let results: Vec<bool> = stream::iter(to_download)
+    let results = stream::iter(to_download)
         .map(|(id, name, art)| {
             let c = ctx.clone();
             async move {
@@ -104,7 +104,7 @@ pub async fn download_collection(
             }
         })
         .buffer_unordered(4)
-        .collect()
+        .collect::<Vec<_>>()
         .await;
 
     let success = results.into_iter().filter(|&x| x).count();
