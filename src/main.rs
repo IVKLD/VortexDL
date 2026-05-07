@@ -11,6 +11,7 @@ use cli::Args;
 use config::AppConfig;
 use soundcloud_rs::ClientBuilder;
 use std::{net::SocketAddr, path::Path, sync::Arc};
+use indicatif::{ProgressBar, ProgressStyle};
 use crate::api::state::AppState;
 
 #[global_allocator]
@@ -31,11 +32,22 @@ async fn main() -> anyhow::Result<()> {
         .output
         .unwrap_or_else(|| config.default_output_dir.clone());
 
+    let pb = ProgressBar::new_spinner();
+    pb.enable_steady_tick(std::time::Duration::from_millis(100));
+    pb.set_style(
+        ProgressStyle::with_template("{spinner:.cyan} {msg}")
+            .unwrap()
+            .tick_strings(&["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"]),
+    );
+    pb.set_message("Initializing SC client...");
+
     let client = Arc::new(ClientBuilder::new()
         .with_max_retries(config.max_retries)
         .with_retry_on_401(true)
         .build()
         .await?);
+        
+    pb.finish_with_message("SC client initialized successfully");
 
     let state = AppState::new(client.clone(), config.clone(), output_dir.clone());
     {
