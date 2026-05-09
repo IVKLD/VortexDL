@@ -1,14 +1,14 @@
-import {ChangeDetectionStrategy, Component, inject} from '@angular/core';
-import {MatProgressBarModule} from '@angular/material/progress-bar';
-import {MatButtonModule} from '@angular/material/button';
+import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
+import { MatProgressBarModule } from '@angular/material/progress-bar';
+import { MatButtonModule } from '@angular/material/button';
 import {
     FixedSizeVirtualScrollStrategy,
     RxVirtualFor,
-    RxVirtualScrollViewportComponent
-} from "@rx-angular/template/virtual-scrolling";
-import {DownloadTrackingService} from "@app/services/download-tracking.service";
-import {ActiveDownloadItemComponent} from "./components/active-download-item/active-download-item.component";
-import {ActiveDownloadErrorsComponent} from "./components/active-download-errors/active-download-errors.component";
+    RxVirtualScrollViewportComponent,
+} from '@rx-angular/template/virtual-scrolling';
+import { DownloadTrackingService } from '@app/services/download-tracking.service';
+import { ActiveDownloadItemComponent } from './components/active-download-item/active-download-item.component';
+import { ActiveDownloadErrorsComponent } from './components/active-download-errors/active-download-errors.component';
 
 @Component({
     selector: 'app-active-downloads',
@@ -31,5 +31,4 @@ export class ActiveDownloadsComponent {
     clearError() {
         this.tracking.clearError();
     }
-
 }

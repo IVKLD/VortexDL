@@ -5,8 +5,12 @@
         <div class="url-form">
             <mat-form-field appearance="outline">
                 <mat-label>SoundCloud URL</mat-label>
-                <input (keyup.enter)="onDownload()" [formControl]="url" matInput
-                       placeholder="Paste link (track, playlist, or user)">
+                <input
+                    (keyup.enter)="onDownload()"
+                    [formControl]="url"
+                    matInput
+                    placeholder="Paste link (track, playlist, or user)"
+                />
                 <mat-hint>Liked, Playlist, or Track URL</mat-hint>
             </mat-form-field>
         </div>

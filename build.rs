@@ -1,6 +1,4 @@
-use std::process::Command;
-use std::env;
-use std::path::Path;
+use std::{env, path::Path, process::Command};
 
 fn main() {
     let opt_level = env::var("OPT_LEVEL").unwrap_or_else(|_| "0".to_string());
@@ -9,8 +7,11 @@ fn main() {
     let needs_build = !Path::new(frontend_dist).exists() || is_release;
 
     if needs_build {
-        println!("cargo:warning=Building frontend (opt-level: {})...", opt_level);
-        
+        println!(
+            "cargo:warning=Building frontend (opt-level: {})...",
+            opt_level
+        );
+
         let status = Command::new("yarn")
             .args(["install"])
             .current_dir("frontend")

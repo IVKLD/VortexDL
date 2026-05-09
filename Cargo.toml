@@ -3,6 +3,7 @@ name = "vortex-dl"
 version = "0.2.0"
 edition = "2024"
 repository = "https://github.com/IVKLD/VortexDL"
+license = "GPL-3.0-only"
 
 [dependencies]
 serde = { version = "1.0.188", features = ["derive"] }
@@ -12,7 +13,7 @@ futures = "0.3.28"
 clap = { version = "4.5.41", features = ["derive"] }
 url = { version = "2.5.4", features = ["serde"] }
 mimalloc = "0.1.48"
-soundcloud-rs = {git = "https://github.com/IVKLD/soundcloud-rs.git" }
+soundcloud-rs = { path = "../soundcloud-rs" }
 colored = "3.1.1"
 indicatif = "0.18.4"
 id3 = "1.16.4"
@@ -23,10 +24,12 @@ tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 async-stream = "0.3"
 futures-util = "0.3"
 tokio-stream = { version = "0.1", features = ["sync"] }
-reqwest = { version = "0.13.3", features = ["json"] }
+reqwest = { version = "0.13.3", features = ["json", "stream"] }
 anyhow = "1.0.102"
 rust-embed = "8.11.0"
 mime_guess = "2.0.5"
+redb = "4.1.0"
+dirs = "6.0.0"
 
 [dev-dependencies]
 tempfile = "3.8"

@@ -1,4 +1,5 @@
-use axum::{Json, response::IntoResponse, http::StatusCode};
+use axum::{Json, http::StatusCode, response::IntoResponse};
+
 use crate::api::models::HealthResponse;
 
 pub async fn health() -> impl IntoResponse {

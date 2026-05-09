@@ -2,6 +2,7 @@ import { computed, inject, Injectable, NgZone, signal } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { MusicTracksViewService } from '../pages/music-tracks-view/music-tracks-view.service';
 import { MusicTracksViewState } from '../pages/music-tracks-view/music-tracks-view.state';
+import { TrackExtension } from '../models/track.model';
 
 export enum DownloadStatus {
     Queued = 'queued',
@@ -15,7 +16,7 @@ export interface DownloadItem {
     title: string;
     status: DownloadStatus;
     artwork_url?: string;
-    format?: 'mp3' | 'wav' | 'flac';
+    format?: TrackExtension;
     created_at?: number;
     source_url?: string;
     error?: string;
@@ -29,13 +30,13 @@ export enum ServerEventType {
 }
 
 export type ServerEvent =
-    | { type: ServerEventType.TrackUpdate, item: DownloadItem }
+    | { type: ServerEventType.TrackUpdate; item: DownloadItem }
     | { type: ServerEventType.SyncFinished }
-    | { type: ServerEventType.Error, message: string }
-    | { type: ServerEventType.Message, message: string, level: string };
+    | { type: ServerEventType.Error; message: string }
+    | { type: ServerEventType.Message; message: string; level: string };
 
 @Injectable({
-    providedIn: 'root'
+    providedIn: 'root',
 })
 export class DownloadTrackingService {
     private readonly _http = inject(HttpClient);
@@ -54,14 +55,13 @@ export class DownloadTrackingService {
     public readonly errors = signal<string[]>([]);
 
     constructor() {
-        console.log('DownloadTrackingService constructor');
         this.initializeEventSource();
     }
 
     private initializeEventSource(): void {
         const eventSource = new EventSource('/api/download/events');
 
-        eventSource.onmessage = (event) => {
+        eventSource.onmessage = event => {
             this._zone.run(() => {
                 try {
                     const serverEvent: ServerEvent = JSON.parse(event.data);
@@ -72,7 +72,7 @@ export class DownloadTrackingService {
             });
         };
 
-        eventSource.onerror = (error) => {
+        eventSource.onerror = error => {
             console.error('SSE Error:', error);
             this.addError('Connection lost. Real-time updates may be unavailable.');
         };
@@ -104,10 +104,10 @@ export class DownloadTrackingService {
     public removeFromQueue(id: number): void {
         this._http.delete(`/download/queue/${id}`).subscribe({
             next: () => this.activeDownloads.update(items => items.filter(i => i.id !== id)),
-            error: (err) => {
+            error: err => {
                 console.error('Failed to remove from queue:', err);
                 this.addError('Failed to remove track from queue.');
-            }
+            },
         });
     }
 
@@ -119,10 +119,10 @@ export class DownloadTrackingService {
                 id: item.id,
                 filename: item.title,
                 album: '',
-                format: item.format || 'mp3',
+                format: item.format || TrackExtension.MP3,
                 artwork_url: item.artwork_url,
                 source_url: item.source_url,
-                created_at: item.created_at || Math.floor(Date.now() / 1000)
+                created_at: item.created_at || Math.floor(Date.now() / 1000),
             });
         }
 
@@ -161,7 +161,7 @@ export class DownloadTrackingService {
 
     private refreshMusicList(): void {
         this._musicApi.getAll().subscribe({
-            next: (tracks) => this._musicState.setTracks = tracks
+            next: tracks => (this._musicState.setTracks = tracks),
         });
     }
 }

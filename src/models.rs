@@ -1,8 +1,26 @@
+use std::fmt;
+
+use clap::ValueEnum;
 use serde::{Deserialize, Serialize};
 
-pub const SC_IDENTIFIER: &str = "sc-identifier";
-pub const SC_ARTWORK_URL: &str = "sc-artwork-url";
-pub const SC_SOURCE_URL: &str = "sc-source-url";
+#[derive(ValueEnum, Clone, Debug, Serialize, Deserialize, PartialEq)]
+#[serde(rename_all = "lowercase")]
+#[value(rename_all = "lowercase")]
+pub enum SyncMode {
+    Silent,
+    Full,
+    Archive,
+}
+
+impl fmt::Display for SyncMode {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Self::Silent => write!(f, "silent"),
+            Self::Full => write!(f, "full"),
+            Self::Archive => write!(f, "archive"),
+        }
+    }
+}
 
 #[derive(Serialize)]
 pub struct ResolveQuery {
@@ -13,7 +31,9 @@ pub struct ResolveQuery {
 pub struct ResolveResponse {
     pub id: i64,
     pub kind: String,
+    #[allow(dead_code)]
     pub title: Option<String>,
+    #[allow(dead_code)]
     pub artwork_url: Option<String>,
 }
 

@@ -1,8 +1,8 @@
-use rust_embed::RustEmbed;
 use axum::{
+    http::{StatusCode, Uri, header},
     response::{Html, IntoResponse, Response},
-    http::{header, StatusCode, Uri},
 };
+use rust_embed::RustEmbed;
 
 #[derive(RustEmbed)]
 #[folder = "frontend/dist/voltexdl/browser/"]
@@ -27,6 +27,10 @@ pub async fn static_handler(uri: Uri) -> impl IntoResponse {
 async fn serve_index() -> Response {
     match Asset::get("index.html") {
         Some(content) => Html(content.data).into_response(),
-        None => (StatusCode::NOT_FOUND, "Frontend not built. Run 'cd frontend && yarn build'").into_response(),
+        None => (
+            StatusCode::NOT_FOUND,
+            "Frontend not built. Run 'cd frontend && yarn build'",
+        )
+            .into_response(),
     }
 }

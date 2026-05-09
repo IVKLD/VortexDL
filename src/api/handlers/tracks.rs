@@ -1,20 +1,24 @@
-use axum::{Json, extract::{Query, State}, response::IntoResponse};
-use std::fs;
+use std::{fs, path::PathBuf};
+
+use axum::{
+    Json,
+    extract::{Path, Query, State},
+    http::StatusCode,
+    response::IntoResponse,
+};
+
 use crate::api::{
     errors::ApiError,
-    models::{KNOWN_EXTENSIONS, DeleteQuery, TrackExtension, TrackRecord},
+    models::{DeleteQuery, KNOWN_EXTENSIONS, TrackExtension, TrackRecord},
     state::AppState,
 };
 
 pub async fn get_tracks(State(state): State<AppState>) -> Result<impl IntoResponse, ApiError> {
-    {
-        let mut storage = state.storage.write().await;
-        storage.indexing(std::path::Path::new(state.output_dir.as_str()));
-    }
-    
     let storage = state.storage.read().await;
-    
-    let tracks = storage.tracks.iter()
+
+    let tracks = storage
+        .tracks
+        .iter()
         .filter_map(|(id, data)| {
             let path = &data.path;
             let extension = path
@@ -42,9 +46,14 @@ pub async fn get_tracks(State(state): State<AppState>) -> Result<impl IntoRespon
                         .to_string(),
                     artwork_url: data.artwork_url.clone(),
                     source_url: data.source_url.clone(),
-                    created_at: path.metadata()
+                    created_at: path
+                        .metadata()
                         .and_then(|m| m.created())
-                        .map(|t| t.duration_since(std::time::UNIX_EPOCH).unwrap_or_default().as_secs())
+                        .map(|t| {
+                            t.duration_since(std::time::UNIX_EPOCH)
+                                .unwrap_or_default()
+                                .as_secs()
+                        })
                         .unwrap_or(0),
                 })
             } else {
@@ -56,12 +65,19 @@ pub async fn get_tracks(State(state): State<AppState>) -> Result<impl IntoRespon
     Ok(Json(tracks))
 }
 
+pub async fn indexing_tracks(State(state): State<AppState>) -> Result<impl IntoResponse, ApiError> {
+    let mut storage = state.storage.write().await;
+    let root = PathBuf::from(&storage.base_path);
+    storage.indexing(&root);
+    Ok(StatusCode::OK)
+}
+
 pub async fn remove_track(
     State(state): State<AppState>,
-    Query(body): Query<DeleteQuery>,
+    Path(id): Path<i64>,
 ) -> Result<impl IntoResponse, ApiError> {
-    let target_id = body.id as i64;
-    
+    let target_id = id;
+
     let path = {
         let storage = state.storage.read().await;
         storage.tracks.get(&target_id).cloned()
@@ -72,12 +88,15 @@ pub async fn remove_track(
             fs::remove_file(&data.path)
                 .map_err(|e| ApiError::internal(format!("Failed to delete file: {e}")))?;
         }
-        
+
         let mut storage = state.storage.write().await;
         storage.remove_track(target_id);
-        
+
         return Ok(());
     }
 
-    Err(ApiError::not_found(format!("Track with ID {} not found", body.id)))
+    Err(ApiError::not_found(format!(
+        "Track with ID {} not found",
+        id
+    )))
 }

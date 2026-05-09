@@ -1,13 +1,14 @@
 <mat-drawer-container>
     <mat-drawer disableClose mode="side" opened>
-        <app-logo/>
+        <app-logo />
 
         <div>
             @for (item of navItems; track item.path) {
-                <a [routerLinkActiveOptions]="{exact: item.exact || false}"
-                   [routerLink]="item.path"
-                   mat-button
-                   routerLinkActive="active"
+                <a
+                    [routerLinkActiveOptions]="{ exact: item.exact || false }"
+                    [routerLink]="item.path"
+                    mat-button
+                    routerLinkActive="active"
                 >
                     <mat-icon>{{ item.icon }}</mat-icon>
                     {{ item.label }}
@@ -15,10 +16,10 @@
             }
         </div>
 
-        <app-active-downloads/>
+        <app-active-downloads />
     </mat-drawer>
 
     <mat-drawer-content>
-        <ng-content/>
+        <ng-content />
     </mat-drawer-content>
 </mat-drawer-container>

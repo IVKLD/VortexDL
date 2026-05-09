@@ -1,13 +1,13 @@
 @let data = track();
 
-<div class="music-card" (click)="onTrackClick.emit()">
+<div class="music-card" (click)="trackClick.emit()" tabindex="0" role="button">
     <div class="artwork">
         @if (data.artwork_url) {
-            <img [ngSrc]="data.artwork_url" [alt]="data.filename" width="42" height="42">
+        <img [ngSrc]="data.artwork_url" [alt]="data.filename" width="42" height="42" />
         } @else {
-            <div class="placeholder">
-                <mat-icon>music_note</mat-icon>
-            </div>
+        <div class="placeholder">
+            <mat-icon>music_note</mat-icon>
+        </div>
         }
     </div>
 
@@ -18,13 +18,13 @@
         </div>
 
         <div class="meta">
-          <span [attr.data-format]="data.format" class="badge">
-            {{ data.format }}
-          </span>
+            <span [attr.data-format]="data.format" class="badge">
+                {{ data.format }}
+            </span>
         </div>
 
-        <div class="actions" (click)="$event.stopPropagation()">
-            <button mat-icon-button (click)="onDeleteMusic.emit()">
+        <div class="actions" (click)="$event.stopPropagation()" role="presentation">
+            <button mat-icon-button (click)="deleteMusic.emit()">
                 <mat-icon>delete</mat-icon>
             </button>
         </div>

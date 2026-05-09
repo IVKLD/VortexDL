@@ -1,7 +1,7 @@
 <div class="music-detail">
     <header>
         <div>
-            <label>Track Details</label>
+            <span class="info-label">Track Details</span>
             <h2>{{ displayTitle() }}</h2>
         </div>
         <button mat-icon-button (click)="close()">
@@ -12,7 +12,7 @@
     <main>
         <figure>
             @if (track.artwork_url) {
-                <img [src]="track.artwork_url" [alt]="track.filename">
+                <img [src]="track.artwork_url" [alt]="track.filename" />
             } @else {
                 <mat-icon>music_note</mat-icon>
             }
@@ -21,19 +21,19 @@
 
         <section>
             <div>
-                <label>Album</label>
+                <span class="info-label">Album</span>
                 <span>{{ track.album || 'Unknown Album' }}</span>
             </div>
             <div>
-                <label>Format</label>
+                <span class="info-label">Format</span>
                 <b [attr.data-format]="track.format">{{ track.format }}</b>
             </div>
             <div>
-                <label>Track ID</label>
+                <span class="info-label">Track ID</span>
                 <code class="primary">#{{ track.id }}</code>
             </div>
             <div>
-                <label>Filename</label>
+                <span class="info-label">Filename</span>
                 <p>{{ track.filename }}</p>
             </div>
         </section>

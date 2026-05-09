@@ -1,11 +1,11 @@
-import { computed, Injectable, signal } from "@angular/core";
-import { Track } from "./music-tracks-view.service";
+import { computed, Injectable, signal } from '@angular/core';
+import { Track } from './music-tracks-view.service';
 import Fuse from 'fuse.js';
 
 export enum MusicSortOption {
     NAME_ASC = 'name-asc',
     NAME_DESC = 'name-desc',
-    DATE = 'date'
+    DATE = 'date',
 }
 
 @Injectable({
@@ -19,26 +19,31 @@ export class MusicTracksViewState {
     public readonly sortOption = this._sortOption.asReadonly();
     public readonly searchQuery = this._searchQuery.asReadonly();
 
-    private readonly _fuse = computed(() => new Fuse(this._tracks(), {
-        keys: [
-            { name: 'filename', weight: 1 },
-            { name: 'album', weight: 0.3 }
-        ],
-        threshold: 0.3,
-        distance: 100,
-        ignoreLocation: true
-    }));
+    private readonly _fuse = computed(
+        () =>
+            new Fuse(this._tracks(), {
+                keys: [
+                    { name: 'filename', weight: 1 },
+                    { name: 'album', weight: 0.3 },
+                ],
+                threshold: 0.3,
+                distance: 100,
+                ignoreLocation: true,
+            }),
+    );
 
     public readonly sortedTracks = computed(() => {
         let tracks = [...this._tracks()];
         const query = this._searchQuery().trim();
 
         if (query) {
-            tracks = this._fuse().search(query).map(result => result.item);
+            tracks = this._fuse()
+                .search(query)
+                .map(result => result.item);
         }
 
         const option = this._sortOption();
-        
+
         switch (option) {
             case MusicSortOption.NAME_ASC:
                 return tracks.sort((a, b) => a.filename.localeCompare(b.filename));
@@ -81,7 +86,7 @@ export class MusicTracksViewState {
         return {
             ...track,
             filename: track.filename.trim(),
-            album: track.album?.trim()
+            album: track.album?.trim(),
         };
     }
 }

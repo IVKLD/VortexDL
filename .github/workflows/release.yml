@@ -31,6 +31,9 @@ jobs:
           yarn build
           cd ..
 
+      - name: Patch Cargo.toml for CI
+        run: sed -i 's|path = "../soundcloud-rs"|git = "https://github.com/IVKLD/soundcloud-rs.git"|g' Cargo.toml
+
       - name: Build Backend
         run: cargo build --release
 

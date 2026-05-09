@@ -2,7 +2,7 @@ export enum HeaderFeature {
     Search = 'search',
     Sort = 'sort',
     Stats = 'stats',
-    Download = 'download'
+    Download = 'download',
 }
 
 export interface HeaderConfig {

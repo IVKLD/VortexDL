@@ -1,175 +1,99 @@
-use std::sync::Arc;
-use tokio::sync::RwLock;
-use futures::stream::{self, StreamExt};
-use indicatif::{ProgressBar, ProgressStyle, MultiProgress};
-use soundcloud_rs::{Client, Identifier};
-use std::time::Duration;
-use std::path::PathBuf;
+use std::{sync::Arc, time::Duration};
+
 use colored::Colorize;
+use futures::{
+    future::join_all,
+    stream::{self, StreamExt},
+};
+use indicatif::MultiProgress;
+use reqwest::Client as HttpClient;
 
-use crate::storage::MusicStorage;
-use crate::api::download_manager::{DownloadManager, DownloadStatus};
-use super::utils::clean_filename;
+use crate::{
+    downloader::{Context, utils::clean_filename},
+    ui::{create_spinner, create_total_progress_bar},
+};
 
-#[derive(Clone)]
-struct DownloadCtx {
-    mp: MultiProgress,
-    master: ProgressBar,
-    storage: Arc<RwLock<MusicStorage>>,
-    dm: Option<Arc<DownloadManager>>,
-    client: Arc<Client>,
-    out_dir: String,
-}
+pub(in crate::downloader) mod artwork;
+pub(in crate::downloader) mod hls;
+pub(in crate::downloader) mod progressive;
+pub(in crate::downloader) mod track;
+pub(in crate::downloader) mod verification;
 
-pub struct DownloadTask {
-    pub client: Arc<Client>,
+#[derive(Clone, Debug)]
+pub(in crate::downloader) struct TrackDownload {
     pub id: i64,
     pub filename: String,
     pub artwork_url: Option<String>,
-    pub output_dir: String,
-    pub pb: ProgressBar,
-    pub master_pb: Option<ProgressBar>,
-    pub storage: Arc<RwLock<MusicStorage>>,
-    pub dm: Option<Arc<DownloadManager>>,
 }
 
-pub async fn download_collection(
-    storage: Arc<RwLock<MusicStorage>>,
-    client: &Arc<Client>,
-    tracks: Vec<(i64, String, Option<String>)>,
-    output_dir: &str,
-    dm: Option<Arc<DownloadManager>>,
+pub(in crate::downloader) async fn run_parallel_download(
+    ctx: &Context,
+    tracks: Vec<TrackDownload>,
 ) {
-    if tracks.is_empty() { return; }
-
-    let (to_download, skipped) = {
-        let s = storage.read().await;
-        let mut skipped = 0;
-        let filtered = tracks.into_iter().filter_map(|(id, name, art)| {
-            if s.tracks.contains_key(&id) {
-                skipped += 1;
-                None
-            } else {
-                Some((id, clean_filename(&name), art))
-            }
-        }).collect::<Vec<_>>();
-        (filtered, skipped)
-    };
-
-    if skipped > 0 {
-        println!("{} Skipped {} tracks.", "[INFO]".blue().bold(), skipped);
-    }
-
-    if to_download.is_empty() {
-        println!("{} Everything synced!", "[INFO]".blue().bold());
-        return;
-    }
-
-    let total = to_download.len() as u64;
     let mp = MultiProgress::new();
-    let master = mp.add(ProgressBar::new(total));
-    master.enable_steady_tick(Duration::from_millis(500));
-    master.set_style(ProgressStyle::default_bar()
-        .template("{spinner:.yellow}[{elapsed_precise}] [{bar:40.cyan/blue}] {pos}/{len} {msg}")
-        .unwrap()
-        .progress_chars("#>-"));
+    let total_pb = create_total_progress_bar(&mp, tracks.len() as u64);
 
-    let ctx = DownloadCtx {
-        mp,
-        master: master.clone(),
-        storage,
-        dm,
-        client: client.clone(),
-        out_dir: output_dir.to_string(),
-    };
+    let http = HttpClient::builder()
+        .timeout(Duration::from_secs(30))
+        .build()
+        .unwrap_or_default();
 
-    let results = stream::iter(to_download)
-        .map(|(id, name, art)| {
-            let c = ctx.clone();
+    let results: Vec<_> = stream::iter(tracks)
+        .map(|track_info| {
+            let (client, http, storage, dm, mp, total_pb, config) = (
+                Arc::clone(&ctx.client),
+                http.clone(),
+                Arc::clone(&ctx.storage),
+                ctx.dm.clone(),
+                mp.clone(),
+                total_pb.clone(),
+                Arc::clone(&ctx.config),
+            );
+
             async move {
-                let pb = c.mp.add(ProgressBar::new_spinner());
-                pb.set_style(ProgressStyle::default_spinner().template("{spinner:.cyan} {msg}").unwrap());
-                
-                download_one(DownloadTask {
-                    client: c.client,
-                    id,
-                    filename: name,
-                    artwork_url: art,
-                    output_dir: c.out_dir,
-                    pb,
-                    master_pb: Some(c.master),
-                    storage: c.storage,
-                    dm: c.dm,
-                }).await
+                let pb = create_spinner(&mp);
+
+                let filename = clean_filename(&track_info.filename);
+                let output_dir = storage.read().await.base_path.clone();
+                let file_path = format!("{}/{}.mp3", output_dir, filename);
+
+                let ctx = track::Context {
+                    client: &client,
+                    http: &http,
+                    storage: &storage,
+                    dm: dm.as_ref(),
+                    config: &config,
+                };
+
+                let task = track::Task {
+                    id: track_info.id,
+                    filename,
+                    artwork_url: track_info.artwork_url.as_deref(),
+                    pb: &pb,
+                    output_dir,
+                    file_path,
+                };
+
+                let result = track::initiate_track_download(&ctx, &task).await;
+                total_pb.inc(1);
+                pb.finish_and_clear();
+                result
             }
         })
-        .buffer_unordered(4)
-        .collect::<Vec<_>>()
+        .buffer_unordered(8)
+        .collect()
         .await;
 
-    let success = results.into_iter().filter(|&x| x).count();
-    let failed = total as usize - success;
+    let failed = results.iter().filter(|r| r.is_none()).count();
+    let downloaded = results.len() - failed;
 
-    master.finish_and_clear();
-    println!("{} Sync complete. {} downloaded, {} failed, {} skipped.", "[SUCCESS]".green().bold(), success, failed, skipped);
-}
+    join_all(results.into_iter().flatten()).await;
+    total_pb.finish_and_clear();
 
-pub async fn download_one(task: DownloadTask) -> bool {
-    let DownloadTask { client, id, filename, artwork_url, output_dir, pb, master_pb, storage, dm, .. } = task;
-
-    if let Some(ref m) = dm {
-        m.update_status(id, DownloadStatus::Downloading).await;
-    }
-
-    pb.set_message(format!("Downloading: {}", filename));
-
-    let res = async {
-        let track = client.get_track(&Identifier::Id(id)).await?;
-        let source_url = track.permalink_url.clone();
-        
-        let transcodings = track.media.as_ref().ok_or_else(|| anyhow::anyhow!("No media"))?
-            .transcodings.as_ref().ok_or_else(|| anyhow::anyhow!("No transcodings"))?;
-        let stream = transcodings.last().and_then(|t| t.format.as_ref()).and_then(|f| f.protocol.as_ref());
-
-        let id_obj = Identifier::Id(id);
-        client.download_track(&track, &id_obj, stream, Some(&output_dir), Some(&filename)).await?;
-        
-        let art_data = fetch_artwork(artwork_url.as_deref()).await;
-        let file_path = format!("{}/{}.mp3", output_dir, filename);
-        
-        crate::utils::metadata::save_track_info(&file_path, &id.to_string(), artwork_url.as_deref(), source_url.as_deref(), art_data)?;
-
-        storage.write().await.update_track(id, PathBuf::from(&file_path), artwork_url, source_url.clone());
-        Ok::<Option<String>, anyhow::Error>(source_url)
-    }.await;
-
-    let success = match res {
-        Ok(source_url) => {
-            if let Some(ref m) = dm { 
-                let created_at = std::time::SystemTime::now()
-                    .duration_since(std::time::UNIX_EPOCH)
-                    .unwrap_or_default()
-                    .as_secs();
-                m.update_finished(id, "mp3".to_string(), created_at, source_url).await; 
-            }
-            pb.println(format!("{} Done: {}", "[OK]".green().bold(), filename));
-            true
-        }
-        Err(e) => {
-            if let Some(ref m) = dm { m.update_status(id, DownloadStatus::Failed).await; }
-            pb.println(format!("{} Failed: {}", "[ERROR]".red().bold(), filename));
-            pb.println(format!("Details: {:#?}", e));
-            false
-        }
-    };
-
-    if let Some(m) = master_pb { m.inc(1); }
-    pb.finish_and_clear();
-    success
-}
-
-async fn fetch_artwork(url: Option<&str>) -> Option<Vec<u8>> {
-    let url = url?.replace("-large.jpg", "-t500x500.jpg");
-    let resp = reqwest::get(&url).await.ok()?;
-    resp.bytes().await.ok().map(|b| b.to_vec())
+    println!(
+        "{} Sync complete. {} downloaded, {} failed.",
+        colored::Colorize::green("[SUCCESS]").bold(),
+        downloaded,
+        failed
+    );
 }

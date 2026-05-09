@@ -1,16 +1,16 @@
-import {ChangeDetectionStrategy, Component, inject, OnInit} from '@angular/core';
-import {FormControl, ReactiveFormsModule, Validators} from '@angular/forms';
-import {MatButton, MatIconButton} from '@angular/material/button';
-import {MatDialogActions, MatDialogClose, MatDialogContent, MatDialogTitle} from '@angular/material/dialog';
-import {MatFormField, MatHint, MatLabel} from '@angular/material/form-field';
-import {MatInput} from '@angular/material/input';
-import {MatList, MatListItem} from '@angular/material/list';
-import {MusicTracksViewService} from "@app/pages/music-tracks-view/music-tracks-view.service";
-import {DialogRef} from "@angular/cdk/dialog";
-import {urlValidator} from "@shared/validators/url.validator";
-import {DownloadProgressSnackbar} from "@shared/components/download-progress-snackbar/download-progress-snackbar";
-import {MatSnackBar} from "@angular/material/snack-bar";
-import {MatIcon} from "@angular/material/icon";
+import { ChangeDetectionStrategy, Component, inject, OnInit } from '@angular/core';
+import { FormControl, ReactiveFormsModule, Validators } from '@angular/forms';
+import { MatButton, MatIconButton } from '@angular/material/button';
+import { MatDialogActions, MatDialogClose, MatDialogContent, MatDialogTitle } from '@angular/material/dialog';
+import { MatFormField, MatHint, MatLabel } from '@angular/material/form-field';
+import { MatInput } from '@angular/material/input';
+import { MatList, MatListItem } from '@angular/material/list';
+import { MusicTracksViewService } from '@app/pages/music-tracks-view/music-tracks-view.service';
+import { DialogRef } from '@angular/cdk/dialog';
+import { urlValidator } from '@shared/validators/url.validator';
+import { DownloadProgressSnackbar } from '@shared/components/download-progress-snackbar/download-progress-snackbar';
+import { MatSnackBar } from '@angular/material/snack-bar';
+import { MatIcon } from '@angular/material/icon';
 
 const STORAGE_KEY = 'vortexdl_download_history';
 
@@ -30,7 +30,7 @@ const STORAGE_KEY = 'vortexdl_download_history';
         MatButton,
         MatInput,
         MatIconButton,
-        MatIcon
+        MatIcon,
     ],
     templateUrl: './download-dialog.component.html',
     styleUrl: './download-dialog.component.scss',
@@ -53,7 +53,7 @@ export class DownloadDialogComponent implements OnInit {
         if (saved) {
             try {
                 this.history = JSON.parse(saved) as string[];
-            } catch (e) {
+            } catch {
                 this.history = [];
             }
         }
@@ -71,12 +71,12 @@ export class DownloadDialogComponent implements OnInit {
     }
 
     removeFromHistory(item: string) {
-        this.history = this.history.filter((i) => i !== item)
+        this.history = this.history.filter(i => i !== item);
         localStorage.setItem(STORAGE_KEY, JSON.stringify(this.history));
     }
 
     protected onDownload() {
-        const url = this.url.getRawValue()!
+        const url = this.url.getRawValue()!;
 
         this.addToHistory(url);
         this._trackService.download(url).subscribe({
@@ -87,12 +87,12 @@ export class DownloadDialogComponent implements OnInit {
                     duration: 5000,
                     panelClass: 'download-snackbar',
                     horizontalPosition: 'right',
-                    verticalPosition: 'bottom'
+                    verticalPosition: 'bottom',
                 });
             },
-            error: (err: any) => {
+            error: err => {
                 console.error('Download failed', err);
-            }
+            },
         });
     }
 }

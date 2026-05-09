@@ -16,7 +16,7 @@ pub enum TrackExtension {
     MP3,
     FLAC,
     WAV,
-    Unknown
+    Unknown,
 }
 
 pub const KNOWN_EXTENSIONS: [TrackExtension; 3] = [

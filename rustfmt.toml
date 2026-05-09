@@ -1,0 +1,13 @@
+edition = "2024"
+max_width = 100
+
+# Включаем нестабильные фичи
+unstable_features = true
+
+# 1. Удаляет лишние пустые строки и группирует импорты в 3 блока:
+# std -> внешние крейты -> crate/super
+group_imports = "StdExternalCrate"
+
+# 2. Схлопывает импорты с одинаковым началом в фигурные скобки.
+# Варианты: "Crate" (всё от одного корня в одни скобки) или "Module"
+imports_granularity = "Crate"

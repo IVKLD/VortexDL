@@ -1,7 +1,17 @@
-use std::collections::{HashMap, HashSet};
-use std::{fs, path::{Path, PathBuf}};
-use crate::models::{SC_IDENTIFIER, SC_ARTWORK_URL, SC_SOURCE_URL};
-use crate::utils::metadata::read_custom_field;
+use std::{
+    collections::{HashMap, HashSet},
+    fs,
+    path::{Path, PathBuf},
+};
+
+use anyhow::Result;
+
+use crate::{
+    constants::{SC_ARTWORK_URL, SC_IDENTIFIER, SC_SOURCE_URL},
+    database::sync::{get_previous_ids, save_sync_ids},
+    models::SyncMode,
+    utils::metadata::read_custom_field,
+};
 
 #[derive(Default, Clone)]
 pub struct TrackData {
@@ -10,14 +20,34 @@ pub struct TrackData {
     pub source_url: Option<String>,
 }
 
-#[derive(Default, Clone)]
+#[derive(Clone)]
 pub struct MusicStorage {
+    pub base_path: String,
     pub tracks: HashMap<i64, TrackData>,
 }
 
 impl MusicStorage {
-    pub fn update_track(&mut self, id: i64, path: PathBuf, artwork_url: Option<String>, source_url: Option<String>) {
-        self.tracks.insert(id, TrackData { path, artwork_url, source_url });
+    pub fn new(base_path: String) -> Self {
+        Self {
+            base_path,
+            tracks: HashMap::new(),
+        }
+    }
+    pub fn update_track(
+        &mut self,
+        id: i64,
+        path: PathBuf,
+        artwork_url: Option<String>,
+        source_url: Option<String>,
+    ) {
+        self.tracks.insert(
+            id,
+            TrackData {
+                path,
+                artwork_url,
+                source_url,
+            },
+        );
     }
 
     pub fn remove_track(&mut self, id: i64) {
@@ -29,7 +59,9 @@ impl MusicStorage {
         let mut seen_ids = HashSet::new();
 
         while let Some(dir) = stack.pop() {
-            let Ok(entries) = fs::read_dir(dir) else { continue };
+            let Ok(entries) = fs::read_dir(dir) else {
+                continue;
+            };
 
             for entry in entries.flatten() {
                 let path = entry.path();
@@ -38,20 +70,24 @@ impl MusicStorage {
                     continue;
                 }
 
-                if let Some(id) = path.to_str()
+                if let Some(id) = path
+                    .to_str()
                     .and_then(|p| read_custom_field(p, SC_IDENTIFIER))
-                    .and_then(|s| s.parse::<i64>().ok()) 
+                    .and_then(|s| s.parse::<i64>().ok())
                 {
                     seen_ids.insert(id);
                     let p_str = path.to_str().unwrap();
                     let artwork_url = read_custom_field(p_str, SC_ARTWORK_URL);
                     let source_url = read_custom_field(p_str, SC_SOURCE_URL);
-                    
-                    self.tracks.insert(id, TrackData {
-                        path,
-                        artwork_url,
-                        source_url,
-                    });
+
+                    self.tracks.insert(
+                        id,
+                        TrackData {
+                            path,
+                            artwork_url,
+                            source_url,
+                        },
+                    );
                 }
             }
         }
@@ -60,23 +96,47 @@ impl MusicStorage {
         tracing::info!("Indexing complete. Found {} tracks.", self.tracks.len());
     }
 
-    pub async fn sync_storage(&self, remote_ids: &HashSet<i64>, output_dir: &str, mode: &str) -> anyhow::Result<()> {
-        let to_remove: Vec<_> = self.tracks.iter().filter(|(id, _)| !remote_ids.contains(id)).collect();
-        if to_remove.is_empty() { return Ok(()); }
+    pub async fn sync_storage(
+        &self,
+        url: &str,
+        remote_ids: &HashSet<i64>,
+        mode: &SyncMode,
+    ) -> Result<()> {
+        let previous_ids = get_previous_ids(url)?;
 
-        if mode == "full" {
-            for (_, data) in to_remove {
-                if data.path.exists() { fs::remove_file(&data.path)?; }
+        let to_remove: Vec<_> = previous_ids
+            .iter()
+            .filter(|id| !remote_ids.contains(id))
+            .filter_map(|id| self.tracks.get(id))
+            .collect();
+
+        if to_remove.is_empty() || matches!(mode, SyncMode::Silent) {
+            save_sync_ids(url, remote_ids)?;
+            return Ok(());
+        }
+
+        let archive_path = Path::new(&self.base_path).join("Archive");
+        if matches!(mode, SyncMode::Archive) {
+            fs::create_dir_all(&archive_path)?;
+        }
+
+        for data in to_remove {
+            if !data.path.exists() {
+                continue;
             }
-        } else {
-            let archive = Path::new(output_dir).join("Archive");
-            fs::create_dir_all(&archive)?;
-            for (_, data) in to_remove {
-                if let Some(name) = data.path.file_name() {
-                    if data.path.exists() { fs::rename(&data.path, archive.join(name))?; }
+
+            match mode {
+                SyncMode::Full => fs::remove_file(&data.path)?,
+                SyncMode::Archive => {
+                    if let Some(name) = data.path.file_name() {
+                        fs::rename(&data.path, archive_path.join(name))?;
+                    }
                 }
+                _ => {}
             }
         }
+
+        save_sync_ids(url, remote_ids)?;
         Ok(())
     }
 }

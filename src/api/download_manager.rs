@@ -1,6 +1,7 @@
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
+
 use serde::{Deserialize, Serialize};
-use tokio::sync::{broadcast, RwLock};
+use tokio::sync::{RwLock, broadcast};
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(rename_all = "lowercase")]
@@ -20,6 +21,7 @@ pub struct DownloadItem {
     pub format: Option<String>,
     pub created_at: Option<u64>,
     pub source_url: Option<String>,
+    pub progress: Option<f64>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -33,6 +35,7 @@ pub enum ServerEvent {
 
 pub struct DownloadManager {
     tasks: RwLock<HashMap<i64, DownloadItem>>,
+    reserved_urls: RwLock<HashSet<String>>,
     tx: broadcast::Sender<ServerEvent>,
 }
 
@@ -41,47 +44,84 @@ impl Default for DownloadManager {
         let (tx, _) = broadcast::channel(100);
         Self {
             tasks: RwLock::new(HashMap::new()),
+            reserved_urls: RwLock::new(HashSet::new()),
             tx,
         }
     }
 }
 
 impl DownloadManager {
+    pub async fn reserve_url(&self, url: &str) -> bool {
+        let mut reserved = self.reserved_urls.write().await;
+        if reserved.contains(url) {
+            return false;
+        }
+        reserved.insert(url.to_string());
+        true
+    }
+
+    pub async fn release_url(&self, url: &str) {
+        self.reserved_urls.write().await.remove(url);
+    }
+
     pub async fn add_task(&self, id: i64, title: String, artwork_url: Option<String>) {
-        let item = DownloadItem { 
-            id, 
-            title, 
-            status: DownloadStatus::Queued, 
+        let item = DownloadItem {
+            id,
+            title,
+            status: DownloadStatus::Queued,
             artwork_url,
             format: None,
             created_at: None,
             source_url: None,
+            progress: None,
         };
         self.tasks.write().await.insert(id, item.clone());
-        let _ = self.tx.send(ServerEvent::TrackUpdate { item });
+        self.notify_update(item);
     }
 
     pub async fn update_status(&self, id: i64, status: DownloadStatus) {
         let mut tasks = self.tasks.write().await;
         if let Some(item) = tasks.get_mut(&id) {
             item.status = status;
-            let item_clone = item.clone();
-            let _ = self.tx.send(ServerEvent::TrackUpdate { item: item_clone });
+            self.notify_update(item.clone());
             self.check_queue_finished(&tasks).await;
         }
     }
 
-    pub async fn update_finished(&self, id: i64, format: String, created_at: u64, source_url: Option<String>) {
+    pub async fn update_finished(
+        &self,
+        id: i64,
+        format: String,
+        created_at: u64,
+        source_url: Option<String>,
+    ) {
         let mut tasks = self.tasks.write().await;
         if let Some(item) = tasks.get_mut(&id) {
             item.status = DownloadStatus::Finished;
             item.format = Some(format);
             item.created_at = Some(created_at);
             item.source_url = source_url;
-            
-            let item_clone = item.clone();
-            let _ = self.tx.send(ServerEvent::TrackUpdate { item: item_clone });
+            item.progress = Some(100.0);
+
+            self.notify_update(item.clone());
             self.check_queue_finished(&tasks).await;
+        }
+    }
+
+    pub async fn update_progress(&self, id: i64, current: u64, total: u64) {
+        let mut tasks = self.tasks.write().await;
+        if let Some(item) = tasks.get_mut(&id) {
+            let progress = if total > 0 {
+                (current as f64 / total as f64) * 100.0
+            } else {
+                0.0
+            };
+
+            if item.progress.map_or(true, |p| (progress - p).abs() > 0.5) {
+                item.progress = Some(progress);
+                item.status = DownloadStatus::Downloading;
+                self.notify_update(item.clone());
+            }
         }
     }
 
@@ -93,7 +133,12 @@ impl DownloadManager {
     }
 
     async fn check_queue_finished(&self, tasks: &HashMap<i64, DownloadItem>) {
-        let has_active = tasks.values().any(|t| matches!(t.status, DownloadStatus::Queued | DownloadStatus::Downloading));
+        let has_active = tasks.values().any(|t| {
+            matches!(
+                t.status,
+                DownloadStatus::Queued | DownloadStatus::Downloading
+            )
+        });
         if !has_active && !tasks.is_empty() {
             let _ = self.tx.send(ServerEvent::SyncFinished);
         }
@@ -103,9 +148,21 @@ impl DownloadManager {
         let _ = self.tx.send(event);
     }
 
+    fn notify_update(&self, item: DownloadItem) {
+        self.broadcast_event(ServerEvent::TrackUpdate { item });
+    }
+
     pub async fn get_queue(&self) -> Vec<DownloadItem> {
-        self.tasks.read().await.values()
-            .filter(|t| matches!(t.status, DownloadStatus::Queued | DownloadStatus::Downloading))
+        self.tasks
+            .read()
+            .await
+            .values()
+            .filter(|t| {
+                matches!(
+                    t.status,
+                    DownloadStatus::Queued | DownloadStatus::Downloading
+                )
+            })
             .cloned()
             .collect()
     }

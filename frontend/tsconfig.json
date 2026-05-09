@@ -2,10 +2,14 @@
   "compileOnSave": false,
   "compilerOptions": {
     "strict": true,
+    "forceConsistentCasingInFileNames": true,
     "noImplicitOverride": true,
     "noPropertyAccessFromIndexSignature": true,
     "noImplicitReturns": true,
     "noFallthroughCasesInSwitch": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "noUncheckedIndexedAccess": true,
     "skipLibCheck": true,
     "isolatedModules": true,
     "experimentalDecorators": true,
@@ -29,7 +33,12 @@
     "enableI18nLegacyMessageIdFormat": false,
     "strictInjectionParameters": true,
     "strictInputAccessModifiers": true,
-    "strictTemplates": true
+    "strictTemplates": true,
+    "strictInputTypes": false,
+    "strictContextGenerics": false,
+    "strictDomLocalRefTypes": true,
+    "strictStandalone": true,
+    "strictControlFlowAnalysis": true
   },
   "files": [],
   "references": [
