@@ -3,11 +3,11 @@
 <div class="music-card" (click)="trackClick.emit()" tabindex="0" role="button">
     <div class="artwork">
         @if (data.artwork_url) {
-        <img [ngSrc]="data.artwork_url" [alt]="data.filename" width="42" height="42" />
+            <img [ngSrc]="data.artwork_url" [alt]="data.filename" width="42" height="42" />
         } @else {
-        <div class="placeholder">
-            <mat-icon>music_note</mat-icon>
-        </div>
+            <div class="placeholder">
+                <mat-icon>music_note</mat-icon>
+            </div>
         }
     </div>
 

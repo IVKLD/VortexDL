@@ -49,6 +49,9 @@ export default tseslint.config(
       prettier,
     },
     rules: {
+      "@angular-eslint/template/label-has-associated-control": ["error", {
+        "controlComponents":["app-custom-input", "my-awesome-select"]
+      }],
       "prettier/prettier": ["error", { parser: "angular" }],
     },
   },

@@ -1,14 +1,14 @@
 <header>
     <div class="page-info">
         <div class="stats-label">
-            <label>Storage</label>
+            <span class="label-text">Storage</span>
             <span>{{ config()?.title || 'System' }}</span>
         </div>
 
         @if (hasFeature(Feature.Stats)) {
             <span class="separator">//</span>
             <div class="stats-value">
-                <label>Tracks</label>
+                <span class="label-text">Tracks</span>
                 <span>{{ musicState.sortedTracks().length }}</span>
             </div>
         }
@@ -34,18 +34,18 @@
                 <button [matMenuTriggerFor]="sortMenu" mat-button>
                     <mat-icon>sort</mat-icon>
                     <span>
-                    @switch (musicState.sortOption()) {
-                        @case (SortOption.NAME_ASC) {
-                            A-Z
+                        @switch (musicState.sortOption()) {
+                            @case (SortOption.NAME_ASC) {
+                                A-Z
+                            }
+                            @case (SortOption.NAME_DESC) {
+                                Z-A
+                            }
+                            @case (SortOption.DATE) {
+                                Recent
+                            }
                         }
-                        @case (SortOption.NAME_DESC) {
-                            Z-A
-                        }
-                        @case (SortOption.DATE) {
-                            Recent
-                        }
-                    }
-                </span>
+                    </span>
                 </button>
 
                 <mat-menu #sortMenu="matMenu">
