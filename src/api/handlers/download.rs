@@ -86,10 +86,7 @@ pub async fn download_events(
                 yield Ok(Event::default().json_data(ServerEvent::TrackUpdate { item }).unwrap());
             }
         }
-        loop {
-            if let Ok(event) = rx.recv().await { yield Ok(Event::default().json_data(event).unwrap()); }
-            else { break; }
-        }
+        while let Ok(event) = rx.recv().await { yield Ok(Event::default().json_data(event).unwrap()); }
     };
 
     Sse::new(stream).keep_alive(KeepAlive::default())

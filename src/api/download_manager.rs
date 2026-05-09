@@ -117,7 +117,7 @@ impl DownloadManager {
                 0.0
             };
 
-            if item.progress.map_or(true, |p| (progress - p).abs() > 0.5) {
+            if item.progress.is_none_or(|p| (progress - p).abs() > 0.5) {
                 item.progress = Some(progress);
                 item.status = DownloadStatus::Downloading;
                 self.notify_update(item.clone());

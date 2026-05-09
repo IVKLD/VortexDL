@@ -2,14 +2,14 @@ use std::{fs, path::PathBuf};
 
 use axum::{
     Json,
-    extract::{Path, Query, State},
+    extract::{Path, State},
     http::StatusCode,
     response::IntoResponse,
 };
 
 use crate::api::{
     errors::ApiError,
-    models::{DeleteQuery, KNOWN_EXTENSIONS, TrackExtension, TrackRecord},
+    models::{KNOWN_EXTENSIONS, TrackExtension, TrackRecord},
     state::AppState,
 };
 
@@ -25,9 +25,9 @@ pub async fn get_tracks(State(state): State<AppState>) -> Result<impl IntoRespon
                 .extension()
                 .map(|ext| ext.to_string_lossy())
                 .map(|ext| match ext.as_ref() {
-                    "mp3" => TrackExtension::MP3,
-                    "flac" => TrackExtension::FLAC,
-                    "wav" => TrackExtension::WAV,
+                    "mp3" => TrackExtension::Mp3,
+                    "flac" => TrackExtension::Flac,
+                    "wav" => TrackExtension::Wav,
                     _ => TrackExtension::Unknown,
                 })
                 .unwrap_or(TrackExtension::Unknown);

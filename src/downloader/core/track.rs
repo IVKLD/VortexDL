@@ -118,12 +118,12 @@ async fn run_download(ctx: &Context<'_>, task: &Task<'_>) -> Result<Option<Strin
     let source_url = track.permalink_url.clone();
 
     let transcodings = track.media.as_ref().and_then(|m| m.transcodings.as_ref());
-    let has_progressive = transcodings.map_or(false, |t| {
+    let has_progressive = transcodings.is_some_and(|t| {
         t.iter().any(|tr| {
             tr.format.as_ref().and_then(|f| f.protocol.as_ref()) == Some(&StreamType::Progressive)
         })
     });
-    let has_hls = transcodings.map_or(false, |t| {
+    let has_hls = transcodings.is_some_and(|t| {
         t.iter().any(|tr| {
             tr.format.as_ref().and_then(|f| f.protocol.as_ref()) == Some(&StreamType::Hls)
         })

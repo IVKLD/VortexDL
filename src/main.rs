@@ -59,7 +59,7 @@ async fn execute_app(state: AppState, args: Args) -> Result<()> {
     if args.serve {
         run_server(state, &args).await
     } else if let Some(ref url) = args.url {
-        run_cli_download(state, &url, &args).await
+        run_cli_download(state, url, &args).await
     } else {
         Ok(())
     }

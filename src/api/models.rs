@@ -13,16 +13,16 @@ pub struct ActionStatus {
 
 #[derive(Eq, PartialEq)]
 pub enum TrackExtension {
-    MP3,
-    FLAC,
-    WAV,
+    Mp3,
+    Flac,
+    Wav,
     Unknown,
 }
 
 pub const KNOWN_EXTENSIONS: [TrackExtension; 3] = [
-    TrackExtension::MP3,
-    TrackExtension::FLAC,
-    TrackExtension::WAV,
+    TrackExtension::Mp3,
+    TrackExtension::Flac,
+    TrackExtension::Wav,
 ];
 
 #[derive(Debug, Serialize)]
@@ -34,11 +34,6 @@ pub struct TrackRecord {
     pub artwork_url: Option<String>,
     pub source_url: Option<String>,
     pub created_at: u64,
-}
-
-#[derive(Debug, Deserialize)]
-pub struct DeleteQuery {
-    pub id: u32,
 }
 
 #[derive(Debug, Serialize)]

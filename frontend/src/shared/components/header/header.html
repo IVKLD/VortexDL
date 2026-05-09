@@ -18,11 +18,10 @@
         <div class="search-area">
             <mat-form-field appearance="outline" subscriptSizing="dynamic">
                 <mat-icon matPrefix>search</mat-icon>
-                <input
-                    (ngModelChange)="onSearch($event)"
-                    [ngModel]="musicState.searchQuery()"
-                    matInput
-                    placeholder="Search..."
+                <input (ngModelChange)="onSearch($event)"
+                       [ngModel]="musicState.searchQuery()"
+                       matInput
+                       placeholder="Search..."
                 />
             </mat-form-field>
         </div>
