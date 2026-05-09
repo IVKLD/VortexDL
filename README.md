@@ -15,8 +15,6 @@
   <img src="https://img.shields.io/badge/Angular-v21-DD0031?style=flat-square&logo=angular&logoColor=white" alt="Angular">
 </p>
 
----
-
 ## Motivation
 Streaming services are a piece of shit with subscriptions and censorship, and modern phones without a 3.5mm jack are a technological failure. This project was written to download music in one click and listen to it like a human being on a proper player (e.g., **Cayin N3 Ultra**).
 
@@ -28,18 +26,6 @@ Read the full thoughts on this — [at the bottom of the page](#manifesto).
 *   **Progress Display:** You can see the download progress everywhere: both in the console (CLI) and in the web panel. You'll always know exactly how much is left.
 *   **Web Panel:** Angular-based web interface for those who don't want to mess with the console. Just paste the link and manage your downloads visually.
 *   **Single Binary:** Everything is packed into one file, so there's no need to fuck around with installing dozens of libraries and dependencies.
-
-## Troubleshooting
-
-### "No available download options"
-If you see this error:
-1.  **99% of the time:** You have a shitty proxy or VPN. SoundCloud simply blocks downloads for your region. It's better to use decent residential IPs.
-2.  **The track really can't be downloaded:** This happens sometimes on SC's side, but it's rare. Usually, the issue is point #1.
-
-## Stack
-*   **Backend:** Rust, Axum, Tokio, Redb.
-*   **Frontend:** Angular v21, SCSS, TypeScript.
-*   **Infrastructure:** Devbox (Nix), cargo-dist, GitHub Actions.
 
 ## Requirements
 
@@ -66,6 +52,13 @@ curl -L https://github.com/IVKLD/VortexDL/releases/latest/download/vortex-dl -o 
 ---
 *   Currently, only **Linux** is officially supported.
 *   Regarding **macOS** and **Windows**: I'm not a programmer and I have no clue how things work for Mac or Windows users. It should work in theory. If you really need support, open an Issue—I'll try to fix it or wait for contributors.
+
+## Troubleshooting
+
+### "No available download options"
+If you see this error:
+1.  **99% of the time:** You have a shitty proxy or VPN. SoundCloud simply blocks downloads for your region. It's better to use decent residential IPs.
+2.  **The track really can't be downloaded:** This happens sometimes on SC's side, but it's rare. Usually, the issue is point #1.
 
 ## Usage
 
@@ -103,11 +96,8 @@ vortex-dl [URL] --output /path/to/music
 
 *Note: The frontend is automatically built and embedded into the binary during backend compilation.*
 
-## Project Structure
 
-*   `src/` — Rust backend source code.
-*   `frontend/` — Angular frontend source code.
-*   `build.rs` — Build script responsible for compiling and embedding the frontend.
+For more details on project structure and technical implementation, see [Development.md](Development.md).
 
 ## Building
 
