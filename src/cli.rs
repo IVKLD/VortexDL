@@ -36,6 +36,7 @@ pub struct Args {
 
     #[arg(
         long,
+        env = "VORTEX_PORT",
         default_value_t = 3200,
         help = "Port to listen on for the REST API and WebUI"
     )]

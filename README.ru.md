@@ -92,7 +92,7 @@ vortex-dl [URL] --output /path/to/music
    # Терминал 2: Фронтенд
    cd frontend && yarn start
    ```
-   *Web Panel (frontend) будет доступна по адресу http://localhost:4200. REST API бэкенда доступен на http://localhost:3200/api.*
+   *Web Panel (frontend) будет доступна по адресу http://localhost:4200. REST API бэкенда по умолчанию доступен на http://localhost:3200/api (можно изменить через переменную окружения VORTEX_PORT).*
 
 *Примечание: фронтенд автоматически собирается и встраивается в бинарный файл при компиляции бэкенда.*
 

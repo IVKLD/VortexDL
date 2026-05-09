@@ -92,7 +92,7 @@ vortex-dl [URL] --output /path/to/music
    # Terminal 2: Frontend
    cd frontend && yarn start
    ```
-   *The Web Panel (frontend) will be available at http://localhost:4200. The backend REST API is available at http://localhost:3200/api.*
+   *The Web Panel (frontend) will be available at http://localhost:4200. The backend REST API is available at http://localhost:3200/api by default (can be changed via the VORTEX_PORT environment variable).*
 
 *Note: The frontend is automatically built and embedded into the binary during backend compilation.*
 
