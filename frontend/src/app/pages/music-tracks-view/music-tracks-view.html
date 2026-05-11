@@ -2,13 +2,11 @@
     @defer (on idle) {
         @if (tracks().length > 0) {
             <rx-virtual-scroll-viewport [itemSize]="82">
-                <div *rxVirtualFor="let track of tracks(); trackBy: 'id'" class="music-list-item">
-                    <app-music-card
-                        (deleteMusic)="deleteMusic(track)"
-                        (trackClick)="openDetail(track)"
+                <app-music-card
+                        (deleteMusic)="deleteMusic(track)" (trackClick)="openDetail(track)"
+                        *rxVirtualFor="let track of tracks(); trackBy: 'id'"
                         [track]="track"
-                    />
-                </div>
+                />
             </rx-virtual-scroll-viewport>
         } @else {
             <div class="empty-state">

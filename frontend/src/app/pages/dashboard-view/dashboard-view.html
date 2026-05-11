@@ -1,1 +1,57 @@
-dashboard
+<div class="dashboard-container">
+    <header class="dashboard-header">
+        <h1>Dashboard</h1>
+        <p>Welcome to VortexLD. Here's a summary of your library and active downloads.</p>
+    </header>
+
+    <div class="stats-grid">
+        @for (stat of stats(); track stat.label) {
+            <app-stat-card 
+                [icon]="stat.icon" 
+                [label]="stat.label" 
+                [value]="stat.isSize ? (stat.value | fileSize) : stat.value" 
+                [iconClass]="stat.iconClass">
+            </app-stat-card>
+        }
+    </div>
+
+    <div class="dashboard-content">
+        <div class="left-column">
+            @defer (on viewport) {
+                <app-activity-chart [data]="activityData()"></app-activity-chart>
+            } @placeholder {
+                <div class="section-placeholder"></div>
+            }
+
+            <section class="active-downloads-section">
+                <div class="section-header">
+                    <h2><mat-icon>cloud_download</mat-icon> Active Queue</h2>
+                    <a routerLink="/downloads" class="view-all">View All</a>
+                </div>
+                @if (tracking.activeDownloads().length > 0) {
+                    <div class="downloads-wrapper">
+                        <app-active-downloads></app-active-downloads>
+                    </div>
+                } @else {
+                    <div class="empty-state">
+                        <mat-icon>done_all</mat-icon>
+                        <p>No active downloads. Queue some tracks to get started!</p>
+                    </div>
+                }
+            </section>
+        </div>
+
+        <div class="right-column">
+            @defer (on viewport) {
+                <app-format-breakdown [data]="formatBreakdown()"></app-format-breakdown>
+            } @placeholder {
+                <div class="section-placeholder"></div>
+            }
+            @defer (on viewport) {
+                <app-recent-tracks [tracks]="recentTracks()"></app-recent-tracks>
+            } @placeholder {
+                <div class="section-placeholder"></div>
+            }
+        </div>
+    </div>
+</div>

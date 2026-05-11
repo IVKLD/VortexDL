@@ -19,10 +19,15 @@ pub async fn fetch_likes(ctx: &DiscoveryContext<'_>, url: &str) -> Result<Vec<Tr
 
     let mut all_tracks = Vec::new();
 
+    let limit = {
+        let s = ctx.settings.read().await;
+        s.limit_per_page
+    };
+
     loop {
         let likes_query = TrackLikesQuery {
             offset: current_offset.clone(),
-            limit: ctx.config.limit_per_page,
+            limit,
         };
 
         let res: TrackLikesResponse = ctx.client.get(&endpoint, Some(&likes_query)).await?;

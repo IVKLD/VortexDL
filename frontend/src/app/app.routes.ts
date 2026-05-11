@@ -1,6 +1,7 @@
 import { DashboardView } from './pages/dashboard-view/dashboard-view';
 import { PlaylistView } from './pages/playlist-view/playlist-view';
 import { MusicTracksView } from './pages/music-tracks-view/music-tracks-view';
+import { SettingsView } from './pages/settings/settings-view.component';
 import { Route } from '@angular/router';
 import { HeaderFeature, HeaderConfig } from '@shared/components/header/header.types';
 
@@ -43,7 +44,7 @@ export const routes: CustomRoutes = [
         data: {
             header: {
                 title: 'Library',
-                features: [HeaderFeature.Search, HeaderFeature.Sort, HeaderFeature.Stats, HeaderFeature.Download],
+                features: [HeaderFeature.Search, HeaderFeature.Sort, HeaderFeature.Stats, HeaderFeature.Download, HeaderFeature.Sync],
             },
         },
         component: MusicTracksView,
@@ -57,6 +58,6 @@ export const routes: CustomRoutes = [
                 features: [],
             },
         },
-        component: MusicTracksView,
+        component: SettingsView,
     },
 ];

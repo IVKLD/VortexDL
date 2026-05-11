@@ -12,9 +12,12 @@ export enum MusicSortOption {
     providedIn: 'root',
 })
 export class MusicTracksViewState {
+    private readonly _isLoading = signal<boolean>(true);
     private readonly _tracks = signal<Track[]>([]);
     private readonly _sortOption = signal<MusicSortOption>(MusicSortOption.DATE);
     private readonly _searchQuery = signal<string>('');
+
+    public readonly isLoading = this._isLoading.asReadonly();
 
     public readonly sortOption = this._sortOption.asReadonly();
     public readonly searchQuery = this._searchQuery.asReadonly();
@@ -50,7 +53,7 @@ export class MusicTracksViewState {
             case MusicSortOption.NAME_DESC:
                 return tracks.sort((a, b) => b.filename.localeCompare(a.filename));
             case MusicSortOption.DATE:
-                return tracks.sort((a, b) => b.created_at - a.created_at);
+                return tracks.sort((a, b) => b.createdAt - a.createdAt);
             default:
                 return tracks;
         }
@@ -58,6 +61,11 @@ export class MusicTracksViewState {
 
     public set setTracks(value: Track[]) {
         this._tracks.set(this.normalizeTracks(value));
+        this._isLoading.set(false);
+    }
+
+    public startLoading() {
+        this._isLoading.set(true);
     }
 
     public setSortOption(option: MusicSortOption) {
@@ -90,3 +98,4 @@ export class MusicTracksViewState {
         };
     }
 }
+

@@ -8,7 +8,7 @@ use crate::api::{
     handlers::{
         download::{download_events, get_download_queue, remove_from_queue, start_download},
         health::health,
-        settings::{get_settings, update_settings},
+        settings::{get_settings, test::test_soundcloud_url, update_settings},
         tracks::{get_tracks, indexing_tracks, remove_track},
     },
     state::AppState,
@@ -51,5 +51,7 @@ fn download_routes() -> Router<AppState> {
 }
 
 fn settings_routes() -> Router<AppState> {
-    Router::new().route("/", get(get_settings).post(update_settings))
+    Router::new()
+        .route("/", get(get_settings).post(update_settings))
+        .route("/test/soundcloud", post(test_soundcloud_url))
 }

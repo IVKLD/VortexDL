@@ -2,6 +2,7 @@ use std::{
     collections::{HashMap, HashSet},
     fs,
     path::{Path, PathBuf},
+    sync::Arc,
 };
 
 use anyhow::Result;
@@ -54,46 +55,62 @@ impl MusicStorage {
         self.tracks.remove(&id);
     }
 
-    pub fn indexing(&mut self, root: &Path) {
-        let mut stack = vec![root.to_path_buf()];
-        let mut seen_ids = HashSet::new();
+    pub async fn run_background_indexing(storage: Arc<tokio::sync::RwLock<Self>>) {
+        let root = {
+            let s = storage.read().await;
+            PathBuf::from(&s.base_path)
+        };
 
-        while let Some(dir) = stack.pop() {
-            let Ok(entries) = fs::read_dir(dir) else {
-                continue;
-            };
+        let result = tokio::task::spawn_blocking(move || {
+            let mut new_tracks = HashMap::new();
+            let mut seen_ids = HashSet::new();
+            let mut stack = vec![root];
 
-            for entry in entries.flatten() {
-                let path = entry.path();
-                if path.is_dir() {
-                    stack.push(path);
+            while let Some(dir) = stack.pop() {
+                let Ok(entries) = fs::read_dir(dir) else {
                     continue;
-                }
+                };
 
-                if let Some(id) = path
-                    .to_str()
-                    .and_then(|p| read_custom_field(p, SC_IDENTIFIER))
-                    .and_then(|s| s.parse::<i64>().ok())
-                {
-                    seen_ids.insert(id);
-                    let p_str = path.to_str().unwrap();
-                    let artwork_url = read_custom_field(p_str, SC_ARTWORK_URL);
-                    let source_url = read_custom_field(p_str, SC_SOURCE_URL);
+                for entry in entries.flatten() {
+                    let path = entry.path();
+                    if path.is_dir() {
+                        stack.push(path);
+                        continue;
+                    }
 
-                    self.tracks.insert(
-                        id,
-                        TrackData {
-                            path,
-                            artwork_url,
-                            source_url,
-                        },
-                    );
+                    if let Some(id) = path
+                        .to_str()
+                        .and_then(|p| read_custom_field(p, SC_IDENTIFIER))
+                        .and_then(|s| s.parse::<i64>().ok())
+                    {
+                        seen_ids.insert(id);
+                        let p_str = path.to_str().unwrap();
+                        let artwork_url = read_custom_field(p_str, SC_ARTWORK_URL);
+                        let source_url = read_custom_field(p_str, SC_SOURCE_URL);
+
+                        new_tracks.insert(
+                            id,
+                            TrackData {
+                                path,
+                                artwork_url,
+                                source_url,
+                            },
+                        );
+                    }
                 }
             }
-        }
+            (new_tracks, seen_ids)
+        })
+        .await;
 
-        self.tracks.retain(|id, _| seen_ids.contains(id));
-        tracing::info!("Indexing complete. Found {} tracks.", self.tracks.len());
+        if let Ok((new_tracks, seen_ids)) = result {
+            let mut s = storage.write().await;
+            for (id, data) in new_tracks {
+                s.tracks.insert(id, data);
+            }
+            s.tracks.retain(|id, _| seen_ids.contains(id));
+            tracing::info!("Indexing complete. Found {} tracks.", s.tracks.len());
+        }
     }
 
     pub async fn sync_storage(

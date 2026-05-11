@@ -4,12 +4,9 @@
 
 .music-container {
     height: calc(100vh - 90px);
-
-    rx-virtual-scroll-viewport {
-    }
 }
 
-.music-list-item {
+app-music-card {
     width: 100%;
     margin: 0 auto;
 }
@@ -20,7 +17,6 @@
     align-items: center;
     justify-content: center;
     height: 100%;
-    color: var(--mat-sys-on-surface-variant);
     text-align: center;
 
     mat-icon {
@@ -50,7 +46,6 @@
     align-items: center;
     justify-content: center;
     height: 100%;
-    color: var(--mat-sys-on-surface-variant);
     opacity: 0.5;
 
     .spinner {

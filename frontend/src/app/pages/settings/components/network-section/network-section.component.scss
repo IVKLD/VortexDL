@@ -1,0 +1,46 @@
+.settings-section {
+    h2 {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        margin: 0 0 20px;
+        font-size: 18px;
+        font-weight: 600;
+        color: var(--mat-sys-primary);
+
+        mat-icon {
+            font-size: 20px;
+            width: 20px;
+            height: 20px;
+        }
+    }
+
+    .section-content {
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+    }
+}
+
+.field-row {
+    display: flex;
+    gap: 16px;
+    align-items: flex-start;
+
+    .flex-grow {
+        flex: 1;
+    }
+}
+
+.rotating {
+    animation: rotate 2s linear infinite;
+}
+
+@keyframes rotate {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+
+.mb-1 {
+    margin-bottom: 8px;
+}

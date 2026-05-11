@@ -1,4 +1,4 @@
-use std::{fs, path::PathBuf};
+use std::fs;
 
 use axum::{
     Json,
@@ -7,10 +7,13 @@ use axum::{
     response::IntoResponse,
 };
 
-use crate::api::{
-    errors::ApiError,
-    models::{KNOWN_EXTENSIONS, TrackExtension, TrackRecord},
-    state::AppState,
+use crate::{
+    api::{
+        errors::ApiError,
+        models::{KNOWN_EXTENSIONS, TrackExtension, TrackRecord},
+        state::AppState,
+    },
+    storage::MusicStorage,
 };
 
 pub async fn get_tracks(State(state): State<AppState>) -> Result<impl IntoResponse, ApiError> {
@@ -55,6 +58,7 @@ pub async fn get_tracks(State(state): State<AppState>) -> Result<impl IntoRespon
                                 .as_secs()
                         })
                         .unwrap_or(0),
+                    size: path.metadata().map(|m| m.len()).unwrap_or(0),
                 })
             } else {
                 None
@@ -66,9 +70,7 @@ pub async fn get_tracks(State(state): State<AppState>) -> Result<impl IntoRespon
 }
 
 pub async fn indexing_tracks(State(state): State<AppState>) -> Result<impl IntoResponse, ApiError> {
-    let mut storage = state.storage.write().await;
-    let root = PathBuf::from(&storage.base_path);
-    storage.indexing(&root);
+    MusicStorage::run_background_indexing(state.storage.clone()).await;
     Ok(StatusCode::OK)
 }
 

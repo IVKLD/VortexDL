@@ -1,8 +1,8 @@
-import { computed, inject, Injectable, NgZone, signal } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
-import { MusicTracksViewService } from '../pages/music-tracks-view/music-tracks-view.service';
-import { MusicTracksViewState } from '../pages/music-tracks-view/music-tracks-view.state';
-import { TrackExtension } from '../models/track.model';
+import {computed, inject, Injectable, NgZone, signal} from '@angular/core';
+import {HttpClient} from '@angular/common/http';
+import {MusicTracksViewService} from '../pages/music-tracks-view/music-tracks-view.service';
+import {MusicTracksViewState} from '../pages/music-tracks-view/music-tracks-view.state';
+import {TrackExtension} from '../models/track.model';
 
 export enum DownloadStatus {
     Queued = 'queued',
@@ -15,11 +15,12 @@ export interface DownloadItem {
     id: number;
     title: string;
     status: DownloadStatus;
-    artwork_url?: string;
+    artworkUrl?: string;
     format?: TrackExtension;
-    created_at?: number;
-    source_url?: string;
+    createdAt?: number;
+    sourceUrl?: string;
     error?: string;
+    size?: number;
 }
 
 export enum ServerEventType {
@@ -55,11 +56,23 @@ export class DownloadTrackingService {
     public readonly errors = signal<string[]>([]);
 
     constructor() {
+        this.syncActiveDownloads();
         this.initializeEventSource();
+    }
+
+    private syncActiveDownloads(): void {
+        this._http.get<DownloadItem[]>('/download/queue').subscribe({
+            next: items => this.activeDownloads.set(items),
+            error: err => console.error('Failed to sync active downloads:', err)
+        });
     }
 
     private initializeEventSource(): void {
         const eventSource = new EventSource('/api/download/events');
+
+        eventSource.onopen = () => {
+            console.info('SSE connection established');
+        };
 
         eventSource.onmessage = event => {
             this._zone.run(() => {
@@ -73,8 +86,12 @@ export class DownloadTrackingService {
         };
 
         eventSource.onerror = error => {
-            console.error('SSE Error:', error);
-            this.addError('Connection lost. Real-time updates may be unavailable.');
+            this._zone.run(() => {
+                console.error('SSE Error, attempting to reconnect:', error);
+                eventSource?.close();
+
+                setTimeout(() => this.initializeEventSource(), 3000);
+            });
         };
     }
 
@@ -120,9 +137,10 @@ export class DownloadTrackingService {
                 filename: item.title,
                 album: '',
                 format: item.format || TrackExtension.MP3,
-                artwork_url: item.artwork_url,
-                source_url: item.source_url,
-                created_at: item.created_at || Math.floor(Date.now() / 1000),
+                artworkUrl: item.artworkUrl,
+                sourceUrl: item.sourceUrl,
+                createdAt: item.createdAt || Math.floor(Date.now() / 1000),
+                size: item.size || 0,
             });
         }
 
@@ -140,7 +158,7 @@ export class DownloadTrackingService {
 
     private updateActiveDownloads(item: DownloadItem): void {
         this.activeDownloads.update(downloads => {
-            if (item.status === DownloadStatus.Finished) {
+            if (item.status === DownloadStatus.Finished || item.status === DownloadStatus.Failed) {
                 return downloads.filter(d => d.id !== item.id);
             }
 
@@ -165,3 +183,4 @@ export class DownloadTrackingService {
         });
     }
 }
+

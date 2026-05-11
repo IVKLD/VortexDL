@@ -1,4 +1,5 @@
 import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
+import { NgOptimizedImage } from '@angular/common';
 import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
 import { Track } from '../music-tracks-view.service';
 import { MatButton, MatIconButton } from '@angular/material/button';
@@ -6,7 +7,7 @@ import { MatIcon } from '@angular/material/icon';
 
 @Component({
     selector: 'app-music-detail-modal',
-    imports: [MatButton, MatIconButton, MatIcon],
+    imports: [MatButton, MatIconButton, MatIcon, NgOptimizedImage],
     templateUrl: './music-detail-modal.html',
     styleUrl: './music-detail-modal.scss',
     changeDetection: ChangeDetectionStrategy.OnPush,

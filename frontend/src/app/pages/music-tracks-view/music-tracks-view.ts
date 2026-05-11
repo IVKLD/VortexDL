@@ -1,4 +1,5 @@
 import { ChangeDetectionStrategy, Component, inject, OnInit } from '@angular/core';
+import { switchMap } from 'rxjs';
 import { MusicTracksViewService, Track } from './music-tracks-view.service';
 import { MusicCard } from './music-card/music-card';
 import { MusicTracksViewState } from './music-tracks-view.state';
@@ -43,10 +44,16 @@ export class MusicTracksView implements OnInit {
     }
 
     ngOnInit() {
-        this._api.getAll().subscribe({
+        this._state.startLoading();
+        this._api.index().pipe(
+            switchMap(() => this._api.getAll())
+        ).subscribe({
             next: tracks => {
                 this._state.setTracks = tracks;
             },
+            error: () => {
+                this._api.getAll().subscribe(tracks => this._state.setTracks = tracks);
+            }
         });
     }
 }

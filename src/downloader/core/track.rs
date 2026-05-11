@@ -11,7 +11,7 @@ use tokio::{sync::RwLock, task::JoinHandle, time::sleep};
 
 use crate::{
     api::download_manager::{DownloadManager, DownloadStatus},
-    config::AppConfig,
+    database::settings::UserSettings,
     downloader::core::{
         artwork::start_artwork_download, hls::try_download_hls,
         progressive::try_download_progressive,
@@ -25,7 +25,7 @@ pub(in crate::downloader) struct Context<'a> {
     pub http: &'a reqwest::Client,
     pub storage: &'a Arc<RwLock<MusicStorage>>,
     pub dm: Option<&'a Arc<DownloadManager>>,
-    pub config: &'a Arc<AppConfig>,
+    pub settings: &'a Arc<RwLock<UserSettings>>,
 }
 
 pub(in crate::downloader) struct Task<'a> {
@@ -48,7 +48,7 @@ pub(in crate::downloader) async fn initiate_track_download(
     task.pb
         .set_message(format!("Downloading Music & Art: {}", task.filename));
 
-    let artwork_url = task.artwork_url.map(String::from);
+    let artwork_url = task.artwork_url.map(|url| url.replace("-large", "-t1080x1080"));
     let artwork_task = artwork_url
         .as_ref()
         .map(|url| start_artwork_download(ctx.http, url.clone()));
@@ -70,15 +70,22 @@ pub(in crate::downloader) async fn initiate_track_download(
                     None
                 };
 
-                let args = SaveTrackArgs {
-                    path: &file_path,
-                    sc_id: &id.to_string(),
-                    artwork_url: artwork_url.as_deref(),
-                    source_url: source_url.as_deref(),
-                    artwork_data: art_data,
-                };
+                let file_path_clone = file_path.clone();
+                let sc_id_str = id.to_string();
+                let artwork_url_clone = artwork_url.clone();
+                let source_url_clone = source_url.clone();
 
-                save_track_info(args).ok();
+                let _ = tokio::task::spawn_blocking(move || {
+                    let args = SaveTrackArgs {
+                        path: &file_path_clone,
+                        sc_id: &sc_id_str,
+                        artwork_url: artwork_url_clone.as_deref(),
+                        source_url: source_url_clone.as_deref(),
+                        artwork_data: art_data,
+                    };
+                    save_track_info(args).ok();
+                })
+                .await;
 
                 storage.write().await.update_track(
                     id,
@@ -92,7 +99,8 @@ pub(in crate::downloader) async fn initiate_track_download(
                         .duration_since(UNIX_EPOCH)
                         .unwrap_or_default()
                         .as_secs();
-                    m.update_finished(id, "mp3".to_string(), now, source_url)
+                    let size = std::fs::metadata(&file_path).map(|m| m.len()).unwrap_or(0);
+                    m.update_finished(id, "mp3".to_string(), now, source_url, size)
                         .await;
                 }
             }))
@@ -133,7 +141,10 @@ async fn run_download(ctx: &Context<'_>, task: &Task<'_>) -> Result<Option<Strin
         return Err(anyhow!("No downloadable streams available for this track"));
     }
 
-    let mut retries = ctx.config.max_retries;
+    let mut retries = {
+        let s = ctx.settings.read().await;
+        s.max_retries
+    };
     let mut last_err = None;
 
     while retries > 0 {

@@ -1,5 +1,5 @@
-<mat-drawer-container>
-    <mat-drawer disableClose mode="side" opened>
+<mat-sidenav-container>
+    <mat-sidenav disableClose mode="side" opened>
         <app-logo />
 
         <div>
@@ -17,9 +17,11 @@
         </div>
 
         <app-active-downloads />
-    </mat-drawer>
+    </mat-sidenav>
 
-    <mat-drawer-content>
+    <mat-sidenav-content>
+        <app-header/>
+
         <ng-content />
-    </mat-drawer-content>
-</mat-drawer-container>
+    </mat-sidenav-content>
+</mat-sidenav-container>

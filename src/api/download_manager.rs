@@ -13,6 +13,7 @@ pub enum DownloadStatus {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct DownloadItem {
     pub id: i64,
     pub title: String,
@@ -22,6 +23,7 @@ pub struct DownloadItem {
     pub created_at: Option<u64>,
     pub source_url: Option<String>,
     pub progress: Option<f64>,
+    pub size: Option<u64>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -74,6 +76,7 @@ impl DownloadManager {
             created_at: None,
             source_url: None,
             progress: None,
+            size: None,
         };
         self.tasks.write().await.insert(id, item.clone());
         self.notify_update(item);
@@ -94,6 +97,7 @@ impl DownloadManager {
         format: String,
         created_at: u64,
         source_url: Option<String>,
+        size: u64,
     ) {
         let mut tasks = self.tasks.write().await;
         if let Some(item) = tasks.get_mut(&id) {
@@ -102,6 +106,7 @@ impl DownloadManager {
             item.created_at = Some(created_at);
             item.source_url = source_url;
             item.progress = Some(100.0);
+            item.size = Some(size);
 
             self.notify_update(item.clone());
             self.check_queue_finished(&tasks).await;

@@ -1,0 +1,31 @@
+<section class="recent-tracks-section">
+    <div class="section-header">
+        <h2><mat-icon>history</mat-icon> Recently Added</h2>
+        <a routerLink="/music-tracks" class="view-all">Library</a>
+    </div>
+
+    <div class="recent-tracks-list">
+        @for (track of tracks(); track track.id) {
+        <div class="recent-track-card">
+            <div class="artwork">
+                @if (track.artworkUrl) {
+                <img [ngSrc]="track.artworkUrl" [alt]="track.filename" width="48" height="48">
+                } @else {
+                <div class="placeholder-art">
+                    <mat-icon>music_note</mat-icon>
+                </div>
+                }
+            </div>
+            <div class="track-info">
+                <h4 class="track-title" [title]="track.filename">{{ track.filename }}</h4>
+                <span class="track-format">{{ track.format | uppercase }}</span>
+            </div>
+        </div>
+        } @empty {
+        <div class="empty-state">
+            <mat-icon>music_off</mat-icon>
+            <p>No tracks in library yet.</p>
+        </div>
+        }
+    </div>
+</section>

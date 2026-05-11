@@ -3,6 +3,7 @@ export enum HeaderFeature {
     Sort = 'sort',
     Stats = 'stats',
     Download = 'download',
+    Sync = 'sync',
 }
 
 export interface HeaderConfig {

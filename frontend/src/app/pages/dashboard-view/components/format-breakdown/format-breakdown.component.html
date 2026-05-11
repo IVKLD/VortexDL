@@ -1,0 +1,25 @@
+<section class="format-section">
+    <div class="section-header">
+        <h2><mat-icon>pie_chart</mat-icon> Audio Formats</h2>
+    </div>
+    <div class="format-list">
+        @for (fmt of data(); track fmt.format) {
+            <div class="format-item">
+                <div class="format-info">
+                    <span class="format-dot" [style.background]="fmt.color"></span>
+                    <span class="format-name">{{ fmt.format }}</span>
+                    <span class="format-count">{{ fmt.count }}</span>
+                </div>
+                <div class="format-bar-bg">
+                    <div class="format-bar-fill" 
+                         [style.width]="fmt.percentage + '%'"
+                         [style.background]="fmt.color"></div>
+                </div>
+            </div>
+        } @empty {
+            <div class="empty-state mini">
+                <p>Library is empty.</p>
+            </div>
+        }
+    </div>
+</section>

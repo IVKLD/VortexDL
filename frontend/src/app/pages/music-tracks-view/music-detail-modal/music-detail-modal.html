@@ -11,8 +11,8 @@
 
     <main>
         <figure>
-            @if (track.artwork_url) {
-                <img [src]="track.artwork_url" [alt]="track.filename" />
+            @if (track.artworkUrl) {
+                <img [ngSrc]="track.artworkUrl" [alt]="track.filename" width="240" height="240" />
             } @else {
                 <mat-icon>music_note</mat-icon>
             }
@@ -40,12 +40,12 @@
     </main>
 
     <footer>
-        @if (track.source_url) {
-            <a [href]="track.source_url" target="_blank" mat-button color="accent" class="source-btn">
+        @if (track.sourceUrl) {
+            <a [href]="track.sourceUrl" target="_blank" mat-button color="accent" class="source-btn">
                 <mat-icon>open_in_new</mat-icon>
                 Open Original
             </a>
         }
-        <button mat-flat-button color="primary" (click)="close()">Done</button>
+        <button mat-flat-button (click)="close()">Done</button>
     </footer>
 </div>

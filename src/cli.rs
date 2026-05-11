@@ -29,7 +29,7 @@ pub struct Args {
 
     #[arg(
         long,
-        default_value = "0.0.0.0",
+        default_value = "127.0.0.1",
         help = "Host address to bind the server to"
     )]
     pub host: String,

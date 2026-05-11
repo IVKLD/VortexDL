@@ -3,10 +3,11 @@ use std::sync::Arc;
 use anyhow::Result;
 use indicatif::ProgressBar;
 use soundcloud_rs::Client;
+use tokio::sync::RwLock;
 
 use crate::{
     api::download_manager::{DownloadManager, ServerEvent},
-    config::AppConfig,
+    database::settings::UserSettings,
     models::ResolveResponse,
     ui::create_standalone_spinner,
     utils::soundcloud::resolve_url,
@@ -22,7 +23,7 @@ pub use crate::downloader::discovery::{
 
 pub struct DiscoveryContext<'a> {
     pub client: &'a Client,
-    pub config: &'a AppConfig,
+    pub settings: &'a Arc<RwLock<UserSettings>>,
     pub dm: Option<&'a Arc<DownloadManager>>,
 }
 

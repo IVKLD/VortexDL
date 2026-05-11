@@ -38,23 +38,33 @@ pub(in crate::downloader) async fn run_parallel_download(
         .build()
         .unwrap_or_default();
 
+    let max_concurrent = {
+        let s = ctx.settings.read().await;
+        s.downloads.max_concurrent as usize
+    };
+
     let results: Vec<_> = stream::iter(tracks)
         .map(|track_info| {
-            let (client, http, storage, dm, mp, total_pb, config) = (
+            let (client, http, storage, dm, mp, total_pb, settings) = (
                 Arc::clone(&ctx.client),
                 http.clone(),
                 Arc::clone(&ctx.storage),
                 ctx.dm.clone(),
                 mp.clone(),
                 total_pb.clone(),
-                Arc::clone(&ctx.config),
+                Arc::clone(&ctx.settings),
             );
 
             async move {
                 let pb = create_spinner(&mp);
 
                 let filename = clean_filename(&track_info.filename);
-                let output_dir = storage.read().await.base_path.clone();
+
+                let output_dir = {
+                    let s = settings.read().await;
+                    s.downloads.output_path.clone()
+                };
+
                 let file_path = format!("{}/{}.mp3", output_dir, filename);
 
                 let ctx = track::Context {
@@ -62,7 +72,7 @@ pub(in crate::downloader) async fn run_parallel_download(
                     http: &http,
                     storage: &storage,
                     dm: dm.as_ref(),
-                    config: &config,
+                    settings: &settings,
                 };
 
                 let task = track::Task {
@@ -80,7 +90,7 @@ pub(in crate::downloader) async fn run_parallel_download(
                 result
             }
         })
-        .buffer_unordered(8)
+        .buffer_unordered(max_concurrent)
         .collect()
         .await;
 

@@ -2,10 +2,11 @@ use axum::{Json, http::StatusCode, response::IntoResponse};
 
 use crate::database::settings::{self, UserSettings};
 
+pub(crate) mod test;
+
 pub async fn get_settings() -> impl IntoResponse {
     match settings::get_settings() {
-        Ok(Some(s)) => (StatusCode::OK, Json(s)).into_response(),
-        Ok(None) => (StatusCode::NOT_FOUND, "Settings not found").into_response(),
+        Ok(s) => (StatusCode::OK, Json(s)).into_response(),
         Err(_) => (StatusCode::INTERNAL_SERVER_ERROR, "DB Error").into_response(),
     }
 }

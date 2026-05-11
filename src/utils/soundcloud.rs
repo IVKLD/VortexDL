@@ -1,9 +1,46 @@
-use std::time::Duration;
+use std::{sync::Arc, time::Duration};
 
 use anyhow::Result;
-use soundcloud_rs::Client;
+use soundcloud_rs::{Client, ClientBuilder};
 
-use crate::models::{ResolveQuery, ResolveResponse};
+use crate::{
+    database::settings::{self, UserSettings},
+    models::{ResolveQuery, ResolveResponse},
+};
+
+pub async fn init_client(settings: &mut UserSettings) -> Result<Arc<Client>> {
+    let mut builder = ClientBuilder::new()
+        .with_max_retries(settings.max_retries)
+        .with_retry_on_401(true);
+
+    let used_cache = settings.soundcloud.cached_client_id.is_some();
+    if let Some(ref cached_id) = settings.soundcloud.cached_client_id {
+        builder = builder.with_client_id(cached_id.clone());
+    }
+
+    let client = Arc::new(
+        builder
+            .build()
+            .await
+            .map_err(|e| anyhow::anyhow!("Failed to init SoundCloud client: {}", e))?,
+    );
+
+    if used_cache {
+        let is_healthy = client.health_check().await;
+
+        if !is_healthy {
+            client.refresh_client_id().await.ok();
+        }
+    }
+
+    let current_client_id = client.get_client_id_value().await;
+    if settings.soundcloud.cached_client_id.as_ref() != Some(&current_client_id) {
+        settings.soundcloud.cached_client_id = Some(current_client_id);
+        settings::update_settings(settings).ok();
+    }
+
+    Ok(client)
+}
 
 pub async fn resolve_url(client: &Client, url: &str) -> Result<ResolveResponse> {
     let response: ResolveResponse = client
@@ -18,10 +55,9 @@ pub async fn resolve_url(client: &Client, url: &str) -> Result<ResolveResponse> 
     Ok(response)
 }
 
-pub async fn fetch_artwork(client: &reqwest::Client, url: Option<&str>) -> Option<Vec<u8>> {
-    let url = url?.replace("-large.jpg", "-t500x500.jpg");
+pub async fn fetch_artwork(client: &reqwest::Client, url: &str) -> Option<Vec<u8>> {
     let resp = client
-        .get(&url)
+        .get(url)
         .timeout(Duration::from_secs(5))
         .send()
         .await

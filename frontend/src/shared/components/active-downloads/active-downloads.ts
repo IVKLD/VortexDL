@@ -1,6 +1,4 @@
 import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
-import { MatProgressBarModule } from '@angular/material/progress-bar';
-import { MatButtonModule } from '@angular/material/button';
 import {
     FixedSizeVirtualScrollStrategy,
     RxVirtualFor,
@@ -18,8 +16,6 @@ import { ActiveDownloadErrorsComponent } from './components/active-download-erro
         RxVirtualFor,
         FixedSizeVirtualScrollStrategy,
         RxVirtualScrollViewportComponent,
-        MatProgressBarModule,
-        MatButtonModule,
         ActiveDownloadItemComponent,
         ActiveDownloadErrorsComponent,
     ],

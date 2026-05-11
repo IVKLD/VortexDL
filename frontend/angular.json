@@ -36,7 +36,13 @@
             "styles": [
               "node_modules/material-symbols/rounded.css",
               "src/styles.scss"
-            ]
+            ],
+            "sourceMap": {
+              "scripts": true,
+              "styles": true,
+              "vendor": true
+            },
+            "namedChunks": true
           },
           "configurations": {
             "production": {
@@ -52,7 +58,18 @@
                   "maximumError": "8kB"
                 }
               ],
-              "outputHashing": "all"
+              "outputHashing": "all",
+              "sourceMap": {
+                "scripts": true,
+                "styles": true,
+                "vendor": true
+              },
+              "namedChunks": true,
+              "optimization": {
+                "scripts": true,
+                "styles": true,
+                "fonts": true
+              }
             },
             "development": {
               "optimization": false,

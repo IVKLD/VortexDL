@@ -21,7 +21,7 @@ pub async fn dispatch_download(
 ) -> Result<HashSet<i64>> {
     let discovery_ctx = DiscoveryContext {
         client: &ctx.client,
-        config: &ctx.config,
+        settings: &ctx.settings,
         dm: ctx.dm.as_ref(),
     };
 
@@ -44,7 +44,14 @@ pub async fn dispatch_download(
         let storage_read = ctx.storage.read().await;
         for track in all_tracks {
             remote_ids.insert(track.id);
-            if storage_read.tracks.contains_key(&track.id) {
+
+            let already_exists = if let Some(data) = storage_read.tracks.get(&track.id) {
+                data.path.exists()
+            } else {
+                false
+            };
+
+            if already_exists {
                 println!("{} Skipping: {}", "[SKIP]".yellow().bold(), track.filename);
                 skipped += 1;
             } else {

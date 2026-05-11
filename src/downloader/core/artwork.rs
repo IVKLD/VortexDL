@@ -9,5 +9,5 @@ pub(super) fn start_artwork_download(
 ) -> JoinHandle<Option<Vec<u8>>> {
     let http = http.clone();
 
-    tokio::spawn(async move { fetch_art(&http, Some(&url)).await })
+    tokio::spawn(async move { fetch_art(&http, &url).await })
 }

@@ -1,16 +1,17 @@
-use std::{fs, net::SocketAddr, path::Path, sync::Arc};
+use std::{fs, net::SocketAddr};
 
 use anyhow::Result;
 use axum::serve;
 use clap::Parser;
-use soundcloud_rs::ClientBuilder;
 use tokio::net::TcpListener;
 
-use crate::{api::state::AppState, cli::Args, config::AppConfig, ui::create_standalone_spinner};
+use crate::{
+    api::state::AppState, cli::Args, database::settings::UserSettings,
+    ui::create_standalone_spinner, utils::soundcloud::init_client,
+};
 
 mod api;
 mod cli;
-mod config;
 mod constants;
 mod database;
 mod downloader;
@@ -25,34 +26,41 @@ static ALLOC: mimalloc::MiMalloc = mimalloc::MiMalloc;
 #[tokio::main]
 async fn main() -> Result<()> {
     setup_tracing();
+    database::init()?;
 
     let args = Args::parse();
     let state = bootstrap_state(&args).await?;
+
+    run_background_indexing(&state);
 
     execute_app(state, args).await
 }
 
 async fn bootstrap_state(args: &Args) -> Result<AppState> {
-    let config = Arc::new(AppConfig::default());
-    fs::create_dir_all(&args.output)?;
+    let mut settings = database::settings::get_settings()?;
+    let output_dir = resolve_output_dir(args, &settings);
+    fs::create_dir_all(&output_dir)?;
 
-    let pb_client = create_standalone_spinner("Initializing SC client...");
-    let client = setup_soundcloud_client(&config).await?;
-    pb_client.finish_with_message("SC client initialized successfully");
+    let pb = create_standalone_spinner("Initializing SoundCloud...");
+    let client = init_client(&mut settings).await?;
+    pb.finish_with_message("SoundCloud ready");
 
-    database::init()?;
+    Ok(AppState::new(client, output_dir, settings))
+}
 
-    let state = AppState::new(client, config, args.output.clone());
+fn run_background_indexing(state: &AppState) {
+    let storage = state.storage.clone();
+    tokio::spawn(async move {
+        storage::MusicStorage::run_background_indexing(storage).await;
+    });
+}
 
-    let pb_idx = create_standalone_spinner("Indexing local tracks...");
-    state
-        .storage
-        .write()
-        .await
-        .indexing(Path::new(&args.output));
-    pb_idx.finish_and_clear();
-
-    Ok(state)
+fn resolve_output_dir(args: &Args, settings: &UserSettings) -> String {
+    if !args.output.is_empty() {
+        args.output.clone()
+    } else {
+        settings.downloads.output_path.clone()
+    }
 }
 
 async fn execute_app(state: AppState, args: Args) -> Result<()> {
@@ -73,27 +81,12 @@ fn setup_tracing() {
         .init();
 }
 
-async fn setup_soundcloud_client(config: &AppConfig) -> Result<Arc<soundcloud_rs::Client>> {
-    let client = ClientBuilder::new()
-        .with_max_retries(config.max_retries)
-        .with_retry_on_401(true)
-        .build()
-        .await?;
-    Ok(Arc::new(client))
-}
-
 async fn run_server(state: AppState, args: &Args) -> Result<()> {
     let router = api::build_router(state, args.serve).await;
-
     let addr: SocketAddr = format!("{}:{}", args.host, args.port).parse()?;
     let listener = TcpListener::bind(addr).await?;
 
-    println!(
-        "REST API listening on http://{}:{}/api",
-        args.host, args.port
-    );
-    println!("WebUI available at http://{}:{}", args.host, args.port);
-
+    println!("VortexLD running on http://{}", addr);
     serve(listener, router).await?;
     Ok(())
 }
@@ -102,11 +95,10 @@ async fn run_cli_download(state: AppState, url: &str, args: &Args) -> Result<()>
     let ctx = downloader::Context {
         storage: state.storage.clone(),
         client: state.client.clone(),
-        config: state.config.clone(),
         dm: None,
+        settings: state.settings.clone(),
     };
 
     downloader::dispatch_download(url, args.sync_mode.clone(), &ctx).await?;
-
     Ok(())
 }

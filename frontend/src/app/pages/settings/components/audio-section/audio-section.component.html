@@ -1,0 +1,19 @@
+<section class="settings-section">
+    <h2>
+        <mat-icon>audiotrack</mat-icon>
+        Audio & Metadata
+    </h2>
+    <div class="section-content controls-row">
+        <mat-slide-toggle [formField]="form().embedMetadata">
+            Embed ID3 Metadata & Artwork
+        </mat-slide-toggle>
+
+        <mat-form-field appearance="outline">
+            <mat-label>Artwork Quality</mat-label>
+            <mat-select [formField]="form().coverArtQuality">
+                <mat-option value="standard">Standard (500x500)</mat-option>
+                <mat-option value="high">High Definition (Original)</mat-option>
+            </mat-select>
+        </mat-form-field>
+    </div>
+</section>

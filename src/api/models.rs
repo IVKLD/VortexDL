@@ -1,11 +1,13 @@
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct DownloadRequest {
     pub url: String,
 }
 
 #[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
 pub struct ActionStatus {
     pub status: &'static str,
     pub message: String,
@@ -26,6 +28,7 @@ pub const KNOWN_EXTENSIONS: [TrackExtension; 3] = [
 ];
 
 #[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
 pub struct TrackRecord {
     pub id: u32,
     pub filename: String,
@@ -34,9 +37,11 @@ pub struct TrackRecord {
     pub artwork_url: Option<String>,
     pub source_url: Option<String>,
     pub created_at: u64,
+    pub size: u64,
 }
 
 #[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
 pub struct HealthResponse {
     pub status: &'static str,
 }

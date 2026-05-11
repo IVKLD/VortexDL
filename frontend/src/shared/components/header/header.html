@@ -9,20 +9,18 @@
             <span class="separator">//</span>
             <div class="stats-value">
                 <span class="label-text">Tracks</span>
-                <span>{{ musicState.sortedTracks().length }}</span>
+                <span [class.skeleton]="musicState.isLoading()">
+                {{ musicState.isLoading() ? '' : musicState.sortedTracks().length }}
+            </span>
             </div>
         }
     </div>
 
     @if (hasFeature(Feature.Search)) {
         <div class="search-area">
-            <mat-form-field appearance="outline" subscriptSizing="dynamic">
+            <mat-form-field subscriptSizing="dynamic">
                 <mat-icon matPrefix>search</mat-icon>
-                <input (ngModelChange)="onSearch($event)"
-                       [ngModel]="musicState.searchQuery()"
-                       matInput
-                       placeholder="Search..."
-                />
+                <input [formField]="searchForm" matInput placeholder="Search..."/>
             </mat-form-field>
         </div>
     }
@@ -44,28 +42,31 @@
                                 Recent
                             }
                         }
-                    </span>
+                     </span>
                 </button>
 
+                <mat-divider vertical/>
+
                 <mat-menu #sortMenu="matMenu">
-                    <button (click)="setSort(SortOption.NAME_ASC)" mat-menu-item>
-                        <mat-icon>sort_by_alpha</mat-icon>
-                        <span>Alphabetical (A-Z)</span>
-                    </button>
-                    <button (click)="setSort(SortOption.NAME_DESC)" mat-menu-item>
-                        <mat-icon>sort_by_alpha</mat-icon>
-                        <span>Alphabetical (Z-A)</span>
-                    </button>
-                    <button (click)="setSort(SortOption.DATE)" mat-menu-item>
-                        <mat-icon>schedule</mat-icon>
-                        <span>Date Added</span>
-                    </button>
+                    @for (option of sortOptions; track option.value) {
+                        <button (click)="setSort(option.value)" mat-menu-item>
+                            <mat-icon>{{ option.icon }}</mat-icon>
+                            <span>{{ option.label }}</span>
+                        </button>
+                    }
                 </mat-menu>
             </div>
         }
 
+        @if (hasFeature(Feature.Sync)) {
+            <button (click)="syncAll()" [disabled]="isSyncing()" mat-flat-button>
+                <mat-icon [class.rotating]="isSyncing()">sync</mat-icon>
+                <span>{{ isSyncing() ? 'Syncing' : 'Sync' }}</span>
+            </button>
+        }
+
         @if (hasFeature(Feature.Download)) {
-            <button (click)="openDownloadDialog()" color="primary" mat-flat-button>
+            <button (click)="openDownloadDialog()" mat-flat-button>
                 <mat-icon>add</mat-icon>
                 <span>Download</span>
             </button>

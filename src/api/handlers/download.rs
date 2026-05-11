@@ -47,8 +47,8 @@ pub async fn start_download(
         let ctx = downloader::Context {
             storage: state.storage.clone(),
             client: state.client.clone(),
-            config: state.config.clone(),
             dm: Some(state.download_manager.clone()),
+            settings: state.settings.clone(),
         };
 
         if let Err(e) = downloader::dispatch_download(&url, SyncMode::Silent, &ctx).await {
@@ -80,13 +80,24 @@ pub async fn download_events(
     let state = state.clone();
 
     let stream = async_stream::stream! {
+        yield Ok(Event::default().json_data(ServerEvent::Message {
+            message: "Connected to event stream".to_string(),
+            level: "info".to_string()
+        }).unwrap());
+
         let queue = state.download_manager.get_queue().await;
         for item in queue {
             if matches!(item.status, DownloadStatus::Queued | DownloadStatus::Downloading) {
                 yield Ok(Event::default().json_data(ServerEvent::TrackUpdate { item }).unwrap());
             }
         }
-        while let Ok(event) = rx.recv().await { yield Ok(Event::default().json_data(event).unwrap()); }
+        loop {
+            match rx.recv().await {
+                Ok(event) => yield Ok(Event::default().json_data(event).unwrap()),
+                Err(tokio::sync::broadcast::error::RecvError::Lagged(_)) => continue,
+                Err(_) => break,
+            }
+        }
     };
 
     Sse::new(stream).keep_alive(KeepAlive::default())
