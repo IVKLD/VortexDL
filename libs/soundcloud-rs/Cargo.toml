@@ -1,0 +1,15 @@
+[package]
+name = "soundcloud-rs"
+version = "0.14.0"
+edition = "2024"
+license = "MIT"
+description = "A simple Rust client for the SoundCloud API"
+repository = "https://github.com/emilsharkov/soundcloud-rs"
+
+[dependencies]
+regex = "1.12.3"
+reqwest = { version = "0.13", default-features = false, features = ["json", "stream", "rustls", "query"] }
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+tokio = { version = "1", features = ["rt-multi-thread", "macros", "sync"] }
+ffmpeg-sidecar = "2.5.1"
