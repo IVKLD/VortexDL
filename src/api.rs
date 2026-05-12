@@ -31,7 +31,7 @@ pub async fn build_router(state: AppState, serve_frontend: bool) -> Router {
         .route("/downloads/indexing_tracks", get(indexing_tracks))
         .nest("/settings", settings_routes());
 
-    let mut router = Router::new().nest("/api", api_routes).with_state(state);
+    let router = Router::new().nest("/api", api_routes).with_state(state);
 
     if serve_frontend {
         #[cfg(feature = "web")]
