@@ -38,9 +38,19 @@ pub async fn fetch_likes(ctx: &DiscoveryContext<'_>, url: &str) -> Result<Vec<Tr
 
         for item in res.collection {
             let id = item.track.id;
+            let author = item
+                .track
+                .user
+                .as_ref()
+                .map(|u| u.username.as_str())
+                .unwrap_or("Unknown");
+
+            let title = item.track.title.as_str();
+            let filename = format!("{} - {}", author, title);
+
             all_tracks.push(TrackDownload {
                 id,
-                filename: item.track.title.clone(),
+                filename,
                 artwork_url: item.track.artwork_url.clone(),
             });
         }

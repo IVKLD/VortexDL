@@ -48,7 +48,9 @@ pub(in crate::downloader) async fn initiate_track_download(
     task.pb
         .set_message(format!("Downloading Music & Art: {}", task.filename));
 
-    let artwork_url = task.artwork_url.map(|url| url.replace("-large", "-t1080x1080"));
+    let artwork_url = task
+        .artwork_url
+        .map(|url| url.replace("-large", "-t1080x1080"));
     let artwork_task = artwork_url
         .as_ref()
         .map(|url| start_artwork_download(ctx.http, url.clone()));

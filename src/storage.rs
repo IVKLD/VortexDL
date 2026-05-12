@@ -6,6 +6,7 @@ use std::{
 };
 
 use anyhow::Result;
+use tokio::{sync::RwLock, task::spawn_blocking};
 
 use crate::{
     constants::{SC_ARTWORK_URL, SC_IDENTIFIER, SC_SOURCE_URL},
@@ -55,13 +56,13 @@ impl MusicStorage {
         self.tracks.remove(&id);
     }
 
-    pub async fn run_background_indexing(storage: Arc<tokio::sync::RwLock<Self>>) {
+    pub async fn run_background_indexing(storage: Arc<RwLock<Self>>) {
         let root = {
             let s = storage.read().await;
             PathBuf::from(&s.base_path)
         };
 
-        let result = tokio::task::spawn_blocking(move || {
+        let result = spawn_blocking(move || {
             let mut new_tracks = HashMap::new();
             let mut seen_ids = HashSet::new();
             let mut stack = vec![root];

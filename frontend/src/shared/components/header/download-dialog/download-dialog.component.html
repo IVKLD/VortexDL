@@ -7,7 +7,7 @@
                 <mat-label>SoundCloud URL</mat-label>
                 <input
                     (keyup.enter)="onDownload()"
-                    [formControl]="url"
+                    [formField]="urlForm"
                     matInput
                     placeholder="Paste link (track, playlist, or user)"
                 />
@@ -36,6 +36,6 @@
 
     <mat-dialog-actions class="dialog-actions">
         <button mat-button mat-dialog-close>Cancel</button>
-        <button (click)="onDownload()" [disabled]="url.invalid" mat-flat-button>Download</button>
+        <button (click)="onDownload()" [disabled]="urlForm().invalid()" mat-flat-button>Download</button>
     </mat-dialog-actions>
 </div>

@@ -8,7 +8,6 @@ import { MusicTracksViewState, MusicSortOption } from '@app/pages/music-tracks-v
 import { Router, NavigationEnd, ActivatedRoute } from '@angular/router';
 import { MatFormField, MatPrefix } from '@angular/material/form-field';
 import { MatInput } from '@angular/material/input';
-import { FormsModule } from '@angular/forms';
 import { HeaderFeature, HeaderConfig } from './header.types';
 import { distinctUntilChanged, filter, map } from 'rxjs';
 import { takeUntilDestroyed, toObservable, toSignal } from '@angular/core/rxjs-interop';
@@ -23,7 +22,7 @@ import { DownloadTrackingService } from '@app/services/download-tracking.service
 
 @Component({
     selector: 'app-header',
-    imports: [MatIcon, MatButton, MatMenu, MatMenuItem, MatMenuTrigger, MatFormField, MatInput, MatPrefix, FormsModule, MatDivider, FormField],
+    imports: [MatIcon, MatButton, MatMenu, MatMenuItem, MatMenuTrigger, MatFormField, MatInput, MatPrefix, MatDivider, FormField],
     templateUrl: './header.html',
     styleUrl: './header.scss',
     changeDetection: ChangeDetectionStrategy.OnPush,

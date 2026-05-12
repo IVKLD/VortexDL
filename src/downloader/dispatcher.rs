@@ -14,13 +14,9 @@ use crate::{
     models::SyncMode,
 };
 
-pub async fn dispatch_download(
-    url: &str,
-    sync_mode: SyncMode,
-    ctx: &Context,
-) -> Result<HashSet<i64>> {
+pub async fn dispatch_download(url: &str, sync_mode: SyncMode, ctx: &Context) -> Result<()> {
     let discovery_ctx = DiscoveryContext {
-        client: &ctx.client,
+        client: &*ctx.client,
         settings: &ctx.settings,
         dm: ctx.dm.as_ref(),
     };
@@ -31,13 +27,11 @@ pub async fn dispatch_download(
         "user" | "likes" => fetch_likes(&discovery_ctx, url).await?,
         "playlist" => fetch_playlist(&discovery_ctx, url).await?,
         "track" => vec![fetch_track(&discovery_ctx, resolve_res.id).await?],
-        _ => {
-            return Err(anyhow!("Unsupported resource kind: {}", resolve_res.kind));
-        }
+        _ => return Err(anyhow!("Unsupported resource kind: {}", resolve_res.kind)),
     };
 
-    let mut to_download = Vec::new();
-    let mut remote_ids = HashSet::new();
+    let mut to_download = Vec::with_capacity(all_tracks.len());
+    let mut remote_ids = HashSet::with_capacity(all_tracks.len());
     let mut skipped = 0;
 
     {
@@ -83,5 +77,5 @@ pub async fn dispatch_download(
         .sync_storage(url, &remote_ids, &sync_mode)
         .await?;
 
-    Ok(remote_ids)
+    Ok(())
 }

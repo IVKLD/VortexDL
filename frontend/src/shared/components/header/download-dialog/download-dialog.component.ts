@@ -1,5 +1,4 @@
-import { ChangeDetectionStrategy, Component, inject, OnInit } from '@angular/core';
-import { FormControl, ReactiveFormsModule, Validators } from '@angular/forms';
+import { ChangeDetectionStrategy, Component, inject, OnInit, signal } from '@angular/core';
 import { MatButton, MatIconButton } from '@angular/material/button';
 import { MatDialogActions, MatDialogClose, MatDialogContent, MatDialogTitle } from '@angular/material/dialog';
 import { MatFormField, MatHint, MatLabel } from '@angular/material/form-field';
@@ -7,17 +6,17 @@ import { MatInput } from '@angular/material/input';
 import { MatList, MatListItem } from '@angular/material/list';
 import { MusicTracksViewService } from '@app/pages/music-tracks-view/music-tracks-view.service';
 import { DialogRef } from '@angular/cdk/dialog';
-import { urlValidator } from '@shared/validators/url.validator';
 import { DownloadProgressSnackbar } from '@shared/components/download-progress-snackbar/download-progress-snackbar';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { MatIcon } from '@angular/material/icon';
+import { form, FormField, required } from '@angular/forms/signals';
 
 const STORAGE_KEY = 'vortexdl_download_history';
 
 @Component({
     selector: 'app-download-dialog',
     imports: [
-        ReactiveFormsModule,
+        FormField,
         MatDialogTitle,
         MatDialogContent,
         MatFormField,
@@ -41,8 +40,11 @@ export class DownloadDialogComponent implements OnInit {
     private readonly _dialogRef = inject(DialogRef);
     private readonly _snackBar = inject(MatSnackBar);
 
-    public url = new FormControl<string>('', [Validators.required, urlValidator()]);
     public history: string[] = [];
+    private readonly _urlValue = signal('');
+    public readonly urlForm = form(this._urlValue, (f) => {
+        required(f, { message: 'URL is required' });
+    });
 
     ngOnInit() {
         this.loadHistory();
@@ -67,7 +69,7 @@ export class DownloadDialogComponent implements OnInit {
     }
 
     protected selectHistory(item: string) {
-        this.url.setValue(item);
+        this.urlForm().reset(item);
     }
 
     removeFromHistory(item: string) {
@@ -76,7 +78,8 @@ export class DownloadDialogComponent implements OnInit {
     }
 
     protected onDownload() {
-        const url = this.url.getRawValue()!;
+        if (this.urlForm().invalid()) return;
+        const url = this.urlForm().value();
 
         this.addToHistory(url);
         this._trackService.download(url).subscribe({

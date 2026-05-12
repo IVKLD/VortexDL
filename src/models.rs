@@ -53,6 +53,12 @@ pub struct TrackInfo {
     pub id: i64,
     pub title: String,
     pub artwork_url: Option<String>,
+    pub user: Option<UserInfo>,
+}
+
+#[derive(Deserialize, Debug)]
+pub struct UserInfo {
+    pub username: String,
 }
 
 #[derive(Serialize)]

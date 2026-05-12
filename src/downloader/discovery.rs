@@ -17,9 +17,7 @@ pub mod likes;
 pub mod playlist;
 pub mod track;
 
-pub use crate::downloader::discovery::{
-    likes::fetch_likes, playlist::fetch_playlist, track::fetch_track,
-};
+pub use self::{likes::fetch_likes, playlist::fetch_playlist, track::fetch_track};
 
 pub struct DiscoveryContext<'a> {
     pub client: &'a Client,

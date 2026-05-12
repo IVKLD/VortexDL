@@ -6,7 +6,6 @@ import { Sidebar } from '@shared/components/sidebar/sidebar';
     selector: 'app-root',
     templateUrl: './app.html',
     styleUrl: './app.scss',
-    standalone: true,
     imports: [RouterOutlet, Sidebar],
 })
 export class App { }
