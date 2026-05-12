@@ -30,6 +30,13 @@ fn main() {
         if !status.success() {
             panic!("yarn build failed");
         }
+    } else {
+        // Create dummy directory to satisfy rust-embed during lint/test
+        let dist_path = "frontend/dist/voltexdl/browser";
+        if !std::path::Path::new(dist_path).exists() {
+            std::fs::create_dir_all(dist_path).unwrap();
+            std::fs::write(format!("{}/index.html", dist_path), "Dummy").unwrap();
+        }
     }
 
     if is_release {
