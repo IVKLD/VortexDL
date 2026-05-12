@@ -1,5 +1,5 @@
-import { HttpInterceptorFn } from '@angular/common/http';
-import { retry, timer } from 'rxjs';
+import {HttpInterceptorFn} from '@angular/common/http';
+import {retry, timer} from 'rxjs';
 
 export const retryInterceptor: HttpInterceptorFn = (req, next) => {
     return next(req).pipe(
@@ -11,7 +11,7 @@ export const retryInterceptor: HttpInterceptorFn = (req, next) => {
                     console.warn(`HTTP ${error.status} on ${req.url}. Retrying attempt ${retryCount} in ${delayMs}ms...`);
                     return timer(delayMs);
                 }
-                
+
                 throw error;
             }
         })

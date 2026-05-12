@@ -12,9 +12,12 @@ use tokio::{sync::RwLock, task::JoinHandle, time::sleep};
 use crate::{
     api::download_manager::{DownloadManager, DownloadStatus},
     database::settings::UserSettings,
-    downloader::core::{
-        artwork::start_artwork_download, hls::try_download_hls,
-        progressive::try_download_progressive,
+    downloader::{
+        core::{
+            artwork::start_artwork_download, hls::try_download_hls,
+            progressive::try_download_progressive,
+        },
+        utils::clean_filename,
     },
     storage::MusicStorage,
     utils::metadata::{SaveTrackArgs, save_track_info},
@@ -30,11 +33,18 @@ pub(in crate::downloader) struct Context<'a> {
 
 pub(in crate::downloader) struct Task<'a> {
     pub id: i64,
-    pub filename: String,
+    pub title: &'a str,
+    pub artist: &'a str,
     pub artwork_url: Option<&'a str>,
     pub pb: &'a indicatif::ProgressBar,
     pub output_dir: String,
     pub file_path: String,
+}
+
+impl Task<'_> {
+    pub fn filename(&self) -> String {
+        clean_filename(&format!("{} - {}", self.artist, self.title))
+    }
 }
 
 pub(in crate::downloader) async fn initiate_track_download(
@@ -46,7 +56,7 @@ pub(in crate::downloader) async fn initiate_track_download(
     }
 
     task.pb
-        .set_message(format!("Downloading Music & Art: {}", task.filename));
+        .set_message(format!("Downloading Music & Art: {}", task.filename()));
 
     let artwork_url = task
         .artwork_url
@@ -57,13 +67,19 @@ pub(in crate::downloader) async fn initiate_track_download(
 
     match run_download(ctx, task).await {
         Ok(source_url) => {
-            task.pb
-                .println(format!("{} Done: {}", "[OK]".green().bold(), task.filename));
+            task.pb.println(format!(
+                "{} Done: {}",
+                "[OK]".green().bold(),
+                task.filename()
+            ));
 
             let storage = Arc::clone(ctx.storage);
             let dm = ctx.dm.map(Arc::clone);
             let id = task.id;
             let file_path = task.file_path.clone();
+
+            let title = task.title.to_string();
+            let artist = task.artist.to_string();
 
             Some(tokio::spawn(async move {
                 let art_data = if let Some(handle) = artwork_task {
@@ -76,11 +92,15 @@ pub(in crate::downloader) async fn initiate_track_download(
                 let sc_id_str = id.to_string();
                 let artwork_url_clone = artwork_url.clone();
                 let source_url_clone = source_url.clone();
+                let title_clone = title.clone();
+                let artist_clone = artist.clone();
 
                 let _ = tokio::task::spawn_blocking(move || {
                     let args = SaveTrackArgs {
                         path: &file_path_clone,
                         sc_id: &sc_id_str,
+                        title: &title_clone,
+                        artist: &artist_clone,
                         artwork_url: artwork_url_clone.as_deref(),
                         source_url: source_url_clone.as_deref(),
                         artwork_data: art_data,
@@ -92,6 +112,8 @@ pub(in crate::downloader) async fn initiate_track_download(
                 storage.write().await.update_track(
                     id,
                     PathBuf::from(&file_path),
+                    artist,
+                    title,
                     artwork_url,
                     source_url.clone(),
                 );
@@ -114,7 +136,7 @@ pub(in crate::downloader) async fn initiate_track_download(
             task.pb.println(format!(
                 "{} Failed: {} — {:#}",
                 "[ERROR]".red().bold(),
-                task.filename,
+                task.filename(),
                 e
             ));
             None
@@ -163,8 +185,11 @@ async fn run_download(ctx: &Context<'_>, task: &Task<'_>) -> Result<Option<Strin
                 retries -= 1;
 
                 if retries > 0 {
-                    task.pb
-                        .set_message(format!("Retrying ({} left): {}", retries, task.filename));
+                    task.pb.set_message(format!(
+                        "Retrying ({} left): {}",
+                        retries,
+                        task.filename()
+                    ));
                     sleep(Duration::from_secs(2)).await;
                 }
             }

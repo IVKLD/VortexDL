@@ -1,11 +1,11 @@
-import { HttpClient } from '@angular/common/http';
-import { inject, Injectable } from '@angular/core';
-import { MatSnackBar } from '@angular/material/snack-bar';
-import { catchError, tap, throwError } from 'rxjs';
-import { UserSettingsRdo } from './models/user-settings.rdo';
-import { UserSettingsDto } from './models/user-settings.dto';
+import {HttpClient} from '@angular/common/http';
+import {inject, Injectable} from '@angular/core';
+import {MatSnackBar} from '@angular/material/snack-bar';
+import {catchError, tap, throwError} from 'rxjs';
+import {UserSettingsRdo} from './models/user-settings.rdo';
+import {UserSettingsDto} from './models/user-settings.dto';
 
-@Injectable({ providedIn: 'root' })
+@Injectable({providedIn: 'root'})
 export class SettingsService {
     private readonly _http = inject(HttpClient);
     private readonly _snack = inject(MatSnackBar);
@@ -25,7 +25,7 @@ export class SettingsService {
     }
 
     public testSoundCloudUrl(url: string) {
-        return this._http.post<string>('/settings/test/soundcloud', { url }).pipe(
+        return this._http.post<string>('/settings/test/soundcloud', {url}).pipe(
             tap(() => this._snack.open('SoundCloud URL is valid', 'OK')),
             catchError((error) => {
                 const message = error.error || 'Invalid configuration';

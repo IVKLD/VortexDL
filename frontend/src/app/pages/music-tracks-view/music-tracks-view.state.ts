@@ -1,5 +1,5 @@
 import { computed, Injectable, signal } from '@angular/core';
-import { Track } from './music-tracks-view.service';
+import { Track } from '@shared/models/track.model';
 import Fuse from 'fuse.js';
 
 export enum MusicSortOption {
@@ -13,26 +13,23 @@ export enum MusicSortOption {
 })
 export class MusicTracksViewState {
     private readonly _isLoading = signal<boolean>(true);
+    public readonly isLoading = this._isLoading.asReadonly();
     private readonly _tracks = signal<Track[]>([]);
     private readonly _sortOption = signal<MusicSortOption>(MusicSortOption.DATE);
-    private readonly _searchQuery = signal<string>('');
-
-    public readonly isLoading = this._isLoading.asReadonly();
-
     public readonly sortOption = this._sortOption.asReadonly();
+    private readonly _searchQuery = signal<string>('');
     public readonly searchQuery = this._searchQuery.asReadonly();
 
-    private readonly _fuse = computed(
-        () =>
-            new Fuse(this._tracks(), {
-                keys: [
-                    { name: 'filename', weight: 1 },
-                    { name: 'album', weight: 0.3 },
-                ],
-                threshold: 0.3,
-                distance: 100,
-                ignoreLocation: true,
-            }),
+    private readonly _fuse = computed(() =>
+        new Fuse(this._tracks(), {
+            keys: [
+                { name: 'title', weight: 1 },
+                { name: 'artist', weight: 0.7 },
+            ],
+            threshold: 0.3,
+            distance: 100,
+            ignoreLocation: true,
+        })
     );
 
     public readonly sortedTracks = computed(() => {
@@ -49,9 +46,9 @@ export class MusicTracksViewState {
 
         switch (option) {
             case MusicSortOption.NAME_ASC:
-                return tracks.sort((a, b) => a.filename.localeCompare(b.filename));
+                return tracks.sort((a, b) => a.title.localeCompare(b.title));
             case MusicSortOption.NAME_DESC:
-                return tracks.sort((a, b) => b.filename.localeCompare(a.filename));
+                return tracks.sort((a, b) => b.title.localeCompare(a.title));
             case MusicSortOption.DATE:
                 return tracks.sort((a, b) => b.createdAt - a.createdAt);
             default:
@@ -60,7 +57,7 @@ export class MusicTracksViewState {
     });
 
     public set setTracks(value: Track[]) {
-        this._tracks.set(this.normalizeTracks(value));
+        this._tracks.set(value);
         this._isLoading.set(false);
     }
 
@@ -77,25 +74,11 @@ export class MusicTracksViewState {
     }
 
     public addTrack(music: Track) {
-        this._tracks.update(data => [...data, this.normalizeTrack(music)]);
+        this._tracks.update(data => [...data, music]);
     }
 
     public removeTrack(music: Track) {
         this._tracks.update(data => data.filter(item => item.id !== music.id));
-    }
-
-    /** Clean up and normalize track list */
-    private normalizeTracks(tracks: Track[]): Track[] {
-        return tracks.map(t => this.normalizeTrack(t));
-    }
-
-    /** Remove redundant spaces for consistent sorting and searching */
-    private normalizeTrack(track: Track): Track {
-        return {
-            ...track,
-            filename: track.filename.trim(),
-            album: track.album?.trim(),
-        };
     }
 }
 

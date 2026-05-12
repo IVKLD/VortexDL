@@ -12,8 +12,10 @@ pub(super) async fn try_download_hls(
     track: &Track,
     sc_id: &Identifier,
 ) -> Result<()> {
+    let filename = task.filename();
+
     task.pb
-        .set_message(format!("Downloading Music & Art (HLS): {}", task.filename));
+        .set_message(format!("Downloading Music & Art (HLS): {}", filename));
 
     ctx.client
         .download_track(
@@ -21,7 +23,7 @@ pub(super) async fn try_download_hls(
             sc_id,
             Some(&StreamType::Hls),
             Some(&task.output_dir),
-            Some(&task.filename),
+            Some(&filename),
         )
         .await
         .map_err(|e| anyhow!("HLS download failed: {}", e))?;

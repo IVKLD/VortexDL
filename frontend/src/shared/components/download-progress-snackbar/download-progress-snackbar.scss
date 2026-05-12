@@ -51,7 +51,12 @@
   color: #ffffff;
   font-weight: 500;
 }
+
 @keyframes snake-run {
-  0% { stroke-dashoffset: 0; }
-  100% { stroke-dashoffset: -100; }
+  0% {
+    stroke-dashoffset: 0;
+  }
+  100% {
+    stroke-dashoffset: -100;
+  }
 }

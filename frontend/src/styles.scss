@@ -81,7 +81,7 @@ mat-form-field {
   --mat-form-field-outlined-container-shape: 5em;
 
   .mdc-text-field--outlined {
-    padding-right: calc(min(16px, var(--mat-form-field-outlined-container-shape, var(--mat-sys-corner-extra-small)))  * 2);
+    padding-right: calc(min(16px, var(--mat-form-field-outlined-container-shape, var(--mat-sys-corner-extra-small))) * 2);
   }
 
   .mdc-text-field--outlined .mdc-notched-outline .mdc-notched-outline__leading {

@@ -1,8 +1,4 @@
-import { pattern, required as ngRequired, SchemaPath } from '@angular/forms/signals';
-
-export const required = (path: SchemaPath<any>, message: string) => {
-    ngRequired(path, { message });
-};
+import {pattern, SchemaPath} from '@angular/forms/signals';
 
 export const soundCloudUrl = (path: SchemaPath<string>) => {
     pattern(path, /^https?:\/\/(www\.)?soundcloud\.com\/[a-z0-9\-_]+(\/.*)?$/i, {

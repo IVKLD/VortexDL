@@ -1,58 +1,62 @@
 .settings-section {
-    h2 {
-        display: flex;
-        align-items: center;
-        gap: 12px;
-        margin: 0 0 24px;
-        font-size: 1.1rem;
-        font-weight: 600;
-        color: var(--mat-sys-primary);
+  h2 {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin: 0 0 24px;
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: var(--mat-sys-primary);
 
-        mat-icon {
-            font-size: 24px;
-            width: 24px;
-            height: 24px;
-        }
+    mat-icon {
+      font-size: 24px;
+      width: 24px;
+      height: 24px;
     }
+  }
 
-    .section-content {
-        display: flex;
-        flex-direction: column;
-        gap: 24px;
-    }
+  .section-content {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+  }
 }
 
 .field-group {
-    display: flex;
-    gap: 16px;
-    align-items: flex-start;
-    flex-wrap: wrap;
+  display: flex;
+  gap: 16px;
+  align-items: flex-start;
+  flex-wrap: wrap;
 
-    mat-form-field {
-        flex: 1;
-        min-width: 200px;
-    }
+  mat-form-field {
+    flex: 1;
+    min-width: 200px;
+  }
 
-    .full-width {
-        flex: 1 1 100%;
-    }
+  .full-width {
+    flex: 1 1 100%;
+  }
 
-    .test-btn {
-        height: 56px;
-        padding: 0 24px;
-        border-radius: 12px;
-    }
+  .test-btn {
+    height: 56px;
+    padding: 0 24px;
+    border-radius: 12px;
+  }
 }
 
 .toggle-row {
-    padding: 8px 0;
+  padding: 8px 0;
 }
 
 .rotating {
-    animation: rotate 2s linear infinite;
+  animation: rotate 2s linear infinite;
 }
 
 @keyframes rotate {
-    from { transform: rotate(0deg); }
-    to { transform: rotate(360deg); }
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
 }

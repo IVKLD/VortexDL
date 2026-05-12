@@ -1,24 +1,24 @@
-import { ChangeDetectionStrategy, Component, inject, signal, computed } from '@angular/core';
-import { MatButton } from '@angular/material/button';
-import { MatDialog } from '@angular/material/dialog';
-import { DownloadDialogComponent } from './download-dialog/download-dialog.component';
-import { MatIcon } from '@angular/material/icon';
-import { MatMenu, MatMenuItem, MatMenuTrigger } from '@angular/material/menu';
-import { MusicTracksViewState, MusicSortOption } from '@app/pages/music-tracks-view/music-tracks-view.state';
-import { Router, NavigationEnd, ActivatedRoute } from '@angular/router';
-import { MatFormField, MatPrefix } from '@angular/material/form-field';
-import { MatInput } from '@angular/material/input';
-import { HeaderFeature, HeaderConfig } from './header.types';
-import { distinctUntilChanged, filter, map } from 'rxjs';
-import { takeUntilDestroyed, toObservable, toSignal } from '@angular/core/rxjs-interop';
-import { FormField, form, debounce } from '@angular/forms/signals';
-import { RouteData } from '@app/app.routes';
-import { MatDivider } from "@angular/material/list";
-import { SettingsService } from '@app/pages/settings/settings.service';
-import { MusicTracksViewService } from '@app/pages/music-tracks-view/music-tracks-view.service';
-import { MatSnackBar } from '@angular/material/snack-bar';
-import { DownloadProgressSnackbar } from '@shared/components/download-progress-snackbar/download-progress-snackbar';
-import { DownloadTrackingService } from '@app/services/download-tracking.service';
+import {ChangeDetectionStrategy, Component, computed, inject, signal} from '@angular/core';
+import {MatButton} from '@angular/material/button';
+import {MatDialog} from '@angular/material/dialog';
+import {DownloadDialogComponent} from './download-dialog/download-dialog.component';
+import {MatIcon} from '@angular/material/icon';
+import {MatMenu, MatMenuItem, MatMenuTrigger} from '@angular/material/menu';
+import {MusicSortOption, MusicTracksViewState} from '@app/pages/music-tracks-view/music-tracks-view.state';
+import {ActivatedRoute, NavigationEnd, Router} from '@angular/router';
+import {MatFormField, MatPrefix} from '@angular/material/form-field';
+import {MatInput} from '@angular/material/input';
+import {HeaderConfig, HeaderFeature} from './header.types';
+import {distinctUntilChanged, filter, map} from 'rxjs';
+import {takeUntilDestroyed, toObservable, toSignal} from '@angular/core/rxjs-interop';
+import {debounce, form, FormField} from '@angular/forms/signals';
+import {RouteData} from '@app/app.routes';
+import {MatDivider} from "@angular/material/list";
+import {SettingsService} from '@app/pages/settings/settings.service';
+import {MusicTracksViewService} from '@app/pages/music-tracks-view/music-tracks-view.service';
+import {MatSnackBar} from '@angular/material/snack-bar';
+import {DownloadProgressSnackbar} from '@shared/components/download-progress-snackbar/download-progress-snackbar';
+import {DownloadTrackingService} from '@app/services/download-tracking.service';
 
 @Component({
     selector: 'app-header',
@@ -28,6 +28,14 @@ import { DownloadTrackingService } from '@app/services/download-tracking.service
     changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class Header {
+    protected readonly musicState = inject(MusicTracksViewState);
+    protected readonly Feature = HeaderFeature;
+    protected readonly SortOption = MusicSortOption;
+    protected readonly sortOptions = [
+        {label: 'Alphabetical (A-Z)', value: MusicSortOption.NAME_ASC, icon: 'sort_by_alpha'},
+        {label: 'Alphabetical (Z-A)', value: MusicSortOption.NAME_DESC, icon: 'sort_by_alpha'},
+        {label: 'Date Added', value: MusicSortOption.DATE, icon: 'schedule'},
+    ];
     private readonly _dialog = inject(MatDialog);
     private readonly _router = inject(Router);
     private readonly _route = inject(ActivatedRoute);
@@ -35,17 +43,6 @@ export class Header {
     private readonly _settingsService = inject(SettingsService);
     private readonly _snackBar = inject(MatSnackBar);
     private readonly _downloadTracking = inject(DownloadTrackingService);
-
-    protected readonly musicState = inject(MusicTracksViewState);
-    protected readonly Feature = HeaderFeature;
-    protected readonly SortOption = MusicSortOption;
-
-    protected readonly sortOptions = [
-        { label: 'Alphabetical (A-Z)', value: MusicSortOption.NAME_ASC, icon: 'sort_by_alpha' },
-        { label: 'Alphabetical (Z-A)', value: MusicSortOption.NAME_DESC, icon: 'sort_by_alpha' },
-        { label: 'Date Added', value: MusicSortOption.DATE, icon: 'schedule' },
-    ];
-    
     private readonly _localSyncing = signal(false);
     protected readonly isSyncing = computed(() => this._localSyncing() || this._downloadTracking.activeDownloads().length > 0);
 
@@ -53,14 +50,6 @@ export class Header {
     protected readonly searchForm = form(this._searchValue, (p) => {
         debounce(p, 200);
     });
-
-    constructor() {
-        toObservable(this.searchForm().value).pipe(
-            distinctUntilChanged(),
-            takeUntilDestroyed()
-        ).subscribe(query => this.musicState.setSearchQuery(query));
-    }
-
     private readonly _headerConfig$ = this._router.events.pipe(
         filter(event => event instanceof NavigationEnd),
         map(() => {
@@ -72,14 +61,15 @@ export class Header {
             return data.header;
         }),
     );
-
     protected readonly config = toSignal(this._headerConfig$, {
         initialValue: this.getInitialHeaderConfig(),
     });
 
-    private getInitialHeaderConfig(): HeaderConfig | undefined {
-        const data: RouteData = this._route.root.snapshot.firstChild?.data || {};
-        return data.header;
+    constructor() {
+        toObservable(this.searchForm().value).pipe(
+            distinctUntilChanged(),
+            takeUntilDestroyed()
+        ).subscribe(query => this.musicState.setSearchQuery(query));
     }
 
     protected hasFeature(feature: HeaderFeature): boolean {
@@ -91,7 +81,7 @@ export class Header {
         this._settingsService.getSettings().subscribe({
             next: (settings) => {
                 if (!settings.soundcloud.profileUrl) {
-                    this._snackBar.open('Please configure SoundCloud URL in settings first', 'OK', { duration: 5000 });
+                    this._snackBar.open('Please configure SoundCloud URL in settings first', 'OK', {duration: 5000});
                     this._localSyncing.set(false);
                     return;
                 }
@@ -123,5 +113,10 @@ export class Header {
 
     protected setSort(option: MusicSortOption) {
         this.musicState.setSortOption(option);
+    }
+
+    private getInitialHeaderConfig(): HeaderConfig | undefined {
+        const data: RouteData = this._route.root.snapshot.firstChild?.data || {};
+        return data.header;
     }
 }

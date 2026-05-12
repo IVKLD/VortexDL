@@ -24,22 +24,20 @@ jobs:
           cache: 'yarn'
           cache-dependency-path: frontend/yarn.lock
 
-      - name: Build Frontend
+      - name: Install just
+        uses: taiki-e/install-action@just
+
+      - name: Build Releases
         run: |
-          cd frontend
-          yarn install
-          yarn build
-          cd ..
+          just dist
+          mv target/release/vortex-dl target/release/vortex-dl-web
+          just build
 
-      - name: Patch Cargo.toml for CI
-        run: sed -i 's|path = "../soundcloud-rs"|git = "https://github.com/IVKLD/soundcloud-rs.git"|g' Cargo.toml
-
-      - name: Build Backend
-        run: cargo build --release
-
-      - name: Upload Release Asset
+      - name: Upload Release Assets
         uses: softprops/action-gh-release@v2
         with:
-          files: target/release/vortex-dl
+          files: |
+            target/release/vortex-dl-web
+            target/release/vortex-dl
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

@@ -1,5 +1,5 @@
-import { ChangeDetectionStrategy, Component, input, output } from '@angular/core';
-import { MatIcon } from '@angular/material/icon';
+import {ChangeDetectionStrategy, Component, input, output} from '@angular/core';
+import {MatIcon} from '@angular/material/icon';
 
 @Component({
     selector: 'app-active-download-errors',

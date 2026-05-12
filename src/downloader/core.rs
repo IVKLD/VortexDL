@@ -22,7 +22,8 @@ pub(in crate::downloader) mod verification;
 #[derive(Clone, Debug)]
 pub(in crate::downloader) struct TrackDownload {
     pub id: i64,
-    pub filename: String,
+    pub title: String,
+    pub artist: String,
     pub artwork_url: Option<String>,
 }
 
@@ -38,14 +39,17 @@ pub(in crate::downloader) async fn run_parallel_download(
         .build()
         .unwrap_or_default();
 
-    let max_concurrent = {
+    let (max_concurrent, output_path) = {
         let s = ctx.settings.read().await;
-        s.downloads.max_concurrent as usize
+        (
+            s.downloads.max_concurrent as usize,
+            s.downloads.output_path.clone(),
+        )
     };
 
     let results: Vec<_> = stream::iter(tracks)
         .map(|track_info| {
-            let (client, http, storage, dm, mp, total_pb, settings) = (
+            let (client, http, storage, dm, mp, total_pb, settings, output_dir) = (
                 Arc::clone(&ctx.client),
                 http.clone(),
                 Arc::clone(&ctx.storage),
@@ -53,17 +57,13 @@ pub(in crate::downloader) async fn run_parallel_download(
                 mp.clone(),
                 total_pb.clone(),
                 Arc::clone(&ctx.settings),
+                output_path.clone(),
             );
 
             async move {
                 let pb = create_spinner(&mp);
-
-                let filename = clean_filename(&track_info.filename);
-
-                let output_dir = {
-                    let s = settings.read().await;
-                    s.downloads.output_path.clone()
-                };
+                let filename =
+                    clean_filename(&format!("{} - {}", track_info.artist, track_info.title));
 
                 let file_path = format!("{}/{}.mp3", output_dir, filename);
 
@@ -77,7 +77,8 @@ pub(in crate::downloader) async fn run_parallel_download(
 
                 let task = track::Task {
                     id: track_info.id,
-                    filename,
+                    title: &track_info.title,
+                    artist: &track_info.artist,
                     artwork_url: track_info.artwork_url.as_deref(),
                     pb: &pb,
                     output_dir,

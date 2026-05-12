@@ -1,6 +1,10 @@
-(import
-  (fetchTarball {
-    url = "https://github.com/edolstra/flake-compat/archive/master.tar.gz";
-    sha256 = "1m96p9vsq27m8sh8fayizsc663673j9fhyv8n43y9q5b4idb639s";
-  })
-  { src = ./.; }).shellNix
+(import (
+  let
+    lock = builtins.fromJSON (builtins.readFile ./flake.lock);
+  in fetchTarball {
+    url = "https://github.com/edolstra/flake-compat/archive/${lock.nodes.flake-compat.locked.rev or "master"}.tar.gz";
+    sha256 = lock.nodes.flake-compat.locked.narHash or "";
+  }
+) {
+  src =  ./.;
+}).shellNix

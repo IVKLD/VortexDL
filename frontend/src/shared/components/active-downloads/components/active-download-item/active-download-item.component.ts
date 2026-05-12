@@ -13,10 +13,9 @@ import {MatIconButton} from "@angular/material/button";
     changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class ActiveDownloadItemComponent {
-    protected readonly DownloadStatus = DownloadStatus;
-
     public readonly item = input.required<DownloadItem>();
     public readonly remove = output<number>();
+    protected readonly DownloadStatus = DownloadStatus;
 
     protected onRemove() {
         this.remove.emit(this.item().id);

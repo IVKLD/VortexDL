@@ -1,8 +1,8 @@
-import {computed, inject, Injectable, NgZone, signal} from '@angular/core';
-import {HttpClient} from '@angular/common/http';
-import {MusicTracksViewService} from '../pages/music-tracks-view/music-tracks-view.service';
-import {MusicTracksViewState} from '../pages/music-tracks-view/music-tracks-view.state';
-import {TrackExtension} from '../models/track.model';
+import { computed, inject, Injectable, NgZone, signal } from '@angular/core';
+import { HttpClient } from '@angular/common/http';
+import { MusicTracksViewService } from '../pages/music-tracks-view/music-tracks-view.service';
+import { MusicTracksViewState } from '../pages/music-tracks-view/music-tracks-view.state';
+import { AudioFormat } from '@shared/models/track.model';
 
 export enum DownloadStatus {
     Queued = 'queued',
@@ -14,11 +14,12 @@ export enum DownloadStatus {
 export interface DownloadItem {
     id: number;
     title: string;
+    artist: string;
     status: DownloadStatus;
-    artworkUrl?: string;
-    format?: TrackExtension;
+    artworkUrl?: string | null;
+    format?: AudioFormat;
     createdAt?: number;
-    sourceUrl?: string;
+    sourceUrl?: string | null;
     error?: string;
     size?: number;
 }
@@ -40,11 +41,6 @@ export type ServerEvent =
     providedIn: 'root',
 })
 export class DownloadTrackingService {
-    private readonly _http = inject(HttpClient);
-    private readonly _musicApi = inject(MusicTracksViewService);
-    private readonly _musicState = inject(MusicTracksViewState);
-    private readonly _zone = inject(NgZone);
-
     public readonly activeDownloads = signal<DownloadItem[]>([]);
     public readonly sortedActiveDownloads = computed(() => {
         return [...this.activeDownloads()].sort((a, b) => {
@@ -54,10 +50,28 @@ export class DownloadTrackingService {
         });
     });
     public readonly errors = signal<string[]>([]);
+    private readonly _http = inject(HttpClient);
+    private readonly _musicApi = inject(MusicTracksViewService);
+    private readonly _musicState = inject(MusicTracksViewState);
+    private readonly _zone = inject(NgZone);
 
     constructor() {
         this.syncActiveDownloads();
         this.initializeEventSource();
+    }
+
+    public removeFromQueue(id: number): void {
+        this._http.delete(`/download/queue/${id}`).subscribe({
+            next: () => this.activeDownloads.update(items => items.filter(i => i.id !== id)),
+            error: err => {
+                console.error('Failed to remove from queue:', err);
+                this.addError('Failed to remove track from queue.');
+            },
+        });
+    }
+
+    public clearError(): void {
+        this.errors.set([]);
     }
 
     private syncActiveDownloads(): void {
@@ -118,34 +132,24 @@ export class DownloadTrackingService {
         }
     }
 
-    public removeFromQueue(id: number): void {
-        this._http.delete(`/download/queue/${id}`).subscribe({
-            next: () => this.activeDownloads.update(items => items.filter(i => i.id !== id)),
-            error: err => {
-                console.error('Failed to remove from queue:', err);
-                this.addError('Failed to remove track from queue.');
-            },
-        });
-    }
-
     private handleTrackUpdate(item: DownloadItem): void {
         this.updateActiveDownloads(item);
 
         if (item.status === DownloadStatus.Finished) {
             this._musicState.addTrack({
                 id: item.id,
-                filename: item.title,
-                album: '',
-                format: item.format || TrackExtension.MP3,
-                artworkUrl: item.artworkUrl,
-                sourceUrl: item.sourceUrl,
-                createdAt: item.createdAt || Math.floor(Date.now() / 1000),
+                artist: item.artist,
+                title: item.title,
+                format: item.format || AudioFormat.MP3,
+                artworkUrl: item.artworkUrl || null,
+                sourceUrl: item.sourceUrl || null,
+                createdAt: item.createdAt || 0,
                 size: item.size || 0,
             });
         }
 
         if (item.status === DownloadStatus.Failed) {
-            this.addError(`Failed to download "${item.title}": ${item.error || 'Unknown error'}`);
+            this.addError(`Failed to download "${item.artist} - ${item.title}": ${item.error || 'Unknown error'}`);
         }
     }
 
@@ -171,10 +175,6 @@ export class DownloadTrackingService {
                 return [...downloads, item];
             }
         });
-    }
-
-    public clearError(): void {
-        this.errors.set([]);
     }
 
     private refreshMusicList(): void {

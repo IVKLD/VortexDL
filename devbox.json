@@ -7,7 +7,14 @@
       "outputs": ["out", "dev"]
     },
     "cargo-dist": "latest",
-    "gcc": "latest"
+    "gcc": "latest",
+    "clang": "latest",
+    "mold": "latest",
+    "cargo-edit": "latest",
+    "just": "latest",
+    "yarn": "latest",
+    "nodejs": "24",
+    "cargo-watch": "latest"
   },
   "env": {
     "PKG_CONFIG_PATH": "$DEVBOX_PACKAGES_DIR/lib/pkgconfig"

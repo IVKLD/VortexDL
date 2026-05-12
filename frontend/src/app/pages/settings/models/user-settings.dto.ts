@@ -1,7 +1,4 @@
-import {
-    DownloadSettings,
-    SoundcloudSettings
-} from "@app/pages/settings/models/settings-form.model";
+import {DownloadSettings, SoundcloudSettings} from "@app/pages/settings/models/settings-form.model";
 
 export interface UserSettingsDto {
     soundcloud: SoundcloudSettings;

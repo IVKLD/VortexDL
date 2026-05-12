@@ -1,16 +1,17 @@
-import { ChangeDetectionStrategy, Component, inject, OnInit } from '@angular/core';
-import { switchMap } from 'rxjs';
-import { MusicTracksViewService, Track } from './music-tracks-view.service';
-import { MusicCard } from './music-card/music-card';
-import { MusicTracksViewState } from './music-tracks-view.state';
+import {ChangeDetectionStrategy, Component, inject, OnInit} from '@angular/core';
+import {switchMap} from 'rxjs';
+import {MusicTracksViewService} from './music-tracks-view.service';
+import {Track} from '@shared/models/track.model';
+import {MusicCard} from './music-card/music-card';
+import {MusicTracksViewState} from './music-tracks-view.state';
 import {
     FixedSizeVirtualScrollStrategy,
     RxVirtualFor,
     RxVirtualScrollViewportComponent,
 } from '@rx-angular/template/virtual-scrolling';
-import { MatDialog } from '@angular/material/dialog';
-import { MusicDetailModal } from './music-detail-modal/music-detail-modal';
-import { MatIcon } from '@angular/material/icon';
+import {MatDialog} from '@angular/material/dialog';
+import {MusicDetailModal} from './music-detail-modal/music-detail-modal';
+import {MatIcon} from '@angular/material/icon';
 
 @Component({
     selector: 'app-music-tracks-view',
@@ -23,9 +24,22 @@ import { MatIcon } from '@angular/material/icon';
 export class MusicTracksView implements OnInit {
     private readonly _api = inject(MusicTracksViewService);
     private readonly _state = inject(MusicTracksViewState);
+    protected readonly tracks = this._state.sortedTracks;
     private readonly _dialog = inject(MatDialog);
 
-    protected readonly tracks = this._state.sortedTracks;
+    ngOnInit() {
+        this._state.startLoading();
+        this._api.index().pipe(
+            switchMap(() => this._api.getAll())
+        ).subscribe({
+            next: tracks => {
+                this._state.setTracks = tracks;
+            },
+            error: () => {
+                this._api.getAll().subscribe(tracks => this._state.setTracks = tracks);
+            }
+        });
+    }
 
     protected deleteMusic(track: Track) {
         this._api.delete(track.id).subscribe({
@@ -40,20 +54,6 @@ export class MusicTracksView implements OnInit {
             data: track,
             maxWidth: '500px',
             width: '100%',
-        });
-    }
-
-    ngOnInit() {
-        this._state.startLoading();
-        this._api.index().pipe(
-            switchMap(() => this._api.getAll())
-        ).subscribe({
-            next: tracks => {
-                this._state.setTracks = tracks;
-            },
-            error: () => {
-                this._api.getAll().subscribe(tracks => this._state.setTracks = tracks);
-            }
         });
     }
 }

@@ -28,41 +28,41 @@
     }
 
     mat-list {
-       max-height: 200px;
-       overflow-y: auto;
-       border-radius: 4px;
-       background: rgba(255, 255, 255, 0.05);
+      max-height: 200px;
+      overflow-y: auto;
+      border-radius: 4px;
+      background: rgba(255, 255, 255, 0.05);
 
-       mat-list-item {
-         cursor: pointer;
-         transition: background 0.2s;
+      mat-list-item {
+        cursor: pointer;
+        transition: background 0.2s;
 
-         &:hover {
-           background: rgba(255, 255, 255, 0.1);
-         }
+        &:hover {
+          background: rgba(255, 255, 255, 0.1);
+        }
 
-         .history-item {
-           display: flex;
-           justify-content: space-between;
-           align-items: center;
-           width: 100%;
-           font-size: 0.85rem;
+        .history-item {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          width: 100%;
+          font-size: 0.85rem;
 
-           .url-text {
-             overflow: hidden;
-             text-overflow: ellipsis;
-             white-space: nowrap;
-             margin-right: 8px;
-           }
+          .url-text {
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            margin-right: 8px;
+          }
 
-           mat-icon {
-             font-size: 18px;
-             height: 18px;
-             width: 18px;
-             opacity: 0.5;
-           }
-         }
-       }
+          mat-icon {
+            font-size: 18px;
+            height: 18px;
+            width: 18px;
+            opacity: 0.5;
+          }
+        }
+      }
     }
   }
 

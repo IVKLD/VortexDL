@@ -1,9 +1,9 @@
-import { DashboardView } from './pages/dashboard-view/dashboard-view';
-import { PlaylistView } from './pages/playlist-view/playlist-view';
-import { MusicTracksView } from './pages/music-tracks-view/music-tracks-view';
-import { SettingsView } from './pages/settings/settings-view.component';
-import { Route } from '@angular/router';
-import { HeaderFeature, HeaderConfig } from '@shared/components/header/header.types';
+import {DashboardView} from './pages/dashboard-view/dashboard-view';
+import {PlaylistView} from './pages/playlist-view/playlist-view';
+import {MusicTracksView} from './pages/music-tracks-view/music-tracks-view';
+import {SettingsView} from './pages/settings/settings-view.component';
+import {Route} from '@angular/router';
+import {HeaderConfig, HeaderFeature} from '@shared/components/header/header.types';
 
 export interface RouteData {
     header?: HeaderConfig;

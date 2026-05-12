@@ -18,6 +18,8 @@ use crate::{
 #[derive(Default, Clone)]
 pub struct TrackData {
     pub path: PathBuf,
+    pub artist: String,
+    pub title: String,
     pub artwork_url: Option<String>,
     pub source_url: Option<String>,
 }
@@ -39,6 +41,8 @@ impl MusicStorage {
         &mut self,
         id: i64,
         path: PathBuf,
+        artist: String,
+        title: String,
         artwork_url: Option<String>,
         source_url: Option<String>,
     ) {
@@ -46,6 +50,8 @@ impl MusicStorage {
             id,
             TrackData {
                 path,
+                artist,
+                title,
                 artwork_url,
                 source_url,
             },
@@ -79,13 +85,35 @@ impl MusicStorage {
                         continue;
                     }
 
-                    if let Some(id) = path
-                        .to_str()
-                        .and_then(|p| read_custom_field(p, SC_IDENTIFIER))
-                        .and_then(|s| s.parse::<i64>().ok())
-                    {
+                    if let Some((p_str, id)) = path.to_str().and_then(|p| {
+                        read_custom_field(p, SC_IDENTIFIER)
+                            .and_then(|s| s.parse::<i64>().ok())
+                            .map(|id| (p, id))
+                    }) {
                         seen_ids.insert(id);
-                        let p_str = path.to_str().unwrap();
+
+                        let tag = id3::Tag::read_from_path(&path).ok();
+                        let (artist, title) = if let Some(t) = tag {
+                            use id3::TagLike;
+                            (
+                                t.artist().unwrap_or("Unknown").to_string(),
+                                t.title().unwrap_or("Unknown").to_string(),
+                            )
+                        } else {
+                            let clean_name = path
+                                .file_stem()
+                                .map(|s| s.to_string_lossy())
+                                .unwrap_or_default()
+                                .replace('_', " ");
+
+                            if clean_name.contains(" - ") {
+                                let parts: Vec<&str> = clean_name.split(" - ").collect();
+                                (parts[0].trim().to_string(), parts[1].trim().to_string())
+                            } else {
+                                ("Unknown".to_string(), clean_name.to_string())
+                            }
+                        };
+
                         let artwork_url = read_custom_field(p_str, SC_ARTWORK_URL);
                         let source_url = read_custom_field(p_str, SC_SOURCE_URL);
 
@@ -93,6 +121,8 @@ impl MusicStorage {
                             id,
                             TrackData {
                                 path,
+                                artist,
+                                title,
                                 artwork_url,
                                 source_url,
                             },

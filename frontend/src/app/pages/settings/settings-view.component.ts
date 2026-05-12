@@ -1,16 +1,16 @@
-import { ChangeDetectionStrategy, Component, inject, OnInit, signal } from '@angular/core';
-import { MatIcon } from '@angular/material/icon';
-import { form, FormRoot } from '@angular/forms/signals';
-import { SettingsService } from './settings.service';
-import { MatButton } from "@angular/material/button";
-import { SettingsFormModel } from "@app/pages/settings/models/settings-form.model";
-import { finalize } from "rxjs";
-import { englishOnly, required, soundCloudUrl } from "@shared/validators/form.validators";
-import { UserSettingsRdo } from "@app/pages/settings/models/user-settings.rdo";
-import { UserSettingsDto } from "@app/pages/settings/models/user-settings.dto";
-import { SoundcloudSectionComponent } from "./components/soundcloud-section/soundcloud-section.component";
-import { DownloadsSectionComponent } from "./components/downloads-section/downloads-section.component";
-import { SystemSectionComponent } from "./components/system-section/system-section.component";
+import {ChangeDetectionStrategy, Component, inject, OnInit, signal} from '@angular/core';
+import {MatIcon} from '@angular/material/icon';
+import {form, FormRoot, max, min, required} from '@angular/forms/signals';
+import {SettingsService} from './settings.service';
+import {MatButton} from "@angular/material/button";
+import {SettingsFormModel} from "@app/pages/settings/models/settings-form.model";
+import {finalize} from "rxjs";
+import {englishOnly, soundCloudUrl} from "@shared/validators/form.validators";
+import {UserSettingsRdo} from "@app/pages/settings/models/user-settings.rdo";
+import {UserSettingsDto} from "@app/pages/settings/models/user-settings.dto";
+import {SoundcloudSectionComponent} from "./components/soundcloud-section/soundcloud-section.component";
+import {DownloadsSectionComponent} from "./components/downloads-section/downloads-section.component";
+import {SystemSectionComponent} from "./components/system-section/system-section.component";
 
 @Component({
     selector: 'app-settings-view',
@@ -23,12 +23,9 @@ import { SystemSectionComponent } from "./components/system-section/system-secti
     changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class SettingsView implements OnInit {
-    private readonly _api = inject(SettingsService);
-
     protected readonly isLoading = signal(true);
     protected readonly isTesting = signal(false);
     protected readonly isNetworkTesting = signal(false);
-
     protected readonly settingsModel = signal<SettingsFormModel>({
         soundcloud: {
             profileUrl: '',
@@ -45,16 +42,26 @@ export class SettingsView implements OnInit {
             maxRetries: 5
         }
     });
-
+    private readonly _api = inject(SettingsService);
     protected readonly settingsForm =
         form(this.settingsModel, (f) => {
-            required(f.soundcloud.profileUrl, 'Profile URL is required');
-            englishOnly(f.soundcloud.profileUrl);
-            soundCloudUrl(f.soundcloud.profileUrl);
+                required(f.soundcloud.profileUrl, {message: 'Profile URL is required'});
+                englishOnly(f.soundcloud.profileUrl);
+                soundCloudUrl(f.soundcloud.profileUrl);
+                
+                min(f.soundcloud.syncInterval, 1, {message: 'Interval must be at least 1 minute'});
+                max(f.soundcloud.syncInterval, 1440, {message: 'Interval cannot exceed 24 hours'});
 
-            // required(f.downloads.outputPath, 'Output path is required');
-            // required(f.downloads.namingTemplate, 'Naming template is required');
-        },
+                required(f.downloads.outputPath, {message: 'Output path is required'});
+                min(f.downloads.maxConcurrent, 1, {message: 'Must have at least 1 concurrent download'});
+                max(f.downloads.maxConcurrent, 10, {message: 'Maximum 10 concurrent downloads allowed'});
+                required(f.downloads.namingTemplate, {message: 'Naming template is required'});
+
+                min(f.system.limitPerPage, 1, {message: 'Limit must be at least 1'});
+                max(f.system.limitPerPage, 500, {message: 'Limit cannot exceed 500'});
+                min(f.system.maxRetries, 0, {message: 'Max retries cannot be negative'});
+                max(f.system.maxRetries, 20, {message: 'Max retries cannot exceed 20'});
+            },
             {
                 submission: {
                     action: async (data) => {

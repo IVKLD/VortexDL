@@ -38,6 +38,8 @@ fn set_txxx(tag: &mut Tag, key: &str, value: &str) {
 pub struct SaveTrackArgs<'a> {
     pub path: &'a str,
     pub sc_id: &'a str,
+    pub title: &'a str,
+    pub artist: &'a str,
     pub artwork_url: Option<&'a str>,
     pub source_url: Option<&'a str>,
     pub artwork_data: Option<Vec<u8>>,
@@ -45,6 +47,9 @@ pub struct SaveTrackArgs<'a> {
 
 pub fn save_track_info(args: SaveTrackArgs) -> Result<()> {
     let mut tag = get_tag(args.path)?;
+
+    tag.set_title(args.title);
+    tag.set_artist(args.artist);
 
     set_txxx(&mut tag, crate::constants::SC_IDENTIFIER, args.sc_id);
 

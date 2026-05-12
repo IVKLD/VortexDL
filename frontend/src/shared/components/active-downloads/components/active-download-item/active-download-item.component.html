@@ -3,7 +3,7 @@
 <div [class.failed]="data.status === DownloadStatus.Failed" class="item">
     <div class="img-container">
         @if (data.artworkUrl) {
-            <img [alt]="data.title" [ngSrc]="data.artworkUrl" width="40" height="40"/>
+            <img [alt]="data.title" [ngSrc]="data.artworkUrl" height="40" width="40"/>
         } @else {
             <mat-icon>music_note</mat-icon>
         }
@@ -19,7 +19,7 @@
         }
 
         @if (data.status === DownloadStatus.Downloading) {
-            <mat-progress-bar mode="indeterminate"></mat-progress-bar>
+            <mat-progress-bar mode="indeterminate" />
         }
     </div>
 

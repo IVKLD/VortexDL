@@ -25,7 +25,7 @@ pub(super) async fn try_download_progressive(
     let total = response.content_length().unwrap_or(0);
 
     task.pb
-        .set_message(format!("Downloading Music & Art: {}", task.filename));
+        .set_message(format!("Downloading Music & Art: {}", task.filename()));
 
     ui::upgrade_to_download_bar(task.pb, total);
 

@@ -38,21 +38,25 @@ pub async fn fetch_likes(ctx: &DiscoveryContext<'_>, url: &str) -> Result<Vec<Tr
 
         for item in res.collection {
             let id = item.track.id;
-            let author = item
+            let artist = item
                 .track
                 .user
                 .as_ref()
-                .map(|u| u.username.as_str())
-                .unwrap_or("Unknown");
+                .map(|u| u.username.as_str().to_string())
+                .unwrap_or("Unknown".to_string());
 
-            let title = item.track.title.as_str();
-            let filename = format!("{} - {}", author, title);
+            let title = item.track.title.as_str().to_string();
 
-            all_tracks.push(TrackDownload {
+            let artwork_url = item.track.artwork_url.clone();
+
+            let track = TrackDownload {
                 id,
-                filename,
-                artwork_url: item.track.artwork_url.clone(),
-            });
+                title,
+                artist,
+                artwork_url,
+            };
+
+            all_tracks.push(track);
         }
 
         if let Some(next_href) = res.next_href {

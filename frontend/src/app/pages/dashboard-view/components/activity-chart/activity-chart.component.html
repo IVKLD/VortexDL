@@ -1,14 +1,17 @@
 <section class="activity-section">
     <div class="section-header">
-        <h2><mat-icon>bar_chart</mat-icon> Download Activity (7 Days)</h2>
+        <h2>
+            <mat-icon>bar_chart</mat-icon>
+            Download Activity (7 Days)
+        </h2>
     </div>
     <div class="chart-container">
         @if (data().length > 0) {
             <div class="bars-wrapper">
                 @for (item of data(); track item.label) {
                     <div class="bar-col">
-                        <div class="bar-value" [class.zero]="item.count === 0">{{ item.count }}</div>
-                        <div class="bar-fill" [style.height]="item.heightPercent + '%'"></div>
+                        <div [class.zero]="item.count === 0" class="bar-value">{{ item.count }}</div>
+                        <div [style.height]="item.heightPercent + '%'" class="bar-fill"></div>
                         <div class="bar-label">{{ item.label }}</div>
                     </div>
                 }

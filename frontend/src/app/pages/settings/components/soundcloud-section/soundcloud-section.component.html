@@ -7,19 +7,19 @@
         <div class="field-group">
             <mat-form-field class="full-width">
                 <mat-label>Profile URL</mat-label>
-                <input [formField]="form().profileUrl" matInput placeholder="https://soundcloud.com/your-username" />
+                <input [formField]="form().profileUrl" matInput placeholder="https://soundcloud.com/your-username"/>
                 <mat-icon matPrefix>link</mat-icon>
                 <mat-hint>Used for quick discovery and "Sync All" features</mat-hint>
 
                 @if (form().profileUrl().invalid()) {
-                <mat-error>{{ form().profileUrl().errors()[0]?.message }}</mat-error>
+                    <mat-error>{{ form().profileUrl().errors()[0]?.message }}</mat-error>
                 }
             </mat-form-field>
 
             <button (click)="test.emit()" [disabled]="form().profileUrl().invalid() || isTesting()" class="test-btn"
-                mat-stroked-button type="button">
+                    mat-stroked-button type="button">
                 <mat-icon [class.rotating]="isTesting()">{{
-                    isTesting() ? 'sync' : 'check_circle'
+                        isTesting() ? 'sync' : 'check_circle'
                     }}
                 </mat-icon>
                 Test Connection

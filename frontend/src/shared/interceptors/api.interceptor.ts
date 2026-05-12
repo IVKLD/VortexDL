@@ -1,4 +1,4 @@
-import { HttpInterceptorFn } from '@angular/common/http';
+import {HttpInterceptorFn} from '@angular/common/http';
 
 export const apiInterceptor: HttpInterceptorFn = (req, next) => {
     if (req.url.startsWith('http')) {
@@ -8,5 +8,5 @@ export const apiInterceptor: HttpInterceptorFn = (req, next) => {
     const path = req.url.startsWith('/') ? req.url.substring(1) : req.url;
     const url = `/api/${path}`;
 
-    return next(req.clone({ url }));
+    return next(req.clone({url}));
 };

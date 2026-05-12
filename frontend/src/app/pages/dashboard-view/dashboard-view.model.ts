@@ -1,0 +1,30 @@
+import {AudioFormat} from '@shared/models/track.model';
+
+export interface DashboardStat {
+    icon: string;
+    label: string;
+    value: number;
+    iconClass: string;
+    isSize?: boolean;
+}
+
+export interface ActivityDay {
+    label: string;
+    count: number;
+    heightPercent: number;
+}
+
+export interface FormatItem {
+    format: AudioFormat;
+    count: number;
+    percentage: number;
+    color: string;
+}
+
+export interface RecentTrack {
+    id: number;
+    artist: string;
+    title: string;
+    format: AudioFormat;
+    artworkUrl: string | null;
+}

@@ -8,27 +8,27 @@
     </header>
 
     @if (isLoading()) {
-    <div class="loading-state">
-        <div class="spinner"></div>
-        <span>Loading configuration...</span>
-    </div>
+        <div class="loading-state">
+            <div class="spinner"></div>
+            <span>Loading configuration...</span>
+        </div>
     } @else {
-    <form [formRoot]="settingsForm">
-        <div class="settings-content">
-            <app-soundcloud-section (test)="testSoundcloudUrl()" [form]="settingsForm.soundcloud"
-                [isTesting]="isTesting()" />
+        <form [formRoot]="settingsForm">
+            <div class="settings-content">
+                <app-soundcloud-section (test)="testSoundcloudUrl()" [form]="settingsForm.soundcloud"
+                                        [isTesting]="isTesting()"/>
 
-            <app-downloads-section [form]="settingsForm.downloads" />
+                <app-downloads-section [form]="settingsForm.downloads"/>
 
-            <app-system-section [form]="settingsForm.system" />
-        </div>
+                <app-system-section [form]="settingsForm.system"/>
+            </div>
 
-        <div class="footer">
-            <button [disabled]="settingsForm().invalid() || isTesting()" mat-flat-button type="submit">
-                <mat-icon>save</mat-icon>
-                Save All Changes
-            </button>
-        </div>
-    </form>
+            <div class="footer">
+                <button [disabled]="settingsForm().invalid() || isTesting()" mat-flat-button type="submit">
+                    <mat-icon>save</mat-icon>
+                    Save All Changes
+                </button>
+            </div>
+        </form>
     }
 </div>

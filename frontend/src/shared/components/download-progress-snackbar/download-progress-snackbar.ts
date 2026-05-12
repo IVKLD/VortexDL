@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component } from '@angular/core';
+import {ChangeDetectionStrategy, Component} from '@angular/core';
 
 @Component({
     selector: 'app-download-progress-snackbar',
@@ -6,4 +6,5 @@ import { ChangeDetectionStrategy, Component } from '@angular/core';
     styleUrl: './download-progress-snackbar.scss',
     changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class DownloadProgressSnackbar {}
+export class DownloadProgressSnackbar {
+}

@@ -10,7 +10,7 @@ use axum::{
 use crate::{
     api::{
         errors::ApiError,
-        models::{KNOWN_EXTENSIONS, TrackExtension, TrackRecord},
+        models::{AudioFormat, TrackRecord},
         state::AppState,
     },
     storage::MusicStorage,
@@ -24,45 +24,32 @@ pub async fn get_tracks(State(state): State<AppState>) -> Result<impl IntoRespon
         .iter()
         .filter_map(|(id, data)| {
             let path = &data.path;
-            let extension = path
-                .extension()
-                .map(|ext| ext.to_string_lossy())
-                .map(|ext| match ext.as_ref() {
-                    "mp3" => TrackExtension::Mp3,
-                    "flac" => TrackExtension::Flac,
-                    "wav" => TrackExtension::Wav,
-                    _ => TrackExtension::Unknown,
-                })
-                .unwrap_or(TrackExtension::Unknown);
+            let metadata = path.metadata().ok()?;
+            let extension_str = path.extension()?.to_string_lossy().to_string();
+            let format = match extension_str.to_lowercase().as_str() {
+                "mp3" => AudioFormat::Mp3,
+                "flac" => AudioFormat::Flac,
+                "wav" => AudioFormat::Wav,
+                _ => AudioFormat::Unknown,
+            };
 
-            if path.is_file() && KNOWN_EXTENSIONS.contains(&extension) {
-                let file_name = path.file_name()?;
-
-                Some(TrackRecord {
-                    id: *id as u32,
-                    filename: file_name.to_string_lossy().into_owned(),
-                    album: String::new(),
-                    format: path
-                        .extension()
-                        .and_then(|e| e.to_str())
-                        .unwrap_or_default()
-                        .to_string(),
-                    artwork_url: data.artwork_url.clone(),
-                    source_url: data.source_url.clone(),
-                    created_at: path
-                        .metadata()
-                        .and_then(|m| m.created())
-                        .map(|t| {
-                            t.duration_since(std::time::UNIX_EPOCH)
-                                .unwrap_or_default()
-                                .as_secs()
-                        })
-                        .unwrap_or(0),
-                    size: path.metadata().map(|m| m.len()).unwrap_or(0),
-                })
-            } else {
-                None
-            }
+            Some(TrackRecord {
+                id: *id as u32,
+                artist: data.artist.clone(),
+                title: data.title.clone(),
+                format,
+                artwork_url: data.artwork_url.clone(),
+                source_url: data.source_url.clone(),
+                created_at: metadata
+                    .created()
+                    .map(|t| {
+                        t.duration_since(std::time::UNIX_EPOCH)
+                            .unwrap_or_default()
+                            .as_secs()
+                    })
+                    .unwrap_or(0),
+                size: metadata.len(),
+            })
         })
         .collect::<Vec<_>>();
 
@@ -78,11 +65,9 @@ pub async fn remove_track(
     State(state): State<AppState>,
     Path(id): Path<i64>,
 ) -> Result<impl IntoResponse, ApiError> {
-    let target_id = id;
-
     let path = {
         let storage = state.storage.read().await;
-        storage.tracks.get(&target_id).cloned()
+        storage.tracks.get(&id).cloned()
     };
 
     if let Some(data) = path {
@@ -92,7 +77,7 @@ pub async fn remove_track(
         }
 
         let mut storage = state.storage.write().await;
-        storage.remove_track(target_id);
+        storage.remove_track(id);
 
         return Ok(());
     }

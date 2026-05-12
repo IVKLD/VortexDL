@@ -31,27 +31,14 @@ jobs:
           cache: 'yarn'
           cache-dependency-path: frontend/yarn.lock
 
-      - name: Install Frontend Dependencies
-        run: |
-          cd frontend
-          yarn install --frozen-lockfile
+      - name: Install just
+        uses: taiki-e/install-action@just
 
-      - name: Lint Frontend
-        run: |
-          cd frontend
-          yarn lint
+      - name: Install Dependencies
+        run: just install
 
-      - name: Patch Cargo.toml for CI
-        run: sed -i 's|path = "../soundcloud-rs"|git = "https://github.com/IVKLD/soundcloud-rs.git"|g' Cargo.toml
+      - name: Lint
+        run: just lint
 
-      - name: Check Formatting
-        run: cargo fmt --all -- --check
-
-      - name: Clippy
-        run: cargo clippy -- -D warnings
-
-      - name: Run Tests
-        run: cargo test --verbose
-
-      - name: Build Release Backend
-        run: cargo build --release
+      - name: Build
+        run: just build

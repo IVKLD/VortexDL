@@ -13,27 +13,22 @@ pub struct ActionStatus {
     pub message: String,
 }
 
-#[derive(Eq, PartialEq)]
-pub enum TrackExtension {
+#[derive(Debug, Serialize, Deserialize, Clone, Copy, PartialEq, Eq)]
+#[serde(rename_all = "lowercase")]
+pub enum AudioFormat {
     Mp3,
     Flac,
     Wav,
     Unknown,
 }
 
-pub const KNOWN_EXTENSIONS: [TrackExtension; 3] = [
-    TrackExtension::Mp3,
-    TrackExtension::Flac,
-    TrackExtension::Wav,
-];
-
 #[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct TrackRecord {
     pub id: u32,
-    pub filename: String,
-    pub album: String,
-    pub format: String,
+    pub artist: String,
+    pub title: String,
+    pub format: AudioFormat,
     pub artwork_url: Option<String>,
     pub source_url: Option<String>,
     pub created_at: u64,

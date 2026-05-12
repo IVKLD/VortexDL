@@ -1,5 +1,5 @@
-import { Component } from '@angular/core';
-import { PlaylistViewService } from './playlist-view.service';
+import {Component} from '@angular/core';
+import {PlaylistViewService} from './playlist-view.service';
 
 @Component({
     selector: 'app-playlist-view',
@@ -7,4 +7,5 @@ import { PlaylistViewService } from './playlist-view.service';
     templateUrl: './playlist-view.html',
     styleUrl: './playlist-view.scss',
 })
-export class PlaylistView {}
+export class PlaylistView {
+}

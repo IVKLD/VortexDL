@@ -21,19 +21,26 @@ pub async fn fetch_playlist(ctx: &DiscoveryContext<'_>, url: &str) -> Result<Vec
         .filter_map(|track| {
             let id = track.id?;
 
-            let author = track
+            let artist = track
                 .user
                 .as_ref()
                 .and_then(|u| u.username.as_deref())
-                .unwrap_or("Unknown");
+                .map(|t| t.to_string())
+                .unwrap_or("Unknown".to_string());
 
-            let title = track.title.as_deref().unwrap_or("Unknown");
-            let filename = format!("{} - {}", author, title);
+            let title = track
+                .title
+                .as_deref()
+                .map(|t| t.to_string())
+                .unwrap_or("Unknown".to_string());
+
+            let artwork_url = track.artwork_url;
 
             Some(TrackDownload {
                 id,
-                filename,
-                artwork_url: track.artwork_url,
+                title,
+                artist,
+                artwork_url,
             })
         })
         .collect();

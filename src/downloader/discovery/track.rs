@@ -6,18 +6,25 @@ use crate::downloader::{core::TrackDownload, discovery::DiscoveryContext};
 pub async fn fetch_track(ctx: &DiscoveryContext<'_>, id: i64) -> Result<TrackDownload> {
     let track = ctx.client.get_track(&Identifier::Id(id)).await?;
 
-    let author = track
+    let artist = track
         .user
         .as_ref()
         .and_then(|u| u.username.as_deref())
-        .unwrap_or("Unknown");
+        .map(|t| t.to_string())
+        .unwrap_or("Unknown".to_string());
 
-    let title = track.title.as_deref().unwrap_or("Unknown");
-    let filename = format!("{} - {}", author, title);
+    let title = track
+        .title
+        .as_deref()
+        .map(|t| t.to_string())
+        .unwrap_or("Unknown".to_string());
+
+    let artwork_url = track.artwork_url;
 
     Ok(TrackDownload {
         id,
-        filename,
-        artwork_url: track.artwork_url,
+        title,
+        artist,
+        artwork_url,
     })
 }

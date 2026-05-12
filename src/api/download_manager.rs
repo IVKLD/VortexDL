@@ -17,6 +17,7 @@ pub enum DownloadStatus {
 pub struct DownloadItem {
     pub id: i64,
     pub title: String,
+    pub artist: String,
     pub status: DownloadStatus,
     pub artwork_url: Option<String>,
     pub format: Option<String>,
@@ -66,10 +67,17 @@ impl DownloadManager {
         self.reserved_urls.write().await.remove(url);
     }
 
-    pub async fn add_task(&self, id: i64, title: String, artwork_url: Option<String>) {
+    pub async fn add_task(
+        &self,
+        id: i64,
+        title: String,
+        artist: String,
+        artwork_url: Option<String>,
+    ) {
         let item = DownloadItem {
             id,
             title,
+            artist,
             status: DownloadStatus::Queued,
             artwork_url,
             format: None,

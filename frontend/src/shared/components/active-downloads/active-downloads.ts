@@ -1,12 +1,12 @@
-import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
+import {ChangeDetectionStrategy, Component, inject} from '@angular/core';
 import {
     FixedSizeVirtualScrollStrategy,
     RxVirtualFor,
     RxVirtualScrollViewportComponent,
 } from '@rx-angular/template/virtual-scrolling';
-import { DownloadTrackingService } from '@app/services/download-tracking.service';
-import { ActiveDownloadItemComponent } from './components/active-download-item/active-download-item.component';
-import { ActiveDownloadErrorsComponent } from './components/active-download-errors/active-download-errors.component';
+import {DownloadTrackingService} from '@app/services/download-tracking.service';
+import {ActiveDownloadItemComponent} from './components/active-download-item/active-download-item.component';
+import {ActiveDownloadErrorsComponent} from './components/active-download-errors/active-download-errors.component';
 
 @Component({
     selector: 'app-active-downloads',

@@ -1,14 +1,8 @@
-import { ChangeDetectionStrategy, Component, input } from '@angular/core';
-import { UpperCasePipe, NgOptimizedImage } from '@angular/common';
-import { MatIcon } from '@angular/material/icon';
-import { RouterLink } from '@angular/router';
-
-export interface RecentTrack {
-    id: number;
-    filename: string;
-    format: string;
-    artworkUrl?: string;
-}
+import {ChangeDetectionStrategy, Component, input} from '@angular/core';
+import {NgOptimizedImage, UpperCasePipe} from '@angular/common';
+import {MatIcon} from '@angular/material/icon';
+import {RouterLink} from '@angular/router';
+import {RecentTrack} from '../../dashboard-view.model';
 
 @Component({
     selector: 'app-recent-tracks',

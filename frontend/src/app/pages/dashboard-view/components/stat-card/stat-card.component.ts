@@ -1,5 +1,5 @@
-import { ChangeDetectionStrategy, Component, input } from '@angular/core';
-import { MatIcon } from '@angular/material/icon';
+import {ChangeDetectionStrategy, Component, input} from '@angular/core';
+import {MatIcon} from '@angular/material/icon';
 
 @Component({
     selector: 'app-stat-card',

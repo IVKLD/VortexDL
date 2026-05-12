@@ -1,20 +1,6 @@
 import {HttpClient} from '@angular/common/http';
 import {inject, Injectable} from '@angular/core';
-
-import {TrackExtension} from '@app/models/track.model';
-
-export interface Track {
-    id: number;
-    filename: string;
-    album: string;
-    format: TrackExtension;
-    artworkUrl?: string;
-    sourceUrl?: string;
-    createdAt: number;
-    size: number;
-}
-
-export type Tracks = Track[];
+import {Tracks} from '@shared/models/track.model';
 
 @Injectable({providedIn: 'root'})
 export class MusicTracksViewService {

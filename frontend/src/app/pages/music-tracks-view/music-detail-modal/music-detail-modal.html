@@ -1,10 +1,10 @@
 <div class="music-detail">
     <header>
         <div>
-            <span class="info-label">Track Details</span>
-            <h2>{{ displayTitle() }}</h2>
+            <span class="info-label">Music Track</span>
+            <h2>{{ track.title }}</h2>
         </div>
-        <button mat-icon-button (click)="close()">
+        <button mat-dialog-close mat-icon-button>
             <mat-icon>close</mat-icon>
         </button>
     </header>
@@ -12,7 +12,7 @@
     <main>
         <figure>
             @if (track.artworkUrl) {
-                <img [ngSrc]="track.artworkUrl" [alt]="track.filename" width="240" height="240" />
+                <img [alt]="track.title" [ngSrc]="track.artworkUrl" height="240" width="240"/>
             } @else {
                 <mat-icon>music_note</mat-icon>
             }
@@ -21,31 +21,31 @@
 
         <section>
             <div>
-                <span class="info-label">Album</span>
-                <span>{{ track.album || 'Unknown Album' }}</span>
+                <span class="info-label">Artist</span>
+                <span>{{ track.artist }}</span>
             </div>
             <div>
                 <span class="info-label">Format</span>
                 <b [attr.data-format]="track.format">{{ track.format }}</b>
             </div>
             <div>
-                <span class="info-label">Track ID</span>
-                <code class="primary">#{{ track.id }}</code>
+                <span class="info-label">File Size</span>
+                <span>{{ track.size | fileSize }}</span>
             </div>
             <div>
-                <span class="info-label">Filename</span>
-                <p>{{ track.filename }}</p>
+                <span class="info-label">Date Added</span>
+                <span>{{ track.createdAt * 1000 | date:'mediumDate' }}</span>
             </div>
         </section>
     </main>
 
     <footer>
         @if (track.sourceUrl) {
-            <a [href]="track.sourceUrl" target="_blank" mat-button color="accent" class="source-btn">
+            <a [href]="track.sourceUrl" class="source-btn" color="accent" mat-button target="_blank">
                 <mat-icon>open_in_new</mat-icon>
                 Open Original
             </a>
         }
-        <button mat-flat-button (click)="close()">Done</button>
+        <button mat-dialog-close mat-flat-button>Done</button>
     </footer>
 </div>

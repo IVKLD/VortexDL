@@ -1,11 +1,6 @@
-import { ChangeDetectionStrategy, Component, input } from '@angular/core';
-import { MatIcon } from '@angular/material/icon';
-
-export interface ActivityDay {
-    label: string;
-    count: number;
-    heightPercent: number;
-}
+import {ChangeDetectionStrategy, Component, input} from '@angular/core';
+import {MatIcon} from '@angular/material/icon';
+import {ActivityDay} from '../../dashboard-view.model';
 
 @Component({
     selector: 'app-activity-chart',

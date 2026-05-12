@@ -1,12 +1,6 @@
-import { ChangeDetectionStrategy, Component, input } from '@angular/core';
-import { MatIcon } from '@angular/material/icon';
-
-export interface FormatItem {
-    format: string;
-    count: number;
-    percentage: number;
-    color: string;
-}
+import {ChangeDetectionStrategy, Component, input} from '@angular/core';
+import {MatIcon} from '@angular/material/icon';
+import {FormatItem} from '../../dashboard-view.model';
 
 @Component({
     selector: 'app-format-breakdown',

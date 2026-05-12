@@ -1,10 +1,9 @@
-use std::{env, path::Path, process::Command};
+use std::{env, process::Command};
 
 fn main() {
     let opt_level = env::var("OPT_LEVEL").unwrap_or_else(|_| "0".to_string());
     let is_release = opt_level != "0";
-    let frontend_dist = "frontend/dist/voltexdl/browser";
-    let needs_build = !Path::new(frontend_dist).exists() || is_release;
+    let needs_build = env::var("BUILD_FRONTEND").is_ok();
 
     if needs_build {
         println!(
@@ -16,7 +15,7 @@ fn main() {
             .args(["install"])
             .current_dir("frontend")
             .status()
-            .expect("Failed to run yarn install");
+            .expect("Failed to run yarn. Is it installed?");
 
         if !status.success() {
             panic!("yarn install failed");

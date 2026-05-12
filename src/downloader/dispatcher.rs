@@ -16,7 +16,7 @@ use crate::{
 
 pub async fn dispatch_download(url: &str, sync_mode: SyncMode, ctx: &Context) -> Result<()> {
     let discovery_ctx = DiscoveryContext {
-        client: &*ctx.client,
+        client: &ctx.client,
         settings: &ctx.settings,
         dm: ctx.dm.as_ref(),
     };
@@ -46,7 +46,12 @@ pub async fn dispatch_download(url: &str, sync_mode: SyncMode, ctx: &Context) ->
             };
 
             if already_exists {
-                println!("{} Skipping: {}", "[SKIP]".yellow().bold(), track.filename);
+                println!(
+                    "{} Skipping: {} - {}",
+                    "[SKIP]".yellow().bold(),
+                    track.artist,
+                    track.title
+                );
                 skipped += 1;
             } else {
                 to_download.push(track);
@@ -60,8 +65,13 @@ pub async fn dispatch_download(url: &str, sync_mode: SyncMode, ctx: &Context) ->
 
     if let Some(ref m) = ctx.dm {
         for track in &to_download {
-            m.add_task(track.id, track.filename.clone(), track.artwork_url.clone())
-                .await;
+            m.add_task(
+                track.id,
+                track.title.clone(),
+                track.artist.clone(),
+                track.artwork_url.clone(),
+            )
+            .await;
         }
     }
 

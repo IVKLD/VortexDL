@@ -1,6 +1,6 @@
 import {Component, input} from '@angular/core';
 import {MatIcon} from '@angular/material/icon';
-import {FormField, FieldTree} from '@angular/forms/signals';
+import {FieldTree, FormField} from '@angular/forms/signals';
 import {MatFormField, MatHint, MatInput, MatLabel} from "@angular/material/input";
 import {DownloadSettings} from "@app/pages/settings/models/settings-form.model";
 
