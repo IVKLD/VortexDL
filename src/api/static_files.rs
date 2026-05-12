@@ -1,3 +1,5 @@
+#![cfg(feature = "web")]
+
 use axum::{
     http::{StatusCode, Uri, header},
     response::{Html, IntoResponse, Response},

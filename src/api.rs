@@ -19,6 +19,7 @@ pub mod errors;
 pub mod handlers;
 pub mod models;
 pub mod state;
+#[cfg(feature = "web")]
 pub mod static_files;
 
 pub async fn build_router(state: AppState, serve_frontend: bool) -> Router {
@@ -33,7 +34,14 @@ pub async fn build_router(state: AppState, serve_frontend: bool) -> Router {
     let mut router = Router::new().nest("/api", api_routes).with_state(state);
 
     if serve_frontend {
-        router = router.fallback(static_files::static_handler);
+        #[cfg(feature = "web")]
+        {
+            router = router.fallback(static_files::static_handler);
+        }
+        #[cfg(not(feature = "web"))]
+        {
+            tracing::warn!("Frontend requested but binary built without 'web' feature");
+        }
     }
 
     router.layer(CorsLayer::permissive())

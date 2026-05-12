@@ -3,7 +3,7 @@ use std::{env, process::Command};
 fn main() {
     let opt_level = env::var("OPT_LEVEL").unwrap_or_else(|_| "0".to_string());
     let is_release = opt_level != "0";
-    let needs_build = env::var("BUILD_FRONTEND").is_ok();
+    let needs_build = env::var("CARGO_FEATURE_WEB").is_ok();
 
     if needs_build {
         println!(
@@ -29,13 +29,6 @@ fn main() {
 
         if !status.success() {
             panic!("yarn build failed");
-        }
-    } else {
-        // Create dummy directory to satisfy rust-embed during lint/test
-        let dist_path = "frontend/dist/voltexdl/browser";
-        if !std::path::Path::new(dist_path).exists() {
-            std::fs::create_dir_all(dist_path).unwrap();
-            std::fs::write(format!("{}/index.html", dist_path), "Dummy").unwrap();
         }
     }
 

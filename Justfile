@@ -39,4 +39,4 @@ build:
 
 # Build full distribution (backend + frontend)
 dist:
-    BUILD_FRONTEND=1 cargo build --release
+    cargo build --release --features web
