@@ -1,6 +1,6 @@
 import {AbstractControl, ValidationErrors, ValidatorFn} from '@angular/forms';
 
-export function urlValidator(allowedProtocols: string[] = ['http:', 'https:']): ValidatorFn {
+export function urlValidator(allowedProtocols: string[]): ValidatorFn {
     return (control: AbstractControl): ValidationErrors | null => {
         const value = control.value;
 

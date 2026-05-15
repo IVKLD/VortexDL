@@ -1,15 +1,10 @@
 use anyhow::{Result, anyhow};
 use soundcloud_rs::Identifier;
 
-use crate::downloader::{
-    core::TrackDownload,
-    discovery::{DiscoveryContext, resolve_with_feedback},
-};
+use crate::downloader::{TrackDownload, discovery::DiscoveryContext};
 
-pub async fn fetch_playlist(ctx: &DiscoveryContext<'_>, url: &str) -> Result<Vec<TrackDownload>> {
-    let resolve_res = resolve_with_feedback(ctx, url, "Resolving playlist URL...").await?;
-
-    let playlist_id = Identifier::Id(resolve_res.id);
+pub async fn fetch_playlist(ctx: &DiscoveryContext<'_>, id: i64) -> Result<Vec<TrackDownload>> {
+    let playlist_id = Identifier::Id(id);
     let playlist = ctx.client.get_playlist(&playlist_id).await?;
 
     let collection = playlist
@@ -18,7 +13,8 @@ pub async fn fetch_playlist(ctx: &DiscoveryContext<'_>, url: &str) -> Result<Vec
 
     let tracks = collection
         .into_iter()
-        .filter_map(|track| {
+        .enumerate()
+        .filter_map(|(i, track)| {
             let id = track.id?;
 
             let artist = track
@@ -41,6 +37,7 @@ pub async fn fetch_playlist(ctx: &DiscoveryContext<'_>, url: &str) -> Result<Vec
                 title,
                 artist,
                 artwork_url,
+                position: Some(i as u32),
             })
         })
         .collect();

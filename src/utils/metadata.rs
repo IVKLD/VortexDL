@@ -42,6 +42,7 @@ pub struct SaveTrackArgs<'a> {
     pub artist: &'a str,
     pub artwork_url: Option<&'a str>,
     pub source_url: Option<&'a str>,
+    pub position: Option<u32>,
     pub artwork_data: Option<Vec<u8>>,
 }
 
@@ -58,6 +59,9 @@ pub fn save_track_info(args: SaveTrackArgs) -> Result<()> {
     }
     if let Some(url) = args.source_url {
         set_txxx(&mut tag, crate::constants::SC_SOURCE_URL, url);
+    }
+    if let Some(pos) = args.position {
+        set_txxx(&mut tag, crate::constants::SC_POSITION, &pos.to_string());
     }
 
     if let Some(data) = args.artwork_data {

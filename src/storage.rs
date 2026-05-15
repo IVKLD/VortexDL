@@ -6,10 +6,11 @@ use std::{
 };
 
 use anyhow::Result;
+use id3::TagLike;
 use tokio::{sync::RwLock, task::spawn_blocking};
 
 use crate::{
-    constants::{SC_ARTWORK_URL, SC_IDENTIFIER, SC_SOURCE_URL},
+    constants::{SC_ARTWORK_URL, SC_IDENTIFIER, SC_POSITION, SC_SOURCE_URL},
     database::sync::{get_previous_ids, save_sync_ids},
     models::SyncMode,
     utils::metadata::read_custom_field,
@@ -22,6 +23,7 @@ pub struct TrackData {
     pub title: String,
     pub artwork_url: Option<String>,
     pub source_url: Option<String>,
+    pub position: Option<u32>,
 }
 
 #[derive(Clone)]
@@ -37,25 +39,8 @@ impl MusicStorage {
             tracks: HashMap::new(),
         }
     }
-    pub fn update_track(
-        &mut self,
-        id: i64,
-        path: PathBuf,
-        artist: String,
-        title: String,
-        artwork_url: Option<String>,
-        source_url: Option<String>,
-    ) {
-        self.tracks.insert(
-            id,
-            TrackData {
-                path,
-                artist,
-                title,
-                artwork_url,
-                source_url,
-            },
-        );
+    pub fn update_track(&mut self, id: i64, data: TrackData) {
+        self.tracks.insert(id, data);
     }
 
     pub fn remove_track(&mut self, id: i64) {
@@ -70,7 +55,6 @@ impl MusicStorage {
 
         let result = spawn_blocking(move || {
             let mut new_tracks = HashMap::new();
-            let mut seen_ids = HashSet::new();
             let mut stack = vec![root];
 
             while let Some(dir) = stack.pop() {
@@ -80,67 +64,73 @@ impl MusicStorage {
 
                 for entry in entries.flatten() {
                     let path = entry.path();
+
                     if path.is_dir() {
                         stack.push(path);
                         continue;
                     }
 
-                    if let Some((p_str, id)) = path.to_str().and_then(|p| {
-                        read_custom_field(p, SC_IDENTIFIER)
-                            .and_then(|s| s.parse::<i64>().ok())
-                            .map(|id| (p, id))
-                    }) {
-                        seen_ids.insert(id);
+                    let Some(p_str) = path.to_str() else { continue };
+                    let Some(id_str) = read_custom_field(p_str, SC_IDENTIFIER) else {
+                        continue;
+                    };
+                    let Ok(id) = id_str.parse::<i64>() else {
+                        continue;
+                    };
 
-                        let tag = id3::Tag::read_from_path(&path).ok();
-                        let (artist, title) = if let Some(t) = tag {
-                            use id3::TagLike;
+                    let (artist, title) = id3::Tag::read_from_path(&path)
+                        .ok()
+                        .map(|t| {
                             (
                                 t.artist().unwrap_or("Unknown").to_string(),
                                 t.title().unwrap_or("Unknown").to_string(),
                             )
-                        } else {
-                            let clean_name = path
-                                .file_stem()
-                                .map(|s| s.to_string_lossy())
-                                .unwrap_or_default()
-                                .replace('_', " ");
+                        })
+                        .unwrap_or_else(|| Self::parse_filename_fallback(&path));
 
-                            if clean_name.contains(" - ") {
-                                let parts: Vec<&str> = clean_name.split(" - ").collect();
-                                (parts[0].trim().to_string(), parts[1].trim().to_string())
-                            } else {
-                                ("Unknown".to_string(), clean_name.to_string())
-                            }
-                        };
+                    let artwork_url = read_custom_field(p_str, SC_ARTWORK_URL);
+                    let source_url = read_custom_field(p_str, SC_SOURCE_URL);
+                    let position =
+                        read_custom_field(p_str, SC_POSITION).and_then(|s| s.parse().ok());
 
-                        let artwork_url = read_custom_field(p_str, SC_ARTWORK_URL);
-                        let source_url = read_custom_field(p_str, SC_SOURCE_URL);
-
-                        new_tracks.insert(
-                            id,
-                            TrackData {
-                                path,
-                                artist,
-                                title,
-                                artwork_url,
-                                source_url,
-                            },
-                        );
-                    }
+                    new_tracks.insert(
+                        id,
+                        TrackData {
+                            path,
+                            artist,
+                            title,
+                            artwork_url,
+                            source_url,
+                            position,
+                        },
+                    );
                 }
             }
-            (new_tracks, seen_ids)
+            new_tracks
         })
         .await;
 
-        if let Ok((new_tracks, seen_ids)) = result {
+        if let Ok(new_tracks) = result {
             let mut s = storage.write().await;
-            for (id, data) in new_tracks {
-                s.tracks.insert(id, data);
-            }
-            s.tracks.retain(|id, _| seen_ids.contains(id));
-            tracing::info!("Indexing complete. Found {} tracks.", s.tracks.len());
+            let count = new_tracks.len();
+
+            s.tracks = new_tracks;
+
+            tracing::info!("Indexing complete. Found {} tracks.", count);
+        }
+    }
+
+    fn parse_filename_fallback(path: &Path) -> (String, String) {
+        let clean_name = path
+            .file_stem()
+            .map(|s| s.to_string_lossy())
+            .unwrap_or_default()
+            .replace('_', " ");
+
+        if let Some((artist, title)) = clean_name.split_once(" - ") {
+            (artist.trim().to_string(), title.trim().to_string())
+        } else {
+            ("Unknown".to_string(), clean_name)
         }
     }
 

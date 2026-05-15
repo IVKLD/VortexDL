@@ -21,10 +21,3 @@ export interface FormatItem {
     color: string;
 }
 
-export interface RecentTrack {
-    id: number;
-    artist: string;
-    title: string;
-    format: AudioFormat;
-    artworkUrl: string | null;
-}

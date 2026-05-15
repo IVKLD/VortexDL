@@ -40,3 +40,7 @@ build:
 # Build full distribution (backend + frontend)
 dist:
     cargo build --release --features web
+
+# Create a new release (version bump, tag, push)
+release:
+    ./scripts/release.sh

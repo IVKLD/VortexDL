@@ -1,9 +1,8 @@
 import {DashboardView} from './pages/dashboard-view/dashboard-view';
-import {PlaylistView} from './pages/playlist-view/playlist-view';
 import {MusicTracksView} from './pages/music-tracks-view/music-tracks-view';
-import {SettingsView} from './pages/settings/settings-view.component';
 import {Route} from '@angular/router';
 import {HeaderConfig, HeaderFeature} from '@shared/components/header/header.types';
+import {SettingsView} from './pages/settings-view/settings-view.component';
 
 export interface RouteData {
     header?: HeaderConfig;
@@ -22,21 +21,10 @@ export const routes: CustomRoutes = [
         data: {
             header: {
                 title: 'Overview',
-                features: [HeaderFeature.Stats],
+                features: [HeaderFeature.Stats, HeaderFeature.Download, HeaderFeature.Sync],
             },
         },
         component: DashboardView,
-    },
-    {
-        path: 'playlist',
-        title: 'Playlist',
-        data: {
-            header: {
-                title: 'Playlists',
-                features: [HeaderFeature.Search],
-            },
-        },
-        component: PlaylistView,
     },
     {
         path: 'musics',

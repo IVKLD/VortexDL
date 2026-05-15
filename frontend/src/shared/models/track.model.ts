@@ -14,6 +14,7 @@ export interface Track {
     sourceUrl: string | null;
     createdAt: number;
     size: number;
+    position: number;
 }
 
 export type Tracks = Track[];

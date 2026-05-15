@@ -9,8 +9,8 @@ import {MatIcon} from '@angular/material/icon';
     changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class StatCardComponent {
-    icon = input.required<string>();
-    label = input.required<string>();
-    value = input.required<string | number>();
-    iconClass = input<string>('');
+    public readonly icon = input.required<string>();
+    public readonly label = input.required<string>();
+    public readonly value = input.required<string | number>();
+    public readonly iconClass = input<string>('');
 }

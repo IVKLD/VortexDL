@@ -1,8 +1,8 @@
-import { computed, inject, Injectable, NgZone, signal } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
-import { MusicTracksViewService } from '../pages/music-tracks-view/music-tracks-view.service';
-import { MusicTracksViewState } from '../pages/music-tracks-view/music-tracks-view.state';
-import { AudioFormat } from '@shared/models/track.model';
+import {inject, Injectable, NgZone, signal} from '@angular/core';
+import {HttpClient} from '@angular/common/http';
+import {MusicTracksViewService} from '../pages/music-tracks-view/music-tracks-view.service';
+import {MusicTracksViewState} from '../pages/music-tracks-view/music-tracks-view.state';
+import {AudioFormat, Track} from '@shared/models/track.model';
 
 export enum DownloadStatus {
     Queued = 'queued',
@@ -11,17 +11,9 @@ export enum DownloadStatus {
     Failed = 'failed',
 }
 
-export interface DownloadItem {
-    id: number;
-    title: string;
-    artist: string;
-    status: DownloadStatus;
-    artworkUrl?: string | null;
-    format?: AudioFormat;
-    createdAt?: number;
-    sourceUrl?: string | null;
+export interface DownloadItem extends Track {
     error?: string;
-    size?: number;
+    status: DownloadStatus;
 }
 
 export enum ServerEventType {
@@ -42,13 +34,6 @@ export type ServerEvent =
 })
 export class DownloadTrackingService {
     public readonly activeDownloads = signal<DownloadItem[]>([]);
-    public readonly sortedActiveDownloads = computed(() => {
-        return [...this.activeDownloads()].sort((a, b) => {
-            if (a.status === DownloadStatus.Downloading && b.status !== DownloadStatus.Downloading) return -1;
-            if (a.status !== DownloadStatus.Downloading && b.status === DownloadStatus.Downloading) return 1;
-            return 0;
-        });
-    });
     public readonly errors = signal<string[]>([]);
     private readonly _http = inject(HttpClient);
     private readonly _musicApi = inject(MusicTracksViewService);
@@ -145,6 +130,7 @@ export class DownloadTrackingService {
                 sourceUrl: item.sourceUrl || null,
                 createdAt: item.createdAt || 0,
                 size: item.size || 0,
+                position: item.position || 0,
             });
         }
 

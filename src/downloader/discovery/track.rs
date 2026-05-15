@@ -1,7 +1,7 @@
 use anyhow::Result;
 use soundcloud_rs::Identifier;
 
-use crate::downloader::{core::TrackDownload, discovery::DiscoveryContext};
+use crate::downloader::{TrackDownload, discovery::DiscoveryContext};
 
 pub async fn fetch_track(ctx: &DiscoveryContext<'_>, id: i64) -> Result<TrackDownload> {
     let track = ctx.client.get_track(&Identifier::Id(id)).await?;
@@ -26,5 +26,6 @@ pub async fn fetch_track(ctx: &DiscoveryContext<'_>, id: i64) -> Result<TrackDow
         title,
         artist,
         artwork_url,
+        position: None,
     })
 }

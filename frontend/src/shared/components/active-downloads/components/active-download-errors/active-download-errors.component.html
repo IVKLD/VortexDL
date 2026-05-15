@@ -1,13 +1,13 @@
-<div class="error-plate">
-    <div class="error-header">
+<div class="plate">
+    <div class="header">
         <span>Errors</span>
         <button (click)="onClear()" class="clear-all-btn">Clear All</button>
     </div>
-    <div class="error-list">
+    <div class="list">
         @for (err of errors(); track $index) {
-            <div class="error-item">
+            <div class="item">
                 <mat-icon>error_outline</mat-icon>
-                <span class="error-message">{{ err }}</span>
+                <span class="message">{{ err }}</span>
             </div>
         }
     </div>

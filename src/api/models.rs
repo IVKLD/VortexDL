@@ -33,6 +33,7 @@ pub struct TrackRecord {
     pub source_url: Option<String>,
     pub created_at: u64,
     pub size: u64,
+    pub position: u32,
 }
 
 #[derive(Debug, Serialize)]

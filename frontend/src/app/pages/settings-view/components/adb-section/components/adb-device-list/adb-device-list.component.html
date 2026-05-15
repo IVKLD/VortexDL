@@ -1,0 +1,29 @@
+@let devices = form()().value();
+
+@if (devices.length === 0) {
+    <div class="empty">
+        <mat-icon>cable</mat-icon>
+        <p>No devices configured. Add a device ID to enable ADB sync.</p>
+    </div>
+} @else {
+    <div class="list">
+        @for (device of devices; track device.deviceId; let i = $index) {
+            <div [class.disabled]="!device.enabled" class="row">
+                <mat-icon>phone_android</mat-icon>
+                <div class="info">
+                    <span class="id">{{ device.deviceId }}</span>
+                        <mat-form-field>
+                            <input [formField]="form()![i]!.remoteMusicDir" matInput placeholder="Remote Directory">
+                        </mat-form-field>
+                </div>
+                <mat-slide-toggle
+                    (change)="toggleDevice.emit(i)"
+                    [checked]="device.enabled"
+                />
+                <button (click)="remove.emit(i)" mat-icon-button>
+                    <mat-icon>delete</mat-icon>
+                </button>
+            </div>
+        }
+    </div>
+}

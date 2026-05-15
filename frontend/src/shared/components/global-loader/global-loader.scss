@@ -1,0 +1,18 @@
+.loader-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  z-index: 10000;
+  pointer-events: none;
+  overflow: hidden;
+
+  mat-progress-bar {
+    height: 3px;
+    filter: drop-shadow(0 0 4px rgba(var(--mat-sys-primary), 0.5));
+  }
+}
+
+:host {
+  display: block;
+}

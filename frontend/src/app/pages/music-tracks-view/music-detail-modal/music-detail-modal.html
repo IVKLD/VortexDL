@@ -1,51 +1,49 @@
-<div class="music-detail">
-    <header>
-        <div>
-            <span class="info-label">Music Track</span>
-            <h2>{{ track.title }}</h2>
-        </div>
-        <button mat-dialog-close mat-icon-button>
-            <mat-icon>close</mat-icon>
-        </button>
-    </header>
+<header>
+    <div>
+        <span class="info-label">Music Track</span>
+        <h2>{{ track.title }}</h2>
+    </div>
+    <button mat-dialog-close mat-icon-button>
+        <mat-icon>close</mat-icon>
+    </button>
+</header>
 
-    <main>
-        <figure>
-            @if (track.artworkUrl) {
-                <img [alt]="track.title" [ngSrc]="track.artworkUrl" height="240" width="240"/>
-            } @else {
-                <mat-icon>music_note</mat-icon>
-            }
-            <div class="glow"></div>
-        </figure>
-
-        <section>
-            <div>
-                <span class="info-label">Artist</span>
-                <span>{{ track.artist }}</span>
-            </div>
-            <div>
-                <span class="info-label">Format</span>
-                <b [attr.data-format]="track.format">{{ track.format }}</b>
-            </div>
-            <div>
-                <span class="info-label">File Size</span>
-                <span>{{ track.size | fileSize }}</span>
-            </div>
-            <div>
-                <span class="info-label">Date Added</span>
-                <span>{{ track.createdAt * 1000 | date:'mediumDate' }}</span>
-            </div>
-        </section>
-    </main>
-
-    <footer>
-        @if (track.sourceUrl) {
-            <a [href]="track.sourceUrl" class="source-btn" color="accent" mat-button target="_blank">
-                <mat-icon>open_in_new</mat-icon>
-                Open Original
-            </a>
+<main>
+    <figure>
+        @if (track.artworkUrl) {
+            <img [alt]="track.title" [ngSrc]="track.artworkUrl" height="240" width="240"/>
+        } @else {
+            <mat-icon>music_note</mat-icon>
         }
-        <button mat-dialog-close mat-flat-button>Done</button>
-    </footer>
-</div>
+        <div class="glow"></div>
+    </figure>
+
+    <section>
+        <div>
+            <span class="info-label">Artist</span>
+            <span>{{ track.artist }}</span>
+        </div>
+        <div>
+            <span class="info-label">Format</span>
+            <b [attr.data-format]="track.format">{{ track.format }}</b>
+        </div>
+        <div>
+            <span class="info-label">File Size</span>
+            <span>{{ track.size | fileSize }}</span>
+        </div>
+        <div>
+            <span class="info-label">Date Added</span>
+            <span>{{ track.createdAt * 1000 | date:'mediumDate' }}</span>
+        </div>
+    </section>
+</main>
+
+<footer>
+    @if (track.sourceUrl) {
+        <a [href]="track.sourceUrl" class="source-btn" color="accent" mat-button target="_blank">
+            <mat-icon>open_in_new</mat-icon>
+            Open Original
+        </a>
+    }
+    <button mat-dialog-close mat-flat-button>Done</button>
+</footer>

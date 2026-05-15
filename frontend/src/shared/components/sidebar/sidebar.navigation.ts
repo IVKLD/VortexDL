@@ -13,11 +13,6 @@ export const SIDEBAR_NAV_ITEMS: SidebarNavItem[] = [
         exact: true,
     },
     {
-        path: '/playlist',
-        icon: 'cards_stack',
-        label: 'Playlist',
-    },
-    {
         path: '/musics',
         icon: 'library_music',
         label: 'Library',

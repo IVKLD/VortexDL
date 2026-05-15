@@ -1,75 +1,87 @@
 <header>
-    <div class="page-info">
-        <div class="stats-label">
-            <span class="label-text">Storage</span>
-            <span>{{ config()?.title || 'System' }}</span>
-        </div>
+    <div class="left">
+        <div class="page-info">
+            <div class="stats-label">
+                <span class="label-text">Storage</span>
+                <span>{{ config()?.title || 'System' }}</span>
+            </div>
 
-        @if (hasFeature(Feature.Stats)) {
-            <span class="separator">//</span>
-            <div class="stats-value">
-                <span class="label-text">Tracks</span>
-                <span [class.skeleton]="musicState.isLoading()">
-                {{ musicState.isLoading() ? '' : musicState.sortedTracks().length }}
-            </span>
+            @if (hasFeature(Feature.Stats)) {
+                <span class="separator">//</span>
+                <div class="stats-value">
+                    <span class="label-text">Tracks</span>
+                    <span [class.skeleton]="musicState.isLoading()">
+                        {{ musicState.isLoading() ? 0 : musicState.sortedTracks().length }}
+                    </span>
+                </div>
+            }
+        </div>
+    </div>
+
+    <div class="center">
+        @if (hasFeature(Feature.Search)) {
+            <div class="search-area">
+                <mat-form-field subscriptSizing="dynamic">
+                    <mat-icon matPrefix>search</mat-icon>
+                    <input [formField]="searchForm" matInput placeholder="Search..."/>
+                </mat-form-field>
             </div>
         }
     </div>
 
-    @if (hasFeature(Feature.Search)) {
-        <div class="search-area">
-            <mat-form-field subscriptSizing="dynamic">
-                <mat-icon matPrefix>search</mat-icon>
-                <input [formField]="searchForm" matInput placeholder="Search..."/>
-            </mat-form-field>
-        </div>
-    }
+    <div class="right">
+        <div class="actions">
+            @if (hasFeature(Feature.Sort)) {
+                <div class="context-actions">
+                    <button [matMenuTriggerFor]="sortMenu" mat-button>
+                        <mat-icon>sort</mat-icon>
+                        <span>
+                            @switch (musicState.sortOption()) {
+                                @case (SortOption.POSITION_ASC) {
+                                    SoundCloud
+                                }
+                                @case (SortOption.NAME_ASC) {
+                                    A-Z
+                                }
+                                @case (SortOption.NAME_DESC) {
+                                    Z-A
+                                }
+                                @case (SortOption.DATE_DESC) {
+                                    Newest
+                                }
+                                @case (SortOption.DATE_ASC) {
+                                    Oldest
+                                }
+                            }
+                         </span>
+                    </button>
 
-    <div class="actions">
-        @if (hasFeature(Feature.Sort)) {
-            <div class="context-actions">
-                <button [matMenuTriggerFor]="sortMenu" mat-button>
-                    <mat-icon>sort</mat-icon>
-                    <span>
-                        @switch (musicState.sortOption()) {
-                            @case (SortOption.NAME_ASC) {
-                                A-Z
-                            }
-                            @case (SortOption.NAME_DESC) {
-                                Z-A
-                            }
-                            @case (SortOption.DATE) {
-                                Recent
-                            }
+                    <mat-divider vertical/>
+
+                    <mat-menu #sortMenu="matMenu">
+                        @for (option of sortOptions; track option.value) {
+                            <button (click)="setSort(option.value)" mat-menu-item>
+                                <mat-icon>{{ option.icon }}</mat-icon>
+                                <span>{{ option.label }}</span>
+                            </button>
                         }
-                     </span>
+                    </mat-menu>
+                </div>
+            }
+
+            @if (hasFeature(Feature.Sync)) {
+                <button (click)="syncAll()" [disabled]="isSyncing()" mat-flat-button>
+                    <mat-icon [class.rotating]="isSyncing()">sync</mat-icon>
+                    <span>{{ isSyncing() ? 'Syncing' : 'Sync' }}</span>
                 </button>
+            }
 
-                <mat-divider vertical/>
-
-                <mat-menu #sortMenu="matMenu">
-                    @for (option of sortOptions; track option.value) {
-                        <button (click)="setSort(option.value)" mat-menu-item>
-                            <mat-icon>{{ option.icon }}</mat-icon>
-                            <span>{{ option.label }}</span>
-                        </button>
-                    }
-                </mat-menu>
-            </div>
-        }
-
-        @if (hasFeature(Feature.Sync)) {
-            <button (click)="syncAll()" [disabled]="isSyncing()" mat-flat-button>
-                <mat-icon [class.rotating]="isSyncing()">sync</mat-icon>
-                <span>{{ isSyncing() ? 'Syncing' : 'Sync' }}</span>
-            </button>
-        }
-
-        @if (hasFeature(Feature.Download)) {
-            <button (click)="openDownloadDialog()" mat-flat-button>
-                <mat-icon>add</mat-icon>
-                <span>Download</span>
-            </button>
-        }
+            @if (hasFeature(Feature.Download)) {
+                <button (click)="openDownloadDialog()" mat-flat-button>
+                    <mat-icon>add</mat-icon>
+                    <span>Download</span>
+                </button>
+            }
+        </div>
     </div>
 </header>

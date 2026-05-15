@@ -46,11 +46,11 @@ export class DownloadDialogComponent implements OnInit {
         required(f, {message: 'URL is required'});
     });
 
-    ngOnInit() {
+    public ngOnInit() {
         this.loadHistory();
     }
 
-    removeFromHistory(item: string) {
+    protected removeFromHistory(item: string) {
         this.history = this.history.filter(i => i !== item);
         localStorage.setItem(STORAGE_KEY, JSON.stringify(this.history));
     }

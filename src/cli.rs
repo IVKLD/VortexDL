@@ -1,6 +1,12 @@
-use clap::Parser;
+use anyhow::Result;
+use clap::{CommandFactory, Parser};
 
-use crate::models::SyncMode;
+use crate::{
+    api::{self, state::AppState},
+    database::settings::UserSettings,
+    downloader::{self, Context},
+    models::SyncMode,
+};
 
 #[derive(Parser, Debug)]
 #[command(name = "vortex-dl")]
@@ -41,4 +47,40 @@ pub struct Args {
         help = "Port to listen on for the REST API and WebUI"
     )]
     pub port: u16,
+}
+
+impl Args {
+    pub fn resolve_output_dir(&self, settings: &UserSettings) -> String {
+        if !self.output.is_empty() {
+            self.output.clone()
+        } else {
+            settings.downloads.output_path.clone()
+        }
+    }
+}
+
+pub async fn execute_app(state: AppState, args: Args) -> Result<()> {
+    if args.serve {
+        api::run_server(state, &args).await
+    } else if let Some(ref url) = args.url {
+        run_cli_download(state, url, &args).await
+    } else {
+        Args::command().print_help()?;
+        println!();
+        Ok(())
+    }
+}
+
+async fn run_cli_download(state: AppState, url: &str, args: &Args) -> Result<()> {
+    let ctx = Context {
+        storage: state.storage.clone(),
+        client: state.client.clone(),
+        http: state.http.clone(),
+        dm: None,
+        settings: state.settings.clone(),
+    };
+
+    ctx.settings.write().await.downloads.sync_mode = args.sync_mode.clone();
+    downloader::download(url, &ctx).await?;
+    Ok(())
 }

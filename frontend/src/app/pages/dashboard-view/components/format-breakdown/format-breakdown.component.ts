@@ -10,5 +10,5 @@ import {FormatItem} from '../../dashboard-view.model';
     changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class FormatBreakdownComponent {
-    data = input.required<FormatItem[]>();
+    public readonly data = input.required<FormatItem[]>();
 }

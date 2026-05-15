@@ -10,5 +10,5 @@ import {ActivityDay} from '../../dashboard-view.model';
     changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class ActivityChartComponent {
-    data = input.required<ActivityDay[]>();
+    public readonly data = input.required<ActivityDay[]>();
 }

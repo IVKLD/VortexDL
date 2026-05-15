@@ -1,9 +1,9 @@
-import {ChangeDetectionStrategy, Component, inject, OnInit} from '@angular/core';
-import {switchMap} from 'rxjs';
+import {ChangeDetectionStrategy, Component, effect, inject, untracked} from '@angular/core';
 import {MusicTracksViewService} from './music-tracks-view.service';
 import {Track} from '@shared/models/track.model';
-import {MusicCard} from './music-card/music-card';
+import {MusicCard} from '@shared/components/music-card/music-card';
 import {MusicTracksViewState} from './music-tracks-view.state';
+import {PlayerService} from '@app/services/player.service';
 import {
     FixedSizeVirtualScrollStrategy,
     RxVirtualFor,
@@ -21,24 +21,34 @@ import {MatIcon} from '@angular/material/icon';
     styleUrl: './music-tracks-view.scss',
     changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class MusicTracksView implements OnInit {
+export class MusicTracksView {
     private readonly _api = inject(MusicTracksViewService);
     private readonly _state = inject(MusicTracksViewState);
-    protected readonly tracks = this._state.sortedTracks;
     private readonly _dialog = inject(MatDialog);
 
-    ngOnInit() {
-        this._state.startLoading();
-        this._api.index().pipe(
-            switchMap(() => this._api.getAll())
-        ).subscribe({
-            next: tracks => {
-                this._state.setTracks = tracks;
-            },
-            error: () => {
-                this._api.getAll().subscribe(tracks => this._state.setTracks = tracks);
-            }
+    protected readonly player = inject(PlayerService);
+    protected readonly tracks = this._state.sortedTracks;
+
+    constructor() {
+        this._api.index().subscribe();
+
+        effect(() => {
+            const option = this._state.sortOption();
+            untracked(() => {
+                this._state.startLoading();
+                const [sort, order] = option.split('-');
+
+                this._api.getAll(sort, order)
+                    .subscribe({
+                    next: tracks => this._state.setTracks = tracks
+                });
+            });
         });
+    }
+
+    protected playTrack(track: Track) {
+        this.player.queue.set(this.tracks());
+        this.player.play(track);
     }
 
     protected deleteMusic(track: Track) {

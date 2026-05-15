@@ -3,8 +3,10 @@
         @if (tracks().length > 0) {
             <rx-virtual-scroll-viewport [itemSize]="82">
                 <app-music-card
-                        (deleteMusic)="deleteMusic(track)" (trackClick)="openDetail(track)"
+                        (deleteMusic)="deleteMusic(track)" (playTrack)="playTrack(track)" (trackClick)="openDetail(track)"
                         *rxVirtualFor="let track of tracks(); trackBy: 'id'"
+                        [isActive]="player.currentTrack()?.id === track.id"
+                        [isPlaying]="player.isPlaying() && player.currentTrack()?.id === track.id"
                         [track]="track"
                 />
             </rx-virtual-scroll-viewport>
@@ -15,7 +17,7 @@
                 <p>Your library is empty. Go to Dashboard to start downloading music.</p>
             </div>
         }
-    } @placeholder (minimum 500ms) {
+    } @placeholder (minimum 400ms) {
         <div class="loading-placeholder">
             <mat-icon class="spinner">sync</mat-icon>
             <p>Loading library...</p>

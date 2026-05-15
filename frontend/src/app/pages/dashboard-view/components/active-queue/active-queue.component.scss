@@ -1,44 +1,11 @@
-section {
-  background: var(--mat-sys-surface-container-high);
+:host {
+  background: var(--mat-sys-surface-container-low);
   border: 1px solid var(--mat-sys-outline-variant);
   border-radius: 16px;
   padding: 1.5rem;
 }
 
-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 1.5rem;
-
-  h2 {
-    display: flex;
-    align-items: center;
-    gap: 0.75rem;
-    font-size: 1.25rem;
-    font-weight: 600;
-    margin: 0;
-    color: var(--mat-sys-on-surface);
-
-    mat-icon {
-      color: var(--mat-sys-on-surface-variant);
-    }
-  }
-
-  .view-all {
-    color: var(--mat-sys-primary);
-    text-decoration: none;
-    font-size: 0.9rem;
-    font-weight: 500;
-    transition: color 0.2s;
-
-    &:hover {
-      opacity: 0.8;
-    }
-  }
-}
-
-.downloads-wrapper {
+.wrapper {
   background: var(--mat-sys-surface-container-lowest);
   border: 1px solid var(--mat-sys-outline-variant);
   border-radius: 16px;
@@ -46,7 +13,7 @@ header {
   min-height: 300px;
 }
 
-.empty-state {
+.empty {
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -64,7 +31,6 @@ header {
   }
 
   p {
-    margin: 0;
     font-size: 1rem;
   }
 }

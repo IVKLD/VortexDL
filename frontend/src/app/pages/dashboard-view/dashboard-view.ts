@@ -1,28 +1,27 @@
-import { ChangeDetectionStrategy, Component, computed, inject, OnInit } from '@angular/core';
-import { DashboardStat, FormatItem, RecentTrack } from './dashboard-view.model';
-import { MusicTracksViewState } from '@app/pages/music-tracks-view/music-tracks-view.state';
-import { MusicTracksViewService } from '@app/pages/music-tracks-view/music-tracks-view.service';
-import { DownloadTrackingService } from '@app/services/download-tracking.service';
-import { ActivityChartComponent } from './components/activity-chart/activity-chart.component';
-import { FormatBreakdownComponent } from './components/format-breakdown/format-breakdown.component';
-import { RecentTracksComponent } from './components/recent-tracks/recent-tracks.component';
-import { DashboardHeaderComponent } from './components/dashboard-header/dashboard-header.component';
-import { ActiveQueueComponent } from './components/active-queue/active-queue.component';
-import { StatCardComponent } from './components/stat-card/stat-card.component';
-import { FileSizePipe } from '@shared/pipes/file-size.pipe';
-import { AudioFormat } from '@shared/models/track.model';
+import {ChangeDetectionStrategy, Component, computed, inject, OnInit} from '@angular/core';
+import {DashboardStat, FormatItem} from './dashboard-view.model';
+import {MusicTracksViewState} from '@app/pages/music-tracks-view/music-tracks-view.state';
+import {MusicTracksViewService} from '@app/pages/music-tracks-view/music-tracks-view.service';
+import {DownloadTrackingService} from '@app/services/download-tracking.service';
+import {ActivityChartComponent} from './components/activity-chart/activity-chart.component';
+import {FormatBreakdownComponent} from './components/format-breakdown/format-breakdown.component';
+import {RecentTracksComponent} from './components/recent-tracks/recent-tracks.component';
+import {ActiveQueueComponent} from './components/active-queue/active-queue.component';
+import {StatCardComponent} from './components/stat-card/stat-card.component';
+import {FileSizePipe} from '@shared/pipes/file-size.pipe';
+import {AudioFormat, Track} from '@shared/models/track.model';
+import {PlayerService} from '@app/services/player.service';
 
 const FORMATS_CONFIG: { format: AudioFormat, color: string }[] = [
-    { format: AudioFormat.MP3, color: '#818cf8' },
-    { format: AudioFormat.FLAC, color: '#34d399' },
-    { format: AudioFormat.WAV, color: '#f472b6' },
-    { format: AudioFormat.UNKNOWN, color: '#94a3b8' }
+    {format: AudioFormat.MP3, color: '#818cf8'},
+    {format: AudioFormat.FLAC, color: '#34d399'},
+    {format: AudioFormat.WAV, color: '#f472b6'},
+    {format: AudioFormat.UNKNOWN, color: '#94a3b8'}
 ];
 
 @Component({
     selector: 'app-dashboard-view',
     imports: [
-        DashboardHeaderComponent,
         ActiveQueueComponent,
         ActivityChartComponent,
         FormatBreakdownComponent,
@@ -35,10 +34,9 @@ const FORMATS_CONFIG: { format: AudioFormat, color: string }[] = [
     changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class DashboardView implements OnInit {
-    private readonly _state = inject(MusicTracksViewState);
-    private readonly _api = inject(MusicTracksViewService);
     public readonly tracking = inject(DownloadTrackingService);
-
+    protected readonly player = inject(PlayerService);
+    private readonly _state = inject(MusicTracksViewState);
     public readonly stats = computed<DashboardStat[]>(() => [
         {
             icon: 'library_music',
@@ -60,13 +58,11 @@ export class DashboardView implements OnInit {
             iconClass: 'active-icon'
         }
     ]);
-
-    public readonly recentTracks = computed<RecentTrack[]>(() =>
+    public readonly recentTracks = computed<Track[]>(() =>
         [...this._state.sortedTracks()]
             .sort((a, b) => b.createdAt - a.createdAt)
             .slice(0, 5)
     );
-
     public readonly formatBreakdown = computed<FormatItem[]>(() => {
         const tracks = this._state.sortedTracks();
         if (tracks.length === 0) return [];
@@ -81,7 +77,6 @@ export class DashboardView implements OnInit {
             };
         }).filter(item => item.count > 0).sort((a, b) => b.count - a.count);
     });
-
     public readonly activityData = computed(() => {
         const tracks = this._state.sortedTracks();
         const now = new Date();
@@ -95,15 +90,21 @@ export class DashboardView implements OnInit {
 
         const max = Math.max(...dayCounts, 1);
         return dayCounts.map((count, i) => ({
-            label: new Date(now.getTime() - (6 - i) * 86400000).toLocaleDateString('en-US', { weekday: 'short' }),
+            label: new Date(now.getTime() - (6 - i) * 86400000).toLocaleDateString('en-US', {weekday: 'short'}),
             count,
             heightPercent: (count / max) * 100 || 5
         }));
     });
+    private readonly _api = inject(MusicTracksViewService);
 
-    ngOnInit() {
+    public ngOnInit() {
         this._api.getAll().subscribe({
             next: t => this._state.setTracks = t
         });
+    }
+
+    protected playTrack(track: Track) {
+        this.player.queue.set(this.recentTracks());
+        this.player.play(track);
     }
 }

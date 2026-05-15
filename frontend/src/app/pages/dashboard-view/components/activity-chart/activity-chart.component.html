@@ -1,25 +1,24 @@
-<section class="activity-section">
-    <div class="section-header">
-        <h2>
-            <mat-icon>bar_chart</mat-icon>
-            Download Activity (7 Days)
-        </h2>
-    </div>
-    <div class="chart-container">
-        @if (data().length > 0) {
-            <div class="bars-wrapper">
-                @for (item of data(); track item.label) {
-                    <div class="bar-col">
-                        <div [class.zero]="item.count === 0" class="bar-value">{{ item.count }}</div>
-                        <div [style.height]="item.heightPercent + '%'" class="bar-fill"></div>
-                        <div class="bar-label">{{ item.label }}</div>
-                    </div>
-                }
-            </div>
-        } @else {
-            <div class="empty-state mini">
-                <p>No activity data available.</p>
-            </div>
-        }
-    </div>
-</section>
+<div class="section-header">
+    <h2>
+        <mat-icon>bar_chart</mat-icon>
+        Download Activity (7 Days)
+    </h2>
+</div>
+
+<div class="chart-container">
+    @if (data().length > 0) {
+        <div class="bars-wrapper">
+            @for (item of data(); track item.label) {
+                <div class="bar-col">
+                    <div [class.zero]="item.count === 0" class="bar-value">{{ item.count }}</div>
+                    <div [style.height]="item.heightPercent + '%'" class="bar-fill"></div>
+                    <div class="bar-label">{{ item.label }}</div>
+                </div>
+            }
+        </div>
+    } @else {
+        <div class="empty-state mini">
+            <p>No activity data available.</p>
+        </div>
+    }
+</div>

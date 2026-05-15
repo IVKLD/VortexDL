@@ -1,115 +1,14 @@
 @use "@angular/material" as mat;
-@use 'reset';
+@use "styles/base";
+@use "styles/overrides";
 
-html {
-  height: 100%;
-  @include mat.theme((
-          color:(
-                  primary: mat.$azure-palette,
-                  tertiary: mat.$blue-palette,
-          ),
-          typography: Manrope,
-          density: 0,
-  ));
-}
+@include mat.theme((color:(primary: mat.$azure-palette,
+            tertiary: mat.$blue-palette,
+        ),
+        typography: Manrope,
+        density: 0,
+    ));
 
-body {
-  color-scheme: dark;
-
-  background-color: var(--mat-sys-surface);
-  color: var(--mat-sys-on-surface);
-  font: var(--mat-sys-body-medium);
-
-  margin: 0;
-  height: 100%;
-
-  ::-webkit-scrollbar {
-    width: 4px;
-    height: 4px;
-    background: transparent;
-  }
-
-  ::-webkit-scrollbar-thumb {
-    background: var(--mat-sys-on-primary-container);
-    border-radius: 1em;
-  }
-
-  ::-webkit-scrollbar-corner {
-    background: transparent;
-  }
-}
-
-* {
-  font-family: "Manrope", sans-serif;
-  font-optical-sizing: auto;
-  font-weight: normal;
-  font-style: normal;
-}
-
-.download-snackbar {
-  backdrop-filter: blur(6px);
-
-  .mdc-snackbar__surface {
-    background: transparent !important;
-    box-shadow: none !important;
-    padding: 0 !important;
-  }
-
-  .mat-mdc-snack-bar-label {
-    padding: 0 !important;
-    margin: 0 !important;
-  }
-}
-
-.mdc-button mat-icon {
-  font-size: 1.5rem !important;
-  height: 1.5rem !important;
-  width: 1.5rem !important;
-}
-
-.mat-icon {
-  font-variation-settings: 'wght' 300;
-}
-
-.mdc-icon-button {
-  display: inline-flex !important;
-}
-
-mat-form-field {
-  --mat-form-field-container-vertical-padding: .75em;
-  --mat-form-field-container-height: 3em;
-  --mat-form-field-outlined-container-shape: 5em;
-
-  .mdc-text-field--outlined {
-    padding-right: calc(min(16px, var(--mat-form-field-outlined-container-shape, var(--mat-sys-corner-extra-small))) * 2);
-  }
-
-  .mdc-text-field--outlined .mdc-notched-outline .mdc-notched-outline__leading {
-    width: max(12px, calc(var(--mat-form-field-outlined-container-shape) - 2em), var(--mat-sys-corner-extra-small));
-  }
-
-  .mdc-text-field--outlined {
-    padding-left: max(12px, calc(var(--mat-form-field-outlined-container-shape) - 2em), var(--mat-sys-corner-extra-small));
-  }
-
-  --mat-mdc-form-field-label-transform: translateY(-50%) translateX(0);
-}
-
-.rx-virtual-scroll-element {
-  scrollbar-width: thin;
-
-}
-
-//todo refactoring
-.custom-modal-panel {
-  .mat-mdc-dialog-container {
-    --mdc-dialog-container-color: transparent;
-    --mdc-dialog-container-elevation-shadow: none;
-
-    .mat-mdc-dialog-surface {
-      background: transparent !important;
-      box-shadow: none !important;
-      padding: 0 !important;
-    }
-  }
+::view-transition-group(root) {
+    animation: none;
 }

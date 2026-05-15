@@ -1,11 +1,13 @@
-import { computed, Injectable, signal } from '@angular/core';
-import { Track } from '@shared/models/track.model';
+import {computed, Injectable, signal} from '@angular/core';
+import {Track} from '@shared/models/track.model';
 import Fuse from 'fuse.js';
 
 export enum MusicSortOption {
+    POSITION_ASC = 'position-asc',
     NAME_ASC = 'name-asc',
     NAME_DESC = 'name-desc',
-    DATE = 'date',
+    DATE_DESC = 'date-desc',
+    DATE_ASC = 'date-asc',
 }
 
 @Injectable({
@@ -14,17 +16,20 @@ export enum MusicSortOption {
 export class MusicTracksViewState {
     private readonly _isLoading = signal<boolean>(true);
     public readonly isLoading = this._isLoading.asReadonly();
+
     private readonly _tracks = signal<Track[]>([]);
-    private readonly _sortOption = signal<MusicSortOption>(MusicSortOption.DATE);
+
+    private readonly _sortOption = signal<MusicSortOption>(MusicSortOption.POSITION_ASC);
     public readonly sortOption = this._sortOption.asReadonly();
+
     private readonly _searchQuery = signal<string>('');
     public readonly searchQuery = this._searchQuery.asReadonly();
 
     private readonly _fuse = computed(() =>
         new Fuse(this._tracks(), {
             keys: [
-                { name: 'title', weight: 1 },
-                { name: 'artist', weight: 0.7 },
+                {name: 'title', weight: 1},
+                {name: 'artist', weight: 0.7},
             ],
             threshold: 0.3,
             distance: 100,
@@ -33,27 +38,16 @@ export class MusicTracksViewState {
     );
 
     public readonly sortedTracks = computed(() => {
-        let tracks = [...this._tracks()];
+        const tracks = [...this._tracks()];
         const query = this._searchQuery().trim();
 
         if (query) {
-            tracks = this._fuse()
+            return this._fuse()
                 .search(query)
                 .map(result => result.item);
         }
 
-        const option = this._sortOption();
-
-        switch (option) {
-            case MusicSortOption.NAME_ASC:
-                return tracks.sort((a, b) => a.title.localeCompare(b.title));
-            case MusicSortOption.NAME_DESC:
-                return tracks.sort((a, b) => b.title.localeCompare(a.title));
-            case MusicSortOption.DATE:
-                return tracks.sort((a, b) => b.createdAt - a.createdAt);
-            default:
-                return tracks;
-        }
+        return tracks;
     });
 
     public set setTracks(value: Track[]) {

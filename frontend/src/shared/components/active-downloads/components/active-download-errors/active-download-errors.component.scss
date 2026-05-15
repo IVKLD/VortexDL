@@ -3,7 +3,7 @@
   width: 100%;
 }
 
-.error-plate {
+.plate {
   display: flex;
   flex-direction: column;
   background: rgba(255, 82, 82, 0.08);
@@ -13,7 +13,7 @@
   animation: slideIn 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   overflow: hidden;
 
-  .error-header {
+  .header {
     display: flex;
     justify-content: space-between;
     align-items: center;
@@ -32,7 +32,7 @@
     .clear-all-btn {
       background: transparent;
       border: none;
-      color: rgba(255, 255, 255, 0.4);
+      color: rgba(255, 255, 255, 0.6);
       font-size: 0.7rem;
       font-weight: 600;
       cursor: pointer;
@@ -47,14 +47,14 @@
     }
   }
 
-  .error-list {
+  .list {
     display: flex;
     flex-direction: column;
     padding: 8px 0;
-    max-height: 200px;
+    max-height: 10em;
     overflow-y: auto;
 
-    .error-item {
+    .item {
       display: flex;
       align-items: flex-start;
       gap: 10px;
@@ -73,7 +73,7 @@
         margin-top: 2px;
       }
 
-      .error-message {
+      .message {
         flex: 1;
         font-size: 0.8rem;
         font-weight: 450;

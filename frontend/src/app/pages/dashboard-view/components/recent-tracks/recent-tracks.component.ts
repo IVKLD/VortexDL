@@ -1,16 +1,18 @@
-import {ChangeDetectionStrategy, Component, input} from '@angular/core';
-import {NgOptimizedImage, UpperCasePipe} from '@angular/common';
+import {ChangeDetectionStrategy, Component, input, output} from '@angular/core';
+import {NgOptimizedImage} from '@angular/common';
 import {MatIcon} from '@angular/material/icon';
-import {RouterLink} from '@angular/router';
-import {RecentTrack} from '../../dashboard-view.model';
+import {SectionHeaderComponent} from '@shared/components/section-header/section-header';
+import {MatIconButton} from '@angular/material/button';
+import {Track} from '@shared/models/track.model';
 
 @Component({
     selector: 'app-recent-tracks',
-    imports: [UpperCasePipe, MatIcon, RouterLink, NgOptimizedImage],
+    imports: [MatIcon, NgOptimizedImage, SectionHeaderComponent, MatIconButton],
     templateUrl: './recent-tracks.component.html',
     styleUrl: './recent-tracks.component.scss',
     changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class RecentTracksComponent {
-    tracks = input.required<RecentTrack[]>();
+    public readonly tracks = input.required<Track[]>();
+    public readonly playTrack = output<Track>();
 }

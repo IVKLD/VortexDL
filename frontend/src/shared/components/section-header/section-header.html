@@ -1,0 +1,9 @@
+<header>
+    <h2>
+        <mat-icon>{{ icon() }}</mat-icon>
+        {{ title() }}
+    </h2>
+    @if (link(); as linkData) {
+        <a [routerLink]="linkData.url" class="view-all">{{ linkData.label }}</a>
+    }
+</header>

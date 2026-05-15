@@ -61,7 +61,8 @@
           buildInputs = with pkgs; [
             openssl
             pkg-config
-            ffmpeg 
+            ffmpeg
+            systemd
           ];
           nativeBuildInputs = with pkgs; [
             pkg-config

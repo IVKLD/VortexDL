@@ -2,10 +2,12 @@ use std::fs;
 
 use axum::{
     Json,
-    extract::{Path, State},
-    http::StatusCode,
-    response::IntoResponse,
+    extract::{Path, Query, State},
+    http::{StatusCode, header},
+    response::{IntoResponse, Response},
 };
+use serde::Deserialize;
+use tokio_util::io::ReaderStream;
 
 use crate::{
     api::{
@@ -16,10 +18,20 @@ use crate::{
     storage::MusicStorage,
 };
 
-pub async fn get_tracks(State(state): State<AppState>) -> Result<impl IntoResponse, ApiError> {
+#[derive(Deserialize)]
+pub struct TracksQuery {
+    pub sort: Option<String>,
+    pub order: Option<String>,
+    pub limit: Option<usize>,
+}
+
+pub async fn get_tracks(
+    State(state): State<AppState>,
+    Query(query): Query<TracksQuery>,
+) -> Result<impl IntoResponse, ApiError> {
     let storage = state.storage.read().await;
 
-    let tracks = storage
+    let mut tracks = storage
         .tracks
         .iter()
         .filter_map(|(id, data)| {
@@ -49,9 +61,27 @@ pub async fn get_tracks(State(state): State<AppState>) -> Result<impl IntoRespon
                     })
                     .unwrap_or(0),
                 size: metadata.len(),
+                position: data.position.unwrap_or(u32::MAX),
             })
         })
         .collect::<Vec<_>>();
+
+    let sort = query.sort.as_deref().unwrap_or("position");
+    let order = query.order.as_deref().unwrap_or("asc");
+
+    tracks.sort_by(|a, b| {
+        let cmp = match sort {
+            "name" => a.title.to_lowercase().cmp(&b.title.to_lowercase()),
+            "date" => a.created_at.cmp(&b.created_at),
+            _ => a.position.cmp(&b.position),
+        };
+
+        if order == "desc" { cmp.reverse() } else { cmp }
+    });
+
+    if let Some(limit) = query.limit {
+        tracks.truncate(limit);
+    }
 
     Ok(Json(tracks))
 }
@@ -86,4 +116,42 @@ pub async fn remove_track(
         "Track with ID {} not found",
         id
     )))
+}
+
+pub async fn stream_track(
+    State(state): State<AppState>,
+    Path(id): Path<i64>,
+) -> Result<Response, ApiError> {
+    let path = state
+        .storage
+        .read()
+        .await
+        .tracks
+        .get(&id)
+        .map(|d| d.path.clone())
+        .ok_or_else(|| ApiError::not_found(format!("Track with ID {id} not found")))?;
+
+    if !path.exists() {
+        return Err(ApiError::not_found(format!("File not found: {:?}", path)));
+    }
+
+    let file = tokio::fs::File::open(&path)
+        .await
+        .map_err(|e| ApiError::internal(format!("Failed to open file: {e}")))?;
+
+    let metadata = file
+        .metadata()
+        .await
+        .map_err(|e| ApiError::internal(format!("Failed to read metadata: {e}")))?;
+
+    let mime = mime_guess::from_path(&path).first_or_octet_stream();
+    let body = axum::body::Body::from_stream(ReaderStream::new(file));
+
+    Response::builder()
+        .status(StatusCode::OK)
+        .header(header::CONTENT_TYPE, mime.to_string())
+        .header(header::CONTENT_LENGTH, metadata.len().to_string())
+        .header(header::ACCEPT_RANGES, "bytes")
+        .body(body)
+        .map_err(|e| ApiError::internal(format!("Failed to build response: {e}")))
 }

@@ -1,12 +1,12 @@
 import {ChangeDetectionStrategy, Component, inject} from '@angular/core';
 import {MatIcon} from '@angular/material/icon';
-import {RouterLink} from '@angular/router';
 import {ActiveDownloadsComponent} from '@shared/components/active-downloads/active-downloads';
 import {DownloadTrackingService} from '@app/services/download-tracking.service';
+import {SectionHeaderComponent} from '@shared/components/section-header/section-header';
 
 @Component({
     selector: 'app-active-queue',
-    imports: [MatIcon, RouterLink, ActiveDownloadsComponent],
+    imports: [ActiveDownloadsComponent, SectionHeaderComponent, MatIcon],
     templateUrl: './active-queue.component.html',
     styleUrl: './active-queue.component.scss',
     changeDetection: ChangeDetectionStrategy.OnPush,

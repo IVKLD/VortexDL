@@ -1,5 +1,3 @@
-<app-dashboard-header/>
-
 <div class="stats-container">
     @for (stat of stats(); track stat.label) {
         <app-stat-card
@@ -22,13 +20,14 @@
     </div>
 
     <div class="right-column">
-        @defer (on viewport) {
+        @defer (on idle) {
             <app-format-breakdown [data]="formatBreakdown()"/>
         } @placeholder {
             <div class="section-placeholder"></div>
         }
-        @defer (on viewport) {
-            <app-recent-tracks [tracks]="recentTracks()"/>
+
+        @defer (on idle) {
+            <app-recent-tracks (playTrack)="playTrack($event)" [tracks]="recentTracks()"/>
         } @placeholder {
             <div class="section-placeholder"></div>
         }

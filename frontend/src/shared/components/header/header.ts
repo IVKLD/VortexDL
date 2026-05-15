@@ -14,7 +14,7 @@ import {takeUntilDestroyed, toObservable, toSignal} from '@angular/core/rxjs-int
 import {debounce, form, FormField} from '@angular/forms/signals';
 import {RouteData} from '@app/app.routes';
 import {MatDivider} from "@angular/material/list";
-import {SettingsService} from '@app/pages/settings/settings.service';
+import {SettingsService} from '@app/pages/settings-view/settings.service';
 import {MusicTracksViewService} from '@app/pages/music-tracks-view/music-tracks-view.service';
 import {MatSnackBar} from '@angular/material/snack-bar';
 import {DownloadProgressSnackbar} from '@shared/components/download-progress-snackbar/download-progress-snackbar';
@@ -32,9 +32,11 @@ export class Header {
     protected readonly Feature = HeaderFeature;
     protected readonly SortOption = MusicSortOption;
     protected readonly sortOptions = [
+        {label: 'SoundCloud Order', value: MusicSortOption.POSITION_ASC, icon: 'reorder'},
+        {label: 'Newest First', value: MusicSortOption.DATE_DESC, icon: 'clock_arrow_down'},
+        {label: 'Oldest First', value: MusicSortOption.DATE_ASC, icon: 'clock_arrow_up'},
         {label: 'Alphabetical (A-Z)', value: MusicSortOption.NAME_ASC, icon: 'sort_by_alpha'},
         {label: 'Alphabetical (Z-A)', value: MusicSortOption.NAME_DESC, icon: 'sort_by_alpha'},
-        {label: 'Date Added', value: MusicSortOption.DATE, icon: 'schedule'},
     ];
     private readonly _dialog = inject(MatDialog);
     private readonly _router = inject(Router);

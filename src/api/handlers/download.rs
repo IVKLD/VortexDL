@@ -20,7 +20,6 @@ use crate::{
         state::AppState,
     },
     downloader,
-    models::SyncMode,
 };
 
 pub async fn start_download(
@@ -47,11 +46,12 @@ pub async fn start_download(
         let ctx = downloader::Context {
             storage: state.storage.clone(),
             client: state.client.clone(),
+            http: state.http.clone(),
             dm: Some(state.download_manager.clone()),
             settings: state.settings.clone(),
         };
 
-        if let Err(e) = downloader::dispatch_download(&url, SyncMode::Silent, &ctx).await {
+        if let Err(e) = downloader::download(&url, &ctx).await {
             tracing::error!("Download failed for {url}: {e}");
         }
 

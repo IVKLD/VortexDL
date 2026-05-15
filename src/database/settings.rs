@@ -2,7 +2,7 @@ use anyhow::Error;
 use redb::{ReadableDatabase, TableDefinition};
 use serde::{Deserialize, Serialize};
 
-use crate::database::get_db;
+use crate::{database::get_db, models::SyncMode};
 
 const TABLE: TableDefinition<u64, &str> = TableDefinition::new("settings");
 const SETTINGS_ID: u64 = 0;
@@ -22,6 +22,23 @@ pub struct DownloadSettings {
     pub output_path: String,
     pub max_concurrent: u32,
     pub naming_template: String,
+    pub sync_mode: SyncMode,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct AdbDeviceSettings {
+    pub device_id: String,
+    pub remote_music_dir: String,
+    pub enabled: bool,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, Default)]
+#[serde(rename_all = "camelCase")]
+pub struct AdbSettings {
+    pub enabled: bool,
+    pub auto_sync: bool,
+    pub devices: Vec<AdbDeviceSettings>,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -29,6 +46,8 @@ pub struct DownloadSettings {
 pub struct UserSettings {
     pub soundcloud: SoundcloudSettings,
     pub downloads: DownloadSettings,
+    #[serde(default)]
+    pub adb: AdbSettings,
     pub limit_per_page: u32,
     pub max_retries: u32,
 }
@@ -46,7 +65,9 @@ impl Default for UserSettings {
                 output_path: "./downloads".to_string(),
                 max_concurrent: 3,
                 naming_template: "{artist} - {title}".to_string(),
+                sync_mode: SyncMode::Silent,
             },
+            adb: AdbSettings::default(),
             limit_per_page: 100,
             max_retries: 5,
         }

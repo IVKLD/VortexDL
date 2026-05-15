@@ -1,28 +1,27 @@
-<section class="format-section">
-    <div class="section-header">
-        <h2>
-            <mat-icon>pie_chart</mat-icon>
-            Audio Formats
-        </h2>
-    </div>
-    <div class="format-list">
-        @for (fmt of data(); track fmt.format) {
-            <div class="format-item">
-                <div class="format-info">
-                    <span [style.background]="fmt.color" class="format-dot"></span>
-                    <span class="format-name">{{ fmt.format }}</span>
-                    <span class="format-count">{{ fmt.count }}</span>
-                </div>
-                <div class="format-bar-bg">
-                    <div [style.background]="fmt.color"
-                         [style.width]="fmt.percentage + '%'"
-                         class="format-bar-fill"></div>
-                </div>
+<div class="section-header">
+    <h2>
+        <mat-icon>pie_chart</mat-icon>
+        Audio Formats
+    </h2>
+</div>
+
+<div class="format-list">
+    @for (fmt of data(); track fmt.format) {
+        <div class="format-item">
+            <div class="format-info">
+                <span [style.background]="fmt.color" class="format-dot"></span>
+                <span class="format-name">{{ fmt.format }}</span>
+                <span class="format-count">{{ fmt.count }}</span>
             </div>
-        } @empty {
-            <div class="empty-state mini">
-                <p>Library is empty.</p>
+            <div class="format-bar-bg">
+                <div [style.background]="fmt.color"
+                     [style.width]="fmt.percentage + '%'"
+                     class="format-bar-fill"></div>
             </div>
-        }
-    </div>
-</section>
+        </div>
+    } @empty {
+        <div class="empty-state mini">
+            <p>Library is empty.</p>
+        </div>
+    }
+</div>

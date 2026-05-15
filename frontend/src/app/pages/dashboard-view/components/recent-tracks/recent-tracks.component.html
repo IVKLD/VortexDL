@@ -1,35 +1,32 @@
-<section class="recent-tracks-section">
-    <div class="section-header">
-        <h2>
-            <mat-icon>history</mat-icon>
-            Recently Added
-        </h2>
-        <a class="view-all" routerLink="/music-tracks">Library</a>
-    </div>
+<app-section-header [link]="{label: 'Library', url: '/musics'}" icon="history" title="Recently Added"/>
 
-    <div class="recent-tracks-list">
-        @for (track of tracks(); track track.id) {
-            <div class="recent-track-card">
-                <div class="artwork">
-                    @if (track.artworkUrl) {
-                        <img [alt]="track.title" [ngSrc]="track.artworkUrl" height="48" width="48">
-                    } @else {
-                        <div class="placeholder-art">
-                            <mat-icon>music_note</mat-icon>
-                        </div>
-                    }
-                </div>
-                <div class="track-info">
-                    <h4 [title]="track.title" class="track-title">{{ track.title }}</h4>
-                    <span class="track-artist">{{ track.artist }}</span>
-                    <span class="track-format">{{ track.format | uppercase }}</span>
-                </div>
+<div class="list">
+    @for (track of tracks(); track track.id) {
+        <div class="card">
+            <div class="artwork">
+                @if (track.artworkUrl) {
+                    <img [alt]="track.title" [ngSrc]="track.artworkUrl" height="60" width="60">
+                } @else {
+                    <div class="placeholder-art">
+                        <mat-icon>music_note</mat-icon>
+                    </div>
+                }
             </div>
-        } @empty {
-            <div class="empty-state">
-                <mat-icon>music_off</mat-icon>
-                <p>No tracks in library yet.</p>
+
+            <div class="info">
+                <h4 [title]="track.title" class="title">{{ track.title }}</h4>
+                <span class="artist">{{ track.artist }}</span>
             </div>
-        }
-    </div>
-</section>
+
+            <span class="format">{{ track.format }}</span>
+            <button (click)="playTrack.emit(track); $event.stopPropagation()" class="play-btn" mat-icon-button>
+                <mat-icon>play_arrow</mat-icon>
+            </button>
+        </div>
+    } @empty {
+        <div class="empty">
+            <mat-icon>music_off</mat-icon>
+            <p>No tracks in library yet.</p>
+        </div>
+    }
+</div>

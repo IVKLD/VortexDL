@@ -1,19 +1,12 @@
-<section>
-    <header>
-        <h2>
-            <mat-icon>cloud_download</mat-icon>
-            Active Queue
-        </h2>
-        <a class="view-all" routerLink="/downloads">View All</a>
-    </header>
-    @if (tracking.activeDownloads().length > 0) {
-        <div class="downloads-wrapper">
-            <app-active-downloads />
-        </div>
-    } @else {
-        <div class="empty-state">
-            <mat-icon>done_all</mat-icon>
-            <p>No active downloads. Queue some tracks to get started!</p>
-        </div>
-    }
-</section>
+<app-section-header icon="cloud_download" title="Active Queue"/>
+
+@if (tracking.activeDownloads().length > 0) {
+    <div class="wrapper">
+        <app-active-downloads/>
+    </div>
+} @else {
+    <div class="empty">
+        <mat-icon>done_all</mat-icon>
+        <p>No active downloads. Queue some tracks to get started!</p>
+    </div>
+}

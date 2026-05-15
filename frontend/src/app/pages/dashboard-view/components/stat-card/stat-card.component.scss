@@ -1,24 +1,21 @@
 :host {
   display: inline-flex;
+  align-items: center;
+  gap: 1.5rem;
   flex: 1;
-}
 
-.stat-card {
-  flex: 1 1 300px;
-  background: var(--mat-sys-surface-container-high);
+  background: var(--mat-sys-surface-container-low);
   border: 1px solid var(--mat-sys-outline-variant);
   border-radius: 16px;
   padding: 1.5rem;
-  display: flex;
-  align-items: center;
-  gap: 1.5rem;
-  transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
 
+  transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
 
   .stat-icon {
     width: 60px;
-    height: 60px;
+    aspect-ratio: 1;
     border-radius: 12px;
+
     display: flex;
     align-items: center;
     justify-content: center;
@@ -46,19 +43,21 @@
   }
 
   .stat-info {
+    display: inline-flex;
+    flex-direction: column;
+    gap: .5em;
+
     h3 {
-      font-size: 0.9rem;
+      font-size: 0.8rem;
       text-transform: uppercase;
       letter-spacing: 1px;
       color: var(--mat-sys-on-surface-variant);
-      margin: 0 0 0.5rem 0;
       font-weight: 600;
     }
 
     p {
-      font-size: 2rem;
+      font-size: 1.4rem;
       font-weight: 700;
-      margin: 0;
       color: var(--mat-sys-on-surface);
     }
   }

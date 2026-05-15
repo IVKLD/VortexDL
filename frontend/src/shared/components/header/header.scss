@@ -6,8 +6,27 @@ header {
   background: var(--mat-sys-surface);
   box-sizing: border-box;
   height: 72px;
-
   z-index: 10;
+
+  .left,
+  .right {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    min-width: 0;
+  }
+
+  .right {
+    justify-content: flex-end;
+  }
+
+  .center {
+    flex: 1;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-width: 0;
+  }
 
   .page-info {
     display: flex;
@@ -40,12 +59,13 @@ header {
       color: var(--mat-sys-primary);
 
       &.skeleton {
-        height: 1.2rem;
         width: 3ch;
         background: var(--mat-sys-surface-container-high);
         border-radius: 4px;
         position: relative;
         overflow: hidden;
+
+        color: transparent;
 
         &::after {
           content: "";

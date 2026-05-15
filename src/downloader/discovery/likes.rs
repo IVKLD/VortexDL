@@ -3,21 +3,20 @@ use url::Url;
 
 use crate::{
     downloader::{
-        core::TrackDownload,
-        discovery::{DiscoveryContext, resolve_with_feedback, show_feedback},
+        TrackDownload,
+        discovery::{DiscoveryContext, show_feedback},
     },
     models::{TrackLikesQuery, TrackLikesResponse},
 };
 
-pub async fn fetch_likes(ctx: &DiscoveryContext<'_>, url: &str) -> Result<Vec<TrackDownload>> {
-    let resolve_res = resolve_with_feedback(ctx, url, "Resolving user URL...").await?;
-
+pub async fn fetch_likes(ctx: &DiscoveryContext<'_>, id: i64) -> Result<Vec<TrackDownload>> {
     let mut current_offset: Option<String> = None;
-    let endpoint = format!("users/{}/track_likes", resolve_res.id);
+    let endpoint = format!("users/{}/track_likes", id);
 
     let pb = show_feedback(ctx, "Fetching track list...");
 
     let mut all_tracks = Vec::new();
+    let mut global_index = 0u32;
 
     let limit = {
         let s = ctx.settings.read().await;
@@ -46,7 +45,6 @@ pub async fn fetch_likes(ctx: &DiscoveryContext<'_>, url: &str) -> Result<Vec<Tr
                 .unwrap_or("Unknown".to_string());
 
             let title = item.track.title.as_str().to_string();
-
             let artwork_url = item.track.artwork_url.clone();
 
             let track = TrackDownload {
@@ -54,9 +52,11 @@ pub async fn fetch_likes(ctx: &DiscoveryContext<'_>, url: &str) -> Result<Vec<Tr
                 title,
                 artist,
                 artwork_url,
+                position: Some(global_index),
             };
 
             all_tracks.push(track);
+            global_index += 1;
         }
 
         if let Some(next_href) = res.next_href {

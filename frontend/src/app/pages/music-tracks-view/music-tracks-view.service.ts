@@ -1,4 +1,4 @@
-import {HttpClient} from '@angular/common/http';
+import {HttpClient, HttpParams} from '@angular/common/http';
 import {inject, Injectable} from '@angular/core';
 import {Tracks} from '@shared/models/track.model';
 
@@ -6,8 +6,16 @@ import {Tracks} from '@shared/models/track.model';
 export class MusicTracksViewService {
     private readonly _http = inject(HttpClient);
 
-    public getAll() {
-        return this._http.get<Tracks>('/downloads');
+    public getAll(sort = 'date', order = 'desc', limit?: number) {
+        let params = new HttpParams()
+            .set('sort', sort.toLowerCase())
+            .set('order', order.toLowerCase());
+
+        if (limit) {
+            params = params.set('limit', limit.toString());
+        }
+
+        return this._http.get<Tracks>('/downloads', { params });
     }
 
     public index() {
@@ -19,7 +27,7 @@ export class MusicTracksViewService {
     }
 
     public download(url: string) {
-        return this._http.post('/download', {url});
+        return this._http.post('/download', { url });
     }
 }
 
