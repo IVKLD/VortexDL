@@ -1,5 +1,7 @@
-use std::collections::{HashMap, HashSet};
-use std::sync::{Mutex, MutexGuard};
+use std::{
+    collections::{HashMap, HashSet},
+    sync::{Mutex, MutexGuard},
+};
 
 use serde::{Deserialize, Serialize};
 use tokio::sync::broadcast;
@@ -77,13 +79,7 @@ impl DownloadManager {
         self.lock_state().reserved_urls.remove(url);
     }
 
-    pub fn add_task(
-        &self,
-        id: i64,
-        title: String,
-        artist: String,
-        artwork_url: Option<String>,
-    ) {
+    pub fn add_task(&self, id: i64, title: String, artist: String, artwork_url: Option<String>) {
         let item = DownloadItem {
             id,
             title,
