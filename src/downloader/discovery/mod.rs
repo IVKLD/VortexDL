@@ -3,12 +3,11 @@ use std::sync::Arc;
 use anyhow::Result;
 use indicatif::ProgressBar;
 use soundcloud_rs::Client;
-use tokio::sync::RwLock;
 
 use crate::{
     api::download_manager::{DownloadManager, ServerEvent},
-    database::settings::UserSettings,
     models::ResolveResponse,
+    settings::SettingsManager,
     ui::create_standalone_spinner,
     utils::soundcloud::resolve_url,
 };
@@ -21,7 +20,7 @@ pub use self::{likes::fetch_likes, playlist::fetch_playlist, track::fetch_track}
 
 pub struct DiscoveryContext<'a> {
     pub client: &'a Client,
-    pub settings: &'a Arc<RwLock<UserSettings>>,
+    pub settings: &'a SettingsManager,
     pub dm: Option<&'a Arc<DownloadManager>>,
 }
 

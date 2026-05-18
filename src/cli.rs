@@ -3,9 +3,9 @@ use clap::{CommandFactory, Parser};
 
 use crate::{
     api::{self, state::AppState},
-    database::settings::UserSettings,
     downloader::{self, Context},
     models::SyncMode,
+    settings::UserSettings,
 };
 
 #[derive(Parser, Debug)]
@@ -80,7 +80,10 @@ async fn run_cli_download(state: AppState, url: &str, args: &Args) -> Result<()>
         settings: state.settings.clone(),
     };
 
-    ctx.settings.write().await.downloads.sync_mode = args.sync_mode.clone();
-    downloader::download(url, &ctx).await?;
+    let mut current_settings = ctx.settings.read().await.clone();
+    current_settings.downloads.sync_mode = args.sync_mode.clone();
+    ctx.settings.update(current_settings).await?;
+
+    downloader::download(&ctx, url).await?;
     Ok(())
 }

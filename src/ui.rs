@@ -8,7 +8,7 @@ pub fn create_total_progress_bar(mp: &MultiProgress, len: u64) -> ProgressBar {
     total_pb.set_style(
         ProgressStyle::default_bar()
             .template("{spinner:.yellow}[{elapsed_precise}] [{bar:40.cyan/blue}] {pos}/{len} {msg}")
-            .unwrap()
+            .unwrap_or_else(|_| ProgressStyle::default_bar())
             .progress_chars("#>-"),
     );
     total_pb
@@ -34,7 +34,7 @@ pub fn upgrade_to_download_bar(pb: &ProgressBar, total_bytes: u64) {
     pb.set_style(
         ProgressStyle::default_bar()
             .template("{spinner:.cyan} [{elapsed_precise}] [{bar:20.cyan/blue}] {bytes}/{total_bytes} ({bytes_per_sec}, {eta}) {msg}")
-            .unwrap()
+            .unwrap_or_else(|_| ProgressStyle::default_bar())
             .progress_chars("#>-"),
     );
 }
@@ -42,6 +42,6 @@ pub fn upgrade_to_download_bar(pb: &ProgressBar, total_bytes: u64) {
 fn get_spinner_style() -> ProgressStyle {
     ProgressStyle::default_spinner()
         .template("{spinner:.cyan} {msg}")
-        .unwrap()
+        .unwrap_or_else(|_| ProgressStyle::default_spinner())
         .tick_strings(&["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"])
 }

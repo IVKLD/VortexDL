@@ -14,7 +14,8 @@
     "just": "latest",
     "yarn": "latest",
     "nodejs": "24",
-    "cargo-watch": "latest"
+    "cargo-watch": "latest",
+    "udev": "latest"
   },
   "env": {
     "PKG_CONFIG_PATH": "$DEVBOX_PACKAGES_DIR/lib/pkgconfig"

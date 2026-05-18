@@ -71,7 +71,7 @@ async fn try_download_progressive(ctx: &Context, task: &DownloadTask, url: &str)
         task.pb.inc(chunk.len() as u64);
 
         if let Some(m) = &ctx.dm {
-            m.update_progress(task.id, task.pb.position(), total).await;
+            m.update_progress(task.id, task.pb.position(), total);
         }
     }
 

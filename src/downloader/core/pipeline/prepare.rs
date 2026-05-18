@@ -7,7 +7,7 @@ use crate::{
 /// Prepares the track environment for download.
 pub async fn prepare_environment(ctx: &Context, task: &DownloadTask) {
     if let Some(m) = &ctx.dm {
-        m.update_status(task.id, DownloadStatus::Downloading).await;
+        m.update_status(task.id, DownloadStatus::Downloading);
     }
 
     task.pb.set_message(format!(

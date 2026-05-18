@@ -1,6 +1,6 @@
 use axum::Json;
 
-use crate::{api::errors::ApiError, device::adb::discovery::list_connected_devices};
+use crate::{adb_device::list_connected_devices, api::errors::ApiError};
 
 pub async fn list_adb_devices() -> Result<Json<Vec<String>>, ApiError> {
     let devices = list_connected_devices()

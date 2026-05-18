@@ -4,8 +4,9 @@ use anyhow::Result;
 use soundcloud_rs::{Client, ClientBuilder};
 
 use crate::{
-    database::settings::{self, UserSettings},
+    database::settings::update_settings_db,
     models::{ResolveQuery, ResolveResponse},
+    settings::UserSettings,
 };
 
 pub async fn init_client(settings: &mut UserSettings) -> Result<Arc<Client>> {
@@ -36,7 +37,7 @@ pub async fn init_client(settings: &mut UserSettings) -> Result<Arc<Client>> {
     let current_client_id = client.get_client_id_value().await;
     if settings.soundcloud.cached_client_id.as_ref() != Some(&current_client_id) {
         settings.soundcloud.cached_client_id = Some(current_client_id);
-        settings::update_settings(settings).ok();
+        update_settings_db(settings).ok();
     }
 
     Ok(client)

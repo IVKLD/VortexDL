@@ -9,18 +9,17 @@ use crate::{
     utils::soundcloud::init_client,
 };
 
+mod adb_device;
 mod api;
 mod cli;
 mod constants;
 mod database;
 mod downloader;
 mod models;
+mod settings;
 mod storage;
 mod ui;
 mod utils;
-
-#[cfg(feature = "player-sync")]
-mod device;
 
 #[global_allocator]
 static ALLOC: mimalloc::MiMalloc = mimalloc::MiMalloc;
@@ -32,7 +31,7 @@ async fn main() -> Result<()> {
 
     let args = Args::parse();
 
-    let mut settings = database::settings::get_settings()?;
+    let mut settings = database::settings::get_settings_db()?;
     let output_dir = args.resolve_output_dir(&settings);
     fs::create_dir_all(&output_dir)?;
 
@@ -44,8 +43,7 @@ async fn main() -> Result<()> {
 
     let state = AppState::new(client, storage.clone(), settings);
 
-    #[cfg(feature = "player-sync")]
-    device::init(state.storage.clone(), state.settings.clone());
+    adb_device::init(state.storage.clone(), state.settings.clone());
 
     tokio::spawn(async move {
         MusicStorage::run_background_indexing(storage).await;

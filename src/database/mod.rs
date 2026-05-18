@@ -12,7 +12,7 @@ use crate::constants::{APP_DIR, DB_NAME};
 pub mod settings;
 pub mod sync;
 
-pub static DB_FILE_PATH: LazyLock<PathBuf> = LazyLock::new(|| {
+static DB_FILE_PATH: LazyLock<PathBuf> = LazyLock::new(|| {
     dirs::config_dir()
         .expect("Could not find config directory")
         .join(APP_DIR)

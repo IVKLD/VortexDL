@@ -3,8 +3,7 @@ use std::collections::HashSet;
 use anyhow::{Result, anyhow};
 use colored::Colorize;
 
-#[cfg(feature = "player-sync")]
-use crate::device::adb;
+use crate::adb_device;
 
 pub mod core;
 pub(crate) mod discovery;
@@ -16,7 +15,7 @@ use discovery::{
 pub use types::{Context, TrackDownload};
 
 /// Downloads and synchronizes a resource from a given URL.
-pub async fn download(url: &str, ctx: &Context) -> Result<()> {
+pub async fn download(ctx: &Context, url: &str) -> Result<()> {
     let discovery_ctx = DiscoveryContext {
         client: &ctx.client,
         settings: &ctx.settings,
@@ -80,13 +79,12 @@ pub async fn download(url: &str, ctx: &Context) -> Result<()> {
                 track.title.clone(),
                 track.artist.clone(),
                 track.artwork_url.clone(),
-            )
-            .await;
+            );
         }
     }
 
     if !to_download.is_empty() {
-        core::runner::run_download_batch(ctx, to_download).await;
+        core::run_download_batch(ctx, to_download).await;
     } else {
         println!("{} Everything synced!", "[INFO]".blue().bold());
     }
@@ -98,8 +96,7 @@ pub async fn download(url: &str, ctx: &Context) -> Result<()> {
         .sync_storage(url, &remote_ids, &sync_mode)
         .await?;
 
-    #[cfg(feature = "player-sync")]
-    adb::sync_all_connected(ctx.storage.clone(), ctx.settings.clone()).await;
+    adb_device::sync_all_connected(ctx.storage.clone(), ctx.settings.clone()).await;
 
     Ok(())
 }

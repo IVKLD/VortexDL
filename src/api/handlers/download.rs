@@ -33,7 +33,7 @@ pub async fn start_download(
 
     tracing::info!("Download request: {url}");
 
-    if !state.download_manager.reserve_url(&url).await {
+    if !state.download_manager.reserve_url(&url) {
         return Err(ApiError::conflict("This URL is already being processed"));
     }
 
@@ -51,25 +51,25 @@ pub async fn start_download(
             settings: state.settings.clone(),
         };
 
-        if let Err(e) = downloader::download(&url, &ctx).await {
+        if let Err(e) = downloader::download(&ctx, &url).await {
             tracing::error!("Download failed for {url}: {e}");
         }
 
-        state.download_manager.release_url(&url).await;
+        state.download_manager.release_url(&url);
     });
 
     Ok((StatusCode::ACCEPTED, Json(status)))
 }
 
 pub async fn get_download_queue(State(state): State<AppState>) -> impl IntoResponse {
-    Json(state.download_manager.get_queue().await)
+    Json(state.download_manager.get_queue())
 }
 
 pub async fn remove_from_queue(
     State(state): State<AppState>,
     Path(id): Path<i64>,
 ) -> impl IntoResponse {
-    state.download_manager.remove_task(id).await;
+    state.download_manager.remove_task(id);
     StatusCode::OK
 }
 
@@ -85,7 +85,7 @@ pub async fn download_events(
             level: "info".to_string()
         }).unwrap());
 
-        let queue = state.download_manager.get_queue().await;
+        let queue = state.download_manager.get_queue();
         for item in queue {
             if matches!(item.status, DownloadStatus::Queued | DownloadStatus::Downloading) {
                 yield Ok(Event::default().json_data(ServerEvent::TrackUpdate { item }).unwrap());

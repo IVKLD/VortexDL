@@ -1,80 +1,12 @@
 use anyhow::Error;
 use redb::{ReadableDatabase, TableDefinition};
-use serde::{Deserialize, Serialize};
 
-use crate::{database::get_db, models::SyncMode};
+use crate::{database::get_db, settings::UserSettings};
 
 const TABLE: TableDefinition<u64, &str> = TableDefinition::new("settings");
 const SETTINGS_ID: u64 = 0;
 
-#[derive(Serialize, Deserialize, Debug, Clone)]
-#[serde(rename_all = "camelCase")]
-pub struct SoundcloudSettings {
-    pub profile_url: String,
-    pub sync_interval: u32,
-    pub auto_sync: bool,
-    pub cached_client_id: Option<String>,
-}
-
-#[derive(Serialize, Deserialize, Debug, Clone)]
-#[serde(rename_all = "camelCase")]
-pub struct DownloadSettings {
-    pub output_path: String,
-    pub max_concurrent: u32,
-    pub naming_template: String,
-    pub sync_mode: SyncMode,
-}
-
-#[derive(Serialize, Deserialize, Debug, Clone)]
-#[serde(rename_all = "camelCase")]
-pub struct AdbDeviceSettings {
-    pub device_id: String,
-    pub remote_music_dir: String,
-    pub enabled: bool,
-}
-
-#[derive(Serialize, Deserialize, Debug, Clone, Default)]
-#[serde(rename_all = "camelCase")]
-pub struct AdbSettings {
-    pub enabled: bool,
-    pub auto_sync: bool,
-    pub devices: Vec<AdbDeviceSettings>,
-}
-
-#[derive(Serialize, Deserialize, Debug, Clone)]
-#[serde(rename_all = "camelCase")]
-pub struct UserSettings {
-    pub soundcloud: SoundcloudSettings,
-    pub downloads: DownloadSettings,
-    #[serde(default)]
-    pub adb: AdbSettings,
-    pub limit_per_page: u32,
-    pub max_retries: u32,
-}
-
-impl Default for UserSettings {
-    fn default() -> Self {
-        Self {
-            soundcloud: SoundcloudSettings {
-                profile_url: String::new(),
-                sync_interval: 60,
-                auto_sync: true,
-                cached_client_id: None,
-            },
-            downloads: DownloadSettings {
-                output_path: "./downloads".to_string(),
-                max_concurrent: 3,
-                naming_template: "{artist} - {title}".to_string(),
-                sync_mode: SyncMode::Silent,
-            },
-            adb: AdbSettings::default(),
-            limit_per_page: 100,
-            max_retries: 5,
-        }
-    }
-}
-
-pub fn get_settings() -> Result<UserSettings, Error> {
+pub fn get_settings_db() -> Result<UserSettings, Error> {
     let db = get_db();
     let read_txn = db.begin_read()?;
 
@@ -91,7 +23,7 @@ pub fn get_settings() -> Result<UserSettings, Error> {
     Ok(settings)
 }
 
-pub fn update_settings(settings: &UserSettings) -> Result<(), Error> {
+pub(crate) fn update_settings_db(settings: &UserSettings) -> Result<(), Error> {
     let db = get_db();
     let write_txn = db.begin_write()?;
     {

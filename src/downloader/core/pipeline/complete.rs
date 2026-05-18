@@ -8,7 +8,6 @@ use tokio::task::JoinHandle;
 
 use super::artwork::ArtworkDataHandle;
 use crate::{
-    api::download_manager::DownloadStatus,
     downloader::{Context, core::pipeline::DownloadTask},
     storage::TrackData,
     utils::{
@@ -83,15 +82,14 @@ async fn persist(
             .map(|d| d.as_secs())
             .unwrap_or(0);
         let size = std::fs::metadata(&file_path).map(|m| m.len()).unwrap_or(0);
-        m.update_finished(id, "mp3".to_string(), now, Some(source_url), size)
-            .await;
+        m.update_finished(id, "mp3".to_string(), now, Some(source_url), size);
     }
 }
 
 /// Handles download failure.
 pub async fn on_failure(ctx: &Context, task: &DownloadTask, e: anyhow::Error) {
     if let Some(m) = &ctx.dm {
-        m.update_status(task.id, DownloadStatus::Failed).await;
+        m.update_failed(task.id, format!("{:#}", e));
     }
     task.pb.println(format!(
         "{} Failed: {} — {:#}",

@@ -1,13 +1,13 @@
 [package]
 name = "vortex-dl"
 version = "0.2.0"
+default-run = "vortex-dl"
 edition = "2024"
 repository = "https://github.com/IVKLD/VortexDL"
 license = "GPL-3.0-only"
 
 [features]
-default = ["player-sync"]
-player-sync = []
+default = []
 web = []
 
 [dependencies]
@@ -37,6 +37,7 @@ mime_guess = "2.0.5"
 redb = "4.1.0"
 dirs = "6.0.0"
 udev = "0.9.1"
+deunicode = "1.6.2"
 
 [dev-dependencies]
 tempfile = "3.27"
