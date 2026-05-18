@@ -36,8 +36,8 @@ rust-embed = "8.11.0"
 mime_guess = "2.0.5"
 redb = "4.1.0"
 dirs = "6.0.0"
-udev = "0.9.1"
 deunicode = "1.6.2"
+
 
 [dev-dependencies]
 tempfile = "3.27"
