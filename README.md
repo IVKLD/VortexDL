@@ -27,15 +27,6 @@ Read the full thoughts on this — [at the bottom of the page](#manifesto).
 *   **Web Panel:** Angular-based web interface for those who don't want to mess with the console. Just paste the link and manage your downloads visually.
 *   **Single Binary:** Everything is packed into one file, so there's no need to fuck around with installing dozens of libraries and dependencies.
 
-## Requirements
-
-For development and building, one of the following is required:
-
-*   **Devbox (Nix):** Recommended method. All dependencies are isolated.
-*   **Manual Installation:**
-    *   Rust (stable toolchain)
-    *   Node.js (18+) and Yarn
-
 ## Quick Start
 
 **1. Via Terminal (Linux):**
@@ -79,31 +70,50 @@ vortex-dl [URL] --output /path/to/music
 
 ## Development
 
+### Requirements
+
+For development and building, one of the following is required:
+
+*   **Devbox (Nix):** Recommended method. All dependencies are isolated.
+*   **Manual Installation:**
+    *   Rust (stable toolchain)
+    *   Node.js (18+) and Yarn
+    *   [Just](https://github.com/casey/just) (task runner for development and build commands)
+
+### Getting Started
+
 1. Clone the repository:
    ```bash
    git clone https://github.com/IVKLD/VortexDL.git
    cd VortexDL
    ```
-2. Run components separately (recommended for development):
+2. Install all dependencies for both backend and frontend:
    ```bash
-   # Terminal 1: Backend
-   cargo run -- --serve
+   just install
+   ```
+3. Start the components for development:
+   ```bash
+   # Terminal 1: Backend (runs with hot-reload watch mode)
+   just backend
 
    # Terminal 2: Frontend
-   cd frontend && yarn start
+   just frontend
    ```
-   *The Web Panel (frontend) will be available at http://localhost:4200. The backend REST API is available at http://localhost:3200/api by default (can be changed via the VORTEX_PORT environment variable).*
-
-*Note: The frontend is automatically built and embedded into the binary during backend compilation.*
+   *The Web Panel (frontend) will be available at http://localhost:4200. The backend REST API is available at http://localhost:3200/api by default.*
 
 
 For more details on project structure and technical implementation, see [Development.md](Development.md).
 
 ## Building
 
-To create an optimized binary:
+To create a fully optimized production binary with the embedded frontend:
 ```bash
-cargo build --release
+just dist
+```
+
+To build only the backend (without the frontend embedded):
+```bash
+just build
 ```
 
 ## Roadmap
