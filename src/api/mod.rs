@@ -53,16 +53,11 @@ pub async fn build_router(state: AppState, serve_frontend: bool) -> Router {
 
     let router = Router::new().nest("/api", api_routes).with_state(state);
 
-    if serve_frontend {
-        #[cfg(feature = "web")]
-        {
-            router = router.fallback(static_files::static_handler);
-        }
-        #[cfg(not(feature = "web"))]
-        {
-            tracing::warn!("Frontend requested but binary built without 'web' feature");
-        }
-    }
+    let router = if serve_frontend {
+        apply_frontend_fallback(router)
+    } else {
+        router
+    };
 
     router.layer(CorsLayer::permissive())
 }
@@ -82,4 +77,15 @@ fn settings_routes() -> Router<AppState> {
     Router::new()
         .route("/", get(get_settings).post(update_settings))
         .route("/test/soundcloud", post(test_soundcloud_url))
+}
+
+fn apply_frontend_fallback(router: Router) -> Router {
+    #[cfg(feature = "web")]
+    return router.fallback(static_files::static_handler);
+
+    #[cfg(not(feature = "web"))]
+    {
+        tracing::warn!("Frontend requested but binary built without 'web' feature");
+        router
+    }
 }
