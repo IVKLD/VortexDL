@@ -4,7 +4,6 @@ header {
   align-items: center;
   padding: .75rem 0;
   background: var(--mat-sys-surface);
-  box-sizing: border-box;
   height: 72px;
   z-index: 10;
 
@@ -76,9 +75,9 @@ header {
           left: 0;
           transform: translateX(-100%);
           background: linear-gradient(90deg,
-                  transparent 0,
-                  var(--mat-sys-surface-container-highest) 50%,
-                  transparent 100%);
+              transparent 0,
+              var(--mat-sys-surface-container-highest) 50%,
+              transparent 100%);
           animation: shimmer 1.5s infinite;
         }
       }
@@ -117,6 +116,10 @@ header {
     }
   }
 
+  mat-divider {
+    height: 2rem;
+  }
+
   .actions {
     display: flex;
     align-items: center;
@@ -126,9 +129,25 @@ header {
       display: flex;
       align-items: center;
       gap: 8px;
+    }
 
-      mat-divider {
-        height: 2rem;
+    .sync-download-block {
+      display: flex;
+
+      button {
+        mat-icon {
+          margin: 0;
+        }
+
+        --mat-button-filled-horizontal-padding: 0px;
+
+        &:first-child {
+          --mat-button-filled-container-shape: 10em 0 0 10em;
+        }
+
+        &:last-child {
+          --mat-button-filled-container-shape: 0 10em 10em 0;
+        }
       }
     }
 

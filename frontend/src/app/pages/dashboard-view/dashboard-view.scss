@@ -27,23 +27,14 @@ header {
 main {
   display: flex;
   flex-wrap: wrap;
-  gap: 2rem;
   align-items: flex-start;
-
-  .left-column {
-    flex: 2 1 600px;
-  }
-
-  .right-column {
-    flex: 1 1 300px;
-  }
-}
-
-.left-column,
-.right-column {
-  display: flex;
   flex-direction: column;
+
   gap: 2rem;
+
+  > * {
+    width: 100%;
+  }
 }
 
 .section-placeholder {

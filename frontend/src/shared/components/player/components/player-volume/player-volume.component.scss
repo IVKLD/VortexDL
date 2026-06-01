@@ -1,0 +1,25 @@
+:host {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 0 16px;
+
+  button {
+    color: rgba(255, 255, 255, 0.5);
+    transition: color 0.2s ease;
+
+    &:hover {
+      color: rgba(255, 255, 255, 0.85);
+    }
+  }
+
+  mat-slider {
+    flex: 1;
+    max-width: 120px;
+    --mdc-slider-handle-color: rgba(255, 255, 255, 0.7);
+    --mdc-slider-active-track-color: rgba(255, 255, 255, 0.7);
+    --mdc-slider-inactive-track-color: rgba(255, 255, 255, 0.1);
+  }
+}

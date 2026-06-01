@@ -29,6 +29,7 @@ pub struct DownloadItem {
     pub progress: Option<f64>,
     pub size: Option<u64>,
     pub error: Option<String>,
+    pub position: Option<u32>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -79,7 +80,14 @@ impl DownloadManager {
         self.lock_state().reserved_urls.remove(url);
     }
 
-    pub fn add_task(&self, id: i64, title: String, artist: String, artwork_url: Option<String>) {
+    pub fn add_task(
+        &self,
+        id: i64,
+        title: String,
+        artist: String,
+        artwork_url: Option<String>,
+        position: Option<u32>,
+    ) {
         let item = DownloadItem {
             id,
             title,
@@ -92,6 +100,7 @@ impl DownloadManager {
             progress: None,
             size: None,
             error: None,
+            position,
         };
         let mut state = self.lock_state();
         state.tasks.insert(id, item.clone());

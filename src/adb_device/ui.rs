@@ -1,124 +1,65 @@
+use std::time::Duration;
+
 use colored::Colorize;
 use indicatif::{ProgressBar, ProgressStyle};
 
-pub fn print_err_access_remote(remote_dir: &str, device_id: &str, err: &dyn std::fmt::Display) {
-    println!(
-        "{} Failed to access remote music folder [{}] on {}: {}",
-        "[ERROR]".red().bold(),
-        remote_dir,
-        device_id,
-        err
-    );
+macro_rules! info  { ($($a:tt)*) => { println!("{} {}", "[INFO]".blue().bold(), format!($($a)*)) } }
+macro_rules! ok    { ($($a:tt)*) => { println!("{} {}", "[OK]".green().bold(), format!($($a)*)) } }
+macro_rules! warn  { ($($a:tt)*) => { println!("{} {}", "[WARN]".yellow().bold(), format!($($a)*)) } }
+macro_rules! err   { ($($a:tt)*) => { println!("{} {}", "[ERROR]".red().bold(), format!($($a)*)) } }
+
+pub fn sync_start(device: &str, dir: &str) {
+    info!("Syncing [{device}] → {dir}");
 }
 
-pub fn print_sync_start(device_id: &str, remote_dir: &str) {
-    println!(
-        "{} Syncing device [{}] to folder: {}",
-        "[INFO]".blue().bold(),
-        device_id,
-        remote_dir
-    );
+pub fn sync_complete(device: &str) {
+    ok!("Sync complete [{device}]");
 }
 
-pub fn print_removing_orphaned(count: usize, device_id: &str) {
-    println!(
-        "{} Removing {} orphaned tracks from device [{}]...",
-        "[INFO]".blue().bold(),
-        count,
-        device_id
-    );
+pub fn removing(count: usize, device: &str) {
+    info!("Removing {count} orphaned tracks from [{device}]");
 }
 
-pub fn print_pushing_new(count: usize, device_id: &str) {
-    println!(
-        "{} Pushing {} new tracks to device [{}]...",
-        "[INFO]".blue().bold(),
-        count,
-        device_id
-    );
+pub fn pushing(count: usize, device: &str) {
+    info!("Pushing {count} tracks to [{device}]");
 }
 
-pub fn print_sync_complete(device_id: &str) {
-    println!(
-        "{} Sync complete for device [{}]!",
-        "[SUCCESS]".green().bold(),
-        device_id
-    );
-}
-
-pub fn print_push_results(pushed: u64, failed: u64) {
+pub fn push_results(pushed: u64, failed: u64) {
     if failed > 0 {
-        println!(
-            "{} Push results: {} succeeded, {} failed.",
-            "[INFO]".blue().bold(),
-            pushed,
-            failed
-        );
+        warn!("{pushed} pushed, {failed} failed");
     }
 }
 
-pub fn print_deleted_orphaned(rel_path: &str) {
-    println!(
-        "{} Deleted orphaned track: {}",
-        "[INFO]".blue().bold(),
-        rel_path
-    );
+pub fn deleted(path: &str) {
+    info!("Deleted: {path}");
 }
 
-pub fn print_fail_delete_orphaned(rel_path: &str, err: &dyn std::fmt::Display) {
-    println!(
-        "{} Failed to delete orphaned track {}: {}",
-        "[WARN]".yellow().bold(),
-        rel_path,
-        err
-    );
+pub fn delete_failed(path: &str, e: &dyn std::fmt::Display) {
+    warn!("Failed to delete {path}: {e}");
 }
 
-pub fn log_warn_invalid_path(pb: &ProgressBar, id: i64) {
-    pb.println(format!(
-        "{} Track path for ID {} is not valid UTF-8, skipping",
-        "[WARN]".yellow().bold(),
-        id
-    ));
+pub fn remote_access_failed(dir: &str, device: &str, e: &dyn std::fmt::Display) {
+    err!("Cannot access {dir} on {device}: {e}");
 }
 
-pub fn log_err_create_artist_dir(pb: &ProgressBar, dir: &str, err: &dyn std::fmt::Display) {
-    pb.println(format!(
-        "{} Failed to create remote artist folder {}: {}",
-        "[ERROR]".red().bold(),
-        dir,
-        err
-    ));
+pub fn pb_warn(pb: &ProgressBar, msg: String) {
+    pb.println(format!("{} {msg}", "[WARN]".yellow().bold()));
 }
 
-pub fn log_warn_media_scan(pb: &ProgressBar, path: &str, err: &dyn std::fmt::Display) {
-    pb.println(format!(
-        "{} Failed to trigger media scan for {}: {}",
-        "[WARN]".yellow().bold(),
-        path,
-        err
-    ));
+pub fn pb_err(pb: &ProgressBar, msg: String) {
+    pb.println(format!("{} {msg}", "[ERROR]".red().bold()));
 }
 
-pub fn log_err_push(pb: &ProgressBar, path: &str, err: &dyn std::fmt::Display) {
-    pb.println(format!(
-        "{} Failed to push {}: {}",
-        "[ERROR]".red().bold(),
-        path,
-        err
-    ));
-}
-
-pub fn build_progress_bar(total: u64, device_id: &str) -> ProgressBar {
+pub fn progress_bar(total: u64, device: &str) -> ProgressBar {
     let pb = ProgressBar::new(total);
     pb.set_style(
         ProgressStyle::default_bar()
             .template(&format!(
-                "{{spinner:.cyan}} [{device_id}] [{{bar:30.green/white}}] {{pos}}/{{len}} {{msg}}"
+                "{{spinner:.cyan}} [{device}] [{{bar:30.green/white}}] {{pos}}/{{len}} {{msg}}"
             ))
             .unwrap_or_else(|_| ProgressStyle::default_bar())
             .progress_chars("█▉▊▋▌▍▎▏ "),
     );
-    pb.enable_steady_tick(std::time::Duration::from_millis(100));
+    pb.enable_steady_tick(Duration::from_millis(100));
     pb
 }

@@ -16,7 +16,7 @@ use crate::{
     api::{
         download_manager::{DownloadStatus, ServerEvent},
         errors::ApiError,
-        models::{ActionStatus, DownloadRequest},
+        models::{ApiStatus, DownloadRequest, DownloadStartResponse},
         state::AppState,
     },
     downloader,
@@ -37,8 +37,8 @@ pub async fn start_download(
         return Err(ApiError::conflict("This URL is already being processed"));
     }
 
-    let status = ActionStatus {
-        status: "queued",
+    let status = DownloadStartResponse {
+        status: ApiStatus::Queued,
         message: format!("Started for: {url}"),
     };
 
@@ -80,20 +80,29 @@ pub async fn download_events(
     let state = state.clone();
 
     let stream = async_stream::stream! {
-        yield Ok(Event::default().json_data(ServerEvent::Message {
+        if let Ok(evt) = Event::default().json_data(ServerEvent::Message {
             message: "Connected to event stream".to_string(),
             level: "info".to_string()
-        }).unwrap());
+        }) {
+            yield Ok(evt);
+        }
 
         let queue = state.download_manager.get_queue();
         for item in queue {
             if matches!(item.status, DownloadStatus::Queued | DownloadStatus::Downloading) {
-                yield Ok(Event::default().json_data(ServerEvent::TrackUpdate { item }).unwrap());
+                let res = Event::default().json_data(ServerEvent::TrackUpdate { item });
+                if let Ok(evt) = res {
+                    yield Ok(evt);
+                }
             }
         }
         loop {
             match rx.recv().await {
-                Ok(event) => yield Ok(Event::default().json_data(event).unwrap()),
+                Ok(event) => {
+                    if let Ok(evt) = Event::default().json_data(event) {
+                        yield Ok(evt);
+                    }
+                }
                 Err(tokio::sync::broadcast::error::RecvError::Lagged(_)) => continue,
                 Err(_) => break,
             }

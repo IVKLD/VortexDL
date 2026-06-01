@@ -38,21 +38,33 @@ export class MusicTracksViewState {
     );
 
     public readonly sortedTracks = computed(() => {
-        const tracks = [...this._tracks()];
         const query = this._searchQuery().trim();
-
         if (query) {
-            return this._fuse()
-                .search(query)
-                .map(result => result.item);
+            return this._fuse().search(query).map(result => result.item);
         }
 
-        return tracks;
+        const option = this._sortOption();
+        const [sort, order] = option.split('-');
+
+        return [...this._tracks()].sort((a, b) => {
+            const valA = sort === 'name' ? (a.title || '').toLowerCase() : sort === 'date' ? a.createdAt : (a.position ?? 4294967295);
+            const valB = sort === 'name' ? (b.title || '').toLowerCase() : sort === 'date' ? b.createdAt : (b.position ?? 4294967295);
+            const cmp = typeof valA === 'string' ? valA.localeCompare(valB as string) : (valA as number) - (valB as number);
+            return order === 'desc' ? -cmp : cmp;
+        });
     });
 
     public set setTracks(value: Track[]) {
         this._tracks.set(value);
         this._isLoading.set(false);
+    }
+
+    public addTrack(music: Track) {
+        this._tracks.update(data => [...data, music]);
+    }
+
+    public removeTrack(music: Track) {
+        this._tracks.update(data => data.filter(item => item.id !== music.id));
     }
 
     public startLoading() {
@@ -65,14 +77,6 @@ export class MusicTracksViewState {
 
     public setSearchQuery(query: string) {
         this._searchQuery.set(query);
-    }
-
-    public addTrack(music: Track) {
-        this._tracks.update(data => [...data, music]);
-    }
-
-    public removeTrack(music: Track) {
-        this._tracks.update(data => data.filter(item => item.id !== music.id));
     }
 }
 

@@ -9,27 +9,21 @@
 </div>
 
 <main>
-    <div class="left-column">
-        @defer (on idle) {
-            <app-activity-chart [data]="activityData()"/>
-        } @placeholder {
-            <div class="section-placeholder"></div>
-        }
+    @defer (on idle) {
+        <app-activity-chart [data]="activityData()"/>
+    } @placeholder {
+        <div class="section-placeholder"></div>
+    }
 
-        <app-active-queue/>
-    </div>
+    @defer (on idle) {
+        <app-format-breakdown [data]="formatBreakdown()"/>
+    } @placeholder {
+        <div class="section-placeholder"></div>
+    }
 
-    <div class="right-column">
-        @defer (on idle) {
-            <app-format-breakdown [data]="formatBreakdown()"/>
-        } @placeholder {
-            <div class="section-placeholder"></div>
-        }
-
-        @defer (on idle) {
-            <app-recent-tracks (playTrack)="playTrack($event)" [tracks]="recentTracks()"/>
-        } @placeholder {
-            <div class="section-placeholder"></div>
-        }
-    </div>
+    @defer (on idle) {
+        <app-recent-tracks [tracks]="recentTracks()"/>
+    } @placeholder {
+        <div class="section-placeholder"></div>
+    }
 </main>

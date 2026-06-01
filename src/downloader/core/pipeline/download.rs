@@ -11,7 +11,7 @@ use crate::{
         core::pipeline::{DownloadTask, resolve::DownloadProtocol},
     },
     ui,
-    utils::{filename::format_track_filename, verification::verify_file},
+    utils::verification::verify_file,
 };
 
 pub async fn download_with_retries(
@@ -42,9 +42,8 @@ pub async fn download_with_retries(
         }
 
         task.pb.set_message(format!(
-            "Retrying ({} left): {}",
-            attempts_left,
-            format_track_filename(&task.artist, &task.title)
+            "Retrying ({attempts_left} left): {}",
+            task.display_name
         ));
         sleep(Duration::from_secs(1)).await;
     }
@@ -54,10 +53,8 @@ async fn try_download_progressive(ctx: &Context, task: &DownloadTask, url: &str)
     let response = ctx.http.get(url).send().await?.error_for_status()?;
     let total = response.content_length().unwrap_or(0);
 
-    task.pb.set_message(format!(
-        "Downloading Music & Art: {}",
-        format_track_filename(&task.artist, &task.title)
-    ));
+    task.pb
+        .set_message(format!("Downloading: {}", task.display_name));
 
     ui::upgrade_to_download_bar(&task.pb, total);
 
@@ -87,10 +84,8 @@ async fn try_download_hls(
     track: &Track,
     sc_id: &Identifier,
 ) -> Result<()> {
-    let filename = format_track_filename(&task.artist, &task.title);
-
     task.pb
-        .set_message(format!("Downloading Music & Art (HLS): {}", filename));
+        .set_message(format!("Downloading (HLS): {}", task.display_name));
 
     ctx.client
         .download_track(
@@ -98,7 +93,7 @@ async fn try_download_hls(
             sc_id,
             Some(&StreamType::Hls),
             Some(&task.output_dir),
-            Some(&filename),
+            Some(&task.display_name),
         )
         .await
         .map_err(|e| anyhow!("HLS download failed: {}", e))?;

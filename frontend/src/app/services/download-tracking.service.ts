@@ -40,6 +40,9 @@ export class DownloadTrackingService {
     private readonly _musicState = inject(MusicTracksViewState);
     private readonly _zone = inject(NgZone);
 
+    private eventSource?: EventSource;
+    private reconnectTimeout?: any;
+
     constructor() {
         this.syncActiveDownloads();
         this.initializeEventSource();
@@ -67,13 +70,16 @@ export class DownloadTrackingService {
     }
 
     private initializeEventSource(): void {
-        const eventSource = new EventSource('/api/download/events');
+        this.cleanupEventSource();
 
-        eventSource.onopen = () => {
+        const es = new EventSource('/api/download/events');
+        this.eventSource = es;
+
+        es.onopen = () => {
             console.info('SSE connection established');
         };
 
-        eventSource.onmessage = event => {
+        es.onmessage = event => {
             this._zone.run(() => {
                 try {
                     const serverEvent: ServerEvent = JSON.parse(event.data);
@@ -84,14 +90,24 @@ export class DownloadTrackingService {
             });
         };
 
-        eventSource.onerror = error => {
+        es.onerror = error => {
             this._zone.run(() => {
                 console.error('SSE Error, attempting to reconnect:', error);
-                eventSource?.close();
-
-                setTimeout(() => this.initializeEventSource(), 3000);
+                this.cleanupEventSource();
+                this.reconnectTimeout = setTimeout(() => this.initializeEventSource(), 3000);
             });
         };
+    }
+
+    private cleanupEventSource(): void {
+        if (this.reconnectTimeout) {
+            clearTimeout(this.reconnectTimeout);
+            this.reconnectTimeout = undefined;
+        }
+        if (this.eventSource) {
+            this.eventSource.close();
+            this.eventSource = undefined;
+        }
     }
 
     private handleServerEvent(event: ServerEvent): void {
@@ -99,21 +115,12 @@ export class DownloadTrackingService {
             case ServerEventType.TrackUpdate:
                 this.handleTrackUpdate(event.item);
                 break;
-            case ServerEventType.SyncFinished:
-                this.refreshMusicList();
-                break;
             case ServerEventType.Message:
-                this.handleMessage(event.message, event.level);
+                if (event.level === 'error') this.addError(event.message);
                 break;
             case ServerEventType.Error:
                 this.addError(event.message);
                 break;
-        }
-    }
-
-    private handleMessage(message: string, level: string): void {
-        if (level === 'error') {
-            this.addError(message);
         }
     }
 
@@ -130,42 +137,24 @@ export class DownloadTrackingService {
                 sourceUrl: item.sourceUrl || null,
                 createdAt: item.createdAt || 0,
                 size: item.size || 0,
-                position: item.position || 0,
+                position: item.position ?? 4294967295,
             });
-        }
-
-        if (item.status === DownloadStatus.Failed) {
+        } else if (item.status === DownloadStatus.Failed) {
             this.addError(`Failed to download "${item.artist} - ${item.title}": ${item.error || 'Unknown error'}`);
         }
     }
 
     private addError(message: string): void {
-        this.errors.update(prev => {
-            if (prev.includes(message)) return prev;
-            return [message, ...prev].slice(0, 5);
-        });
+        this.errors.update(prev => prev.includes(message) ? prev : [message, ...prev].slice(0, 5));
     }
 
     private updateActiveDownloads(item: DownloadItem): void {
         this.activeDownloads.update(downloads => {
+            const filtered = downloads.filter(d => d.id !== item.id);
             if (item.status === DownloadStatus.Finished || item.status === DownloadStatus.Failed) {
-                return downloads.filter(d => d.id !== item.id);
+                return filtered;
             }
-
-            const index = downloads.findIndex(d => d.id === item.id);
-            if (index !== -1) {
-                const newDownloads = [...downloads];
-                newDownloads[index] = item;
-                return newDownloads;
-            } else {
-                return [...downloads, item];
-            }
-        });
-    }
-
-    private refreshMusicList(): void {
-        this._musicApi.getAll().subscribe({
-            next: tracks => (this._musicState.setTracks = tracks),
+            return [...filtered, item];
         });
     }
 }

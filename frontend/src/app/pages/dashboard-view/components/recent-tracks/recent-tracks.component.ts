@@ -1,18 +1,16 @@
-import {ChangeDetectionStrategy, Component, input, output} from '@angular/core';
-import {NgOptimizedImage} from '@angular/common';
+import {ChangeDetectionStrategy, Component, input} from '@angular/core';
 import {MatIcon} from '@angular/material/icon';
 import {SectionHeaderComponent} from '@shared/components/section-header/section-header';
-import {MatIconButton} from '@angular/material/button';
 import {Track} from '@shared/models/track.model';
+import {MusicCard} from "@shared/components/music-card/music-card";
 
 @Component({
     selector: 'app-recent-tracks',
-    imports: [MatIcon, NgOptimizedImage, SectionHeaderComponent, MatIconButton],
+    imports: [MatIcon, SectionHeaderComponent, MusicCard],
     templateUrl: './recent-tracks.component.html',
     styleUrl: './recent-tracks.component.scss',
     changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class RecentTracksComponent {
     public readonly tracks = input.required<Track[]>();
-    public readonly playTrack = output<Track>();
 }

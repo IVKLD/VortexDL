@@ -1,4 +1,4 @@
-import { Component, input, output } from '@angular/core';
+import { ChangeDetectionStrategy, Component, input, output } from '@angular/core';
 import { MatIcon } from '@angular/material/icon';
 import { FieldTree, FormField } from '@angular/forms/signals';
 import { MatInput } from "@angular/material/input";
@@ -11,7 +11,8 @@ import { SoundcloudSettings } from "@app/pages/settings-view/models/settings-for
     selector: 'app-soundcloud-section',
     imports: [MatIcon, FormField, MatLabel, MatFormField, MatHint, MatError, MatSlideToggle, MatInput, MatButton, MatSuffix],
     templateUrl: './soundcloud-section.component.html',
-    styleUrl: './soundcloud-section.component.scss'
+    styleUrl: './soundcloud-section.component.scss',
+    changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class SoundcloudSectionComponent {
     public readonly form = input.required<FieldTree<SoundcloudSettings>>();

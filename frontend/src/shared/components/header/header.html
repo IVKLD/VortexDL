@@ -2,7 +2,7 @@
     <div class="left">
         <div class="page-info">
             <div class="stats-label">
-                <span class="label-text">Storage</span>
+                <span class="label-text">Vortex</span>
                 <span>{{ config()?.title || 'System' }}</span>
             </div>
 
@@ -10,8 +10,8 @@
                 <span class="separator">//</span>
                 <div class="stats-value">
                     <span class="label-text">Tracks</span>
-                    <span [class.skeleton]="musicState.isLoading()">
-                        {{ musicState.isLoading() ? 0 : musicState.sortedTracks().length }}
+                    <span>
+                        {{ musicState.sortedTracks().length }}
                     </span>
                 </div>
             }
@@ -56,8 +56,6 @@
                          </span>
                     </button>
 
-                    <mat-divider vertical/>
-
                     <mat-menu #sortMenu="matMenu">
                         @for (option of sortOptions; track option.value) {
                             <button (click)="setSort(option.value)" mat-menu-item>
@@ -69,19 +67,19 @@
                 </div>
             }
 
-            @if (hasFeature(Feature.Sync)) {
-                <button (click)="syncAll()" [disabled]="isSyncing()" mat-flat-button>
+            <div class="sync-download-block">
+                <button (click)="syncAll()" [disabled]="isSyncing()" [matTooltip]="isSyncing() ? 'Syncing' : 'Sync'"
+                        mat-flat-button>
                     <mat-icon [class.rotating]="isSyncing()">sync</mat-icon>
-                    <span>{{ isSyncing() ? 'Syncing' : 'Sync' }}</span>
                 </button>
-            }
 
-            @if (hasFeature(Feature.Download)) {
-                <button (click)="openDownloadDialog()" mat-flat-button>
+                <mat-divider vertical/>
+
+                <button (click)="openDownloadDialog()" mat-flat-button
+                        matTooltip="Download">
                     <mat-icon>add</mat-icon>
-                    <span>Download</span>
                 </button>
-            }
+            </div>
         </div>
     </div>
 </header>

@@ -1,0 +1,13 @@
+@let track = data();
+
+@if (track.artworkUrl) {
+    <img [ngSrc]="track.artworkUrl" alt="Artwork" height="160" width="160">
+} @else {
+    <div class="placeholder">
+        <mat-icon>music_note</mat-icon>
+    </div>
+}
+<div class="details">
+    <h3>{{ track.title }}</h3>
+    <p>{{ track.artist }}</p>
+</div>

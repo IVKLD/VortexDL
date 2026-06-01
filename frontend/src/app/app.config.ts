@@ -5,7 +5,7 @@ import {
     provideZonelessChangeDetection
 } from '@angular/core';
 import { GlobalErrorHandler } from '@shared/error-handler';
-import { provideRouter, withViewTransitions } from '@angular/router';
+import { provideRouter } from '@angular/router';
 import { routes } from './app.routes';
 import { provideHttpClient, withFetch, withInterceptors } from '@angular/common/http';
 import { MAT_ICON_DEFAULT_OPTIONS } from '@angular/material/icon';
@@ -34,7 +34,7 @@ export const appConfig: ApplicationConfig = {
             useClass: GlobalErrorHandler,
         },
         provideBrowserGlobalErrorListeners(),
-        provideRouter(routes, withViewTransitions()),
+        provideRouter(routes),
         provideHttpClient(withInterceptors([retryInterceptor, apiInterceptor, loadingInterceptor]), withFetch()),
         provideZonelessChangeDetection(),
     ],

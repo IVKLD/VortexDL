@@ -1,38 +1,37 @@
 @let data = track();
 
-<div (click)="trackClick.emit()" [class.active]="isActive()" class="music-card" role="button" tabindex="0">
-    <div class="artwork">
-        @if (data.artworkUrl) {
-            <img [alt]="track().title" [ngSrc]="track().artworkUrl" height="42" width="42"/>
-        } @else {
-            <div class="placeholder">
-                <mat-icon>music_note</mat-icon>
-            </div>
-        }
+<div class="artwork">
+    @if (data.artworkUrl) {
+        <img [alt]="data.title" [ngSrc]="data.artworkUrl" height="42" width="42"/>
+    } @else {
+        <mat-icon>music_note</mat-icon>
+    }
 
-        <button (click)="$event.stopPropagation(); playTrack.emit(data)" class="play-overlay" mat-icon-button>
-            <mat-icon>{{ isPlaying() ? 'pause' : 'play_arrow' }}</mat-icon>
-        </button>
-    </div>
+    <button (click)="$event.stopPropagation(); playTrack.emit(data)" mat-icon-button>
+        <mat-icon>{{ isPlaying() ? 'pause' : 'play_arrow' }}</mat-icon>
+    </button>
+</div>
 
-    <div class="content">
-        <div class="info">
-            <h3 class="title text-truncate">{{ displayTitle() }}</h3>
-        </div>
-        <div class="meta">
-            <span class="file-size">
-                {{ data.size | fileSize }}
-            </span>
+<div class="info">
+    <section>
+        <h3>{{ data.title }}</h3>
+        <span>{{ data.artist }}</span>
+    </section>
 
-            <span [attr.data-format]="data.format" class="badge">
-                {{ data.format }}
-            </span>
-        </div>
+    <aside>
+        <span>{{ data.size | fileSize }}</span>
+        <strong [attr.data-format]="data.format">{{ data.format }}</strong>
+    </aside>
 
-        <div (click)="$event.stopPropagation()" class="actions" role="presentation">
-            <button (click)="deleteMusic.emit()" mat-icon-button>
-                <mat-icon>delete</mat-icon>
-            </button>
-        </div>
+    <div class="actions-wrapper">
+        <menu (click)="$event.stopPropagation()" animate.enter="slide-in"
+              animate.leave="slide-out" role="presentation"
+        >
+            @if (this._deleteTrackSubj.observed) {
+                <button (click)="onDeleteClick()" mat-icon-button>
+                    <mat-icon>delete</mat-icon>
+                </button>
+            }
+        </menu>
     </div>
 </div>

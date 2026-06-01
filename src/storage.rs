@@ -3,6 +3,7 @@ use std::{
     fs,
     path::{Path, PathBuf},
     sync::Arc,
+    time::UNIX_EPOCH,
 };
 
 use anyhow::Result;
@@ -24,6 +25,8 @@ pub struct TrackData {
     pub artwork_url: Option<String>,
     pub source_url: Option<String>,
     pub position: Option<u32>,
+    pub created_at: u64,
+    pub size: u64,
 }
 
 #[derive(Clone)]
@@ -93,6 +96,21 @@ impl MusicStorage {
                     let position =
                         read_custom_field(p_str, SC_POSITION).and_then(|s| s.parse().ok());
 
+                    let (created_at, size) = entry
+                        .metadata()
+                        .ok()
+                        .map(|m| {
+                            (
+                                m.created()
+                                    .ok()
+                                    .and_then(|t| t.duration_since(UNIX_EPOCH).ok())
+                                    .map(|d| d.as_secs())
+                                    .unwrap_or(0),
+                                m.len(),
+                            )
+                        })
+                        .unwrap_or((0, 0));
+
                     new_tracks.insert(
                         id,
                         TrackData {
@@ -102,6 +120,8 @@ impl MusicStorage {
                             artwork_url,
                             source_url,
                             position,
+                            created_at,
+                            size,
                         },
                     );
                 }
@@ -155,7 +175,7 @@ impl MusicStorage {
 
         let archive_path = Path::new(&self.base_path).join("Archive");
         if matches!(mode, SyncMode::Archive) {
-            fs::create_dir_all(&archive_path)?;
+            tokio::fs::create_dir_all(&archive_path).await?;
         }
 
         for data in to_remove {
@@ -164,10 +184,10 @@ impl MusicStorage {
             }
 
             match mode {
-                SyncMode::Full => fs::remove_file(&data.path)?,
+                SyncMode::Full => tokio::fs::remove_file(&data.path).await?,
                 SyncMode::Archive => {
                     if let Some(name) = data.path.file_name() {
-                        fs::rename(&data.path, archive_path.join(name))?;
+                        tokio::fs::rename(&data.path, archive_path.join(name)).await?;
                     }
                 }
                 _ => {}

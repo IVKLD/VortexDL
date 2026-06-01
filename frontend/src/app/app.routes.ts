@@ -21,7 +21,7 @@ export const routes: CustomRoutes = [
         data: {
             header: {
                 title: 'Overview',
-                features: [HeaderFeature.Stats, HeaderFeature.Download, HeaderFeature.Sync],
+                features: [HeaderFeature.Stats],
             },
         },
         component: DashboardView,
@@ -32,7 +32,7 @@ export const routes: CustomRoutes = [
         data: {
             header: {
                 title: 'Library',
-                features: [HeaderFeature.Search, HeaderFeature.Sort, HeaderFeature.Stats, HeaderFeature.Download, HeaderFeature.Sync],
+                features: [HeaderFeature.Search, HeaderFeature.Sort, HeaderFeature.Stats],
             },
         },
         component: MusicTracksView,

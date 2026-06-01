@@ -1,74 +1,40 @@
 use anyhow::Result;
 use url::Url;
 
-use crate::{
-    downloader::{
-        TrackDownload,
-        discovery::{DiscoveryContext, show_feedback},
-    },
-    models::{TrackLikesQuery, TrackLikesResponse},
+use crate::downloader::{
+    TrackDownload,
+    discovery::{DiscoveryContext, extract_artist, extract_title, get_likes, show_feedback},
 };
 
 pub async fn fetch_likes(ctx: &DiscoveryContext<'_>, id: i64) -> Result<Vec<TrackDownload>> {
     let mut current_offset: Option<String> = None;
-    let endpoint = format!("users/{}/track_likes", id);
-
     let pb = show_feedback(ctx, "Fetching track list...");
-
     let mut all_tracks = Vec::new();
-    let mut global_index = 0u32;
-
-    let limit = {
-        let s = ctx.settings.read().await;
-        s.limit_per_page
-    };
+    let limit = ctx.settings.read().await.limit_per_page;
 
     loop {
-        let likes_query = TrackLikesQuery {
-            offset: current_offset.clone(),
-            limit,
-        };
-
-        let res: TrackLikesResponse = ctx.client.get(&endpoint, Some(&likes_query)).await?;
-
+        let res = get_likes(ctx.client, id, current_offset.as_deref(), limit).await?;
         if res.collection.is_empty() {
             break;
         }
 
         for item in res.collection {
-            let id = item.track.id;
-            let artist = item
-                .track
-                .user
-                .as_ref()
-                .map(|u| u.username.as_str().to_string())
-                .unwrap_or("Unknown".to_string());
-
-            let title = item.track.title.as_str().to_string();
-            let artwork_url = item.track.artwork_url.clone();
-
-            let track = TrackDownload {
-                id,
-                title,
-                artist,
-                artwork_url,
-                position: Some(global_index),
-            };
-
-            all_tracks.push(track);
-            global_index += 1;
+            all_tracks.push(TrackDownload {
+                id: item.track.id,
+                title: extract_title(Some(&item.track.title)),
+                artist: extract_artist(item.track.user.as_ref()),
+                artwork_url: item.track.artwork_url,
+                position: Some(all_tracks.len() as u32),
+            });
         }
 
-        if let Some(next_href) = res.next_href {
-            let parsed_url = Url::parse(&next_href)?;
-
-            current_offset = parsed_url
-                .query_pairs()
-                .find(|(k, _)| k == "offset")
-                .map(|(_, v)| v.into_owned());
-        } else {
+        let Some(href) = res.next_href else {
             break;
-        }
+        };
+        current_offset = Url::parse(&href)?
+            .query_pairs()
+            .find(|(k, _)| k == "offset")
+            .map(|(_, v)| v.into_owned());
     }
 
     pb.finish_and_clear();

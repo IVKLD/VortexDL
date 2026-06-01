@@ -29,20 +29,29 @@
       color: #ff8a80;
     }
 
-    .clear-all-btn {
-      background: transparent;
-      border: none;
-      color: rgba(255, 255, 255, 0.6);
-      font-size: 0.7rem;
-      font-weight: 600;
-      cursor: pointer;
-      padding: 4px 8px;
-      border-radius: 4px;
-      transition: all 0.2s;
+    .clear-open-block {
+      display: flex;
 
-      &:hover {
-        background: rgba(255, 255, 255, 0.05);
-        color: white;
+      button {
+        min-width: 48px;
+        --mat-button-filled-container-height: 32px;
+
+        mat-icon {
+          margin: 0;
+          font-size: 1.25rem !important;
+          height: 1.25rem !important;
+          width: 1.25rem !important;
+        }
+
+        --mat-button-filled-horizontal-padding: 0px;
+
+        &:first-child {
+          --mat-button-filled-container-shape: 10em 0 0 10em;
+        }
+
+        &:last-child {
+          --mat-button-filled-container-shape: 0 10em 10em 0;
+        }
       }
     }
   }
@@ -50,37 +59,19 @@
   .list {
     display: flex;
     flex-direction: column;
-    padding: 8px 0;
-    max-height: 10em;
+    max-height: 12em;
     overflow-y: auto;
 
-    .item {
+    .message {
       display: flex;
       align-items: flex-start;
       gap: 10px;
       padding: 8px 16px;
-      transition: background 0.2s;
-
-      &:hover {
-        background: rgba(255, 255, 255, 0.02);
-      }
-
-      mat-icon {
-        font-size: 16px;
-        width: 16px;
-        height: 16px;
-        color: #ff5252;
-        margin-top: 2px;
-      }
-
-      .message {
-        flex: 1;
-        font-size: 0.8rem;
-        font-weight: 450;
-        line-height: 1.5;
-        color: rgba(255, 255, 255, 0.8);
-        word-break: break-word;
-      }
+      font-size: 0.8rem;
+      font-weight: 450;
+      line-height: 1.5;
+      color: rgba(255, 255, 255, 0.8);
+      word-break: break-word;
     }
   }
 }

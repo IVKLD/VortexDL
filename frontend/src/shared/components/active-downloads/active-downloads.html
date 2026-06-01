@@ -11,19 +11,13 @@
                 }
             </header>
 
-            @if (items.length > 0) {
-                <rx-virtual-scroll-viewport [itemSize]="52">
-                    <app-active-download-item
-                            (remove)="tracking.removeFromQueue($event)"
-                            *rxVirtualFor="let item of items; trackBy: 'id'"
-                            [item]="item"
-                    />
-                </rx-virtual-scroll-viewport>
-            } @else if (errors.length > 0) {
-                <div class="empty-active-state">
-                    <p>No active tasks</p>
-                </div>
-            }
+            <rx-virtual-scroll-viewport [itemSize]="52">
+                <app-active-download-item
+                        (remove)="tracking.removeFromQueue($event)"
+                        *rxVirtualFor="let item of items; trackBy: 'id'"
+                        [item]="item"
+                />
+            </rx-virtual-scroll-viewport>
         </div>
     }
 

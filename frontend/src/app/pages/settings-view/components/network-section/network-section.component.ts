@@ -1,4 +1,4 @@
-import {Component, input, output} from '@angular/core';
+import {ChangeDetectionStrategy, Component, input, output} from '@angular/core';
 import { MatIcon } from '@angular/material/icon';
 import { FormField } from '@angular/forms/signals';
 import { MatInput } from "@angular/material/input";
@@ -10,7 +10,8 @@ import { MatIconButton } from "@angular/material/button";
     selector: 'app-network-settings',
     imports: [MatIcon, FormField, MatLabel, MatFormField, MatError, MatSlideToggle, MatInput, MatIconButton, MatSuffix],
     templateUrl: './network-section.component.html',
-    styleUrl: './network-section.component.scss'
+    styleUrl: './network-section.component.scss',
+    changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class NetworkSettingsComponent {
     public readonly form = input.required<any>();

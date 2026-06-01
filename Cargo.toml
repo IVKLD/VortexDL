@@ -37,6 +37,7 @@ mime_guess = "2.0.5"
 redb = "4.1.0"
 dirs = "6.0.0"
 deunicode = "1.6.2"
+symphonia = { version = "0.5.4", features = ["all"] }
 
 
 [dev-dependencies]

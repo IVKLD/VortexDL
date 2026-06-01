@@ -1,0 +1,10 @@
+<button (click)="mute()" mat-icon-button>
+    <mat-icon>{{ volumeIcon() }}</mat-icon>
+</button>
+
+<mat-slider max="1" min="0" step="0.01">
+    <input #volumeSlider (input)="onVolumeInput(volumeSlider.value)"
+           [value]="player.volume()"
+           matSliderThumb>
+</mat-slider>
+

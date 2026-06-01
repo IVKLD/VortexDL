@@ -5,6 +5,8 @@ use id3::{
     frame::{ExtendedText, Frame, Picture, PictureType},
 };
 
+use crate::constants::{SC_ARTWORK_URL, SC_IDENTIFIER, SC_POSITION, SC_SOURCE_URL};
+
 fn get_tag(path: &str) -> Result<Tag> {
     match Tag::read_from_path(path) {
         Ok(tag) => Ok(tag),
@@ -52,16 +54,16 @@ pub fn save_track_info(args: SaveTrackArgs) -> Result<()> {
     tag.set_title(args.title);
     tag.set_artist(args.artist);
 
-    set_txxx(&mut tag, crate::constants::SC_IDENTIFIER, args.sc_id);
+    set_txxx(&mut tag, SC_IDENTIFIER, args.sc_id);
 
     if let Some(url) = args.artwork_url {
-        set_txxx(&mut tag, crate::constants::SC_ARTWORK_URL, url);
+        set_txxx(&mut tag, SC_ARTWORK_URL, url);
     }
     if let Some(url) = args.source_url {
-        set_txxx(&mut tag, crate::constants::SC_SOURCE_URL, url);
+        set_txxx(&mut tag, SC_SOURCE_URL, url);
     }
     if let Some(pos) = args.position {
-        set_txxx(&mut tag, crate::constants::SC_POSITION, &pos.to_string());
+        set_txxx(&mut tag, SC_POSITION, &pos.to_string());
     }
 
     if let Some(data) = args.artwork_data {
@@ -87,4 +89,15 @@ pub fn read_custom_field(path: &str, key: &str) -> Option<String> {
             .find(|f| f.description == key)
             .map(|f| f.value.clone())
     })
+}
+
+pub fn update_track_position(path: &str, position: Option<u32>) -> Result<()> {
+    let mut tag = get_tag(path)?;
+    if let Some(pos) = position {
+        set_txxx(&mut tag, SC_POSITION, &pos.to_string());
+    } else {
+        tag.remove_extended_text(Some(SC_POSITION), None);
+    }
+    tag.write_to_path(path, Version::Id3v23)?;
+    Ok(())
 }

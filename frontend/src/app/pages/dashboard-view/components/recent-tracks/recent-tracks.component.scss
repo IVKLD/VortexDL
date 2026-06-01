@@ -5,94 +5,10 @@
   padding: 1.5rem;
 }
 
-.list {
+div {
   display: flex;
   flex-direction: column;
   gap: .4rem;
-}
-
-.card {
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-  background: var(--mat-sys-surface-container-lowest);
-  border: 1px solid var(--mat-sys-outline-variant);
-  border-radius: 12px;
-  padding: 0.75rem;
-  transition: background 0.2s;
-
-  &:hover {
-    background: color-mix(in srgb, var(--mat-sys-primary) 5%, var(--mat-sys-surface-container-lowest));
-  }
-
-  .artwork {
-    width: 60px;
-    height: 60px;
-    border-radius: 8px;
-    overflow: hidden;
-    flex-shrink: 0;
-    background: var(--mat-sys-surface);
-
-    .placeholder-art {
-      width: 100%;
-      height: 100%;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      background: var(--mat-sys-surface-container-high);
-      color: var(--mat-sys-on-surface-variant);
-    }
-  }
-
-  .info {
-    flex: 1;
-    min-width: 0;
-
-    .title {
-      font-size: 0.95rem;
-      font-weight: 500;
-      color: var(--mat-sys-on-surface);
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-    }
-
-    .artist {
-      display: block;
-      font-size: 0.8rem;
-      color: var(--mat-sys-on-surface-variant);
-      margin-bottom: 0.25rem;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-    }
-  }
-
-  .format {
-    display: inline-block;
-    font-size: 0.7rem;
-    font-weight: 700;
-    padding: 0.1rem 0.4rem;
-    border-radius: 4px;
-    background: color-mix(in srgb, var(--mat-sys-primary) 15%, transparent);
-    color: var(--mat-sys-primary);
-    text-transform: uppercase;
-  }
-
-  .play-btn {
-    opacity: 0;
-    transition: opacity 0.2s;
-    color: var(--mat-sys-primary);
-    background: color-mix(in srgb, var(--mat-sys-primary) 10%, transparent);
-
-    &:hover {
-      background: color-mix(in srgb, var(--mat-sys-primary) 20%, transparent);
-    }
-  }
-
-  &:hover .play-btn {
-    opacity: 1;
-  }
 }
 
 .empty {

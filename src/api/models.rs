@@ -6,10 +6,18 @@ pub struct DownloadRequest {
     pub url: String,
 }
 
+#[derive(Debug, Serialize, Deserialize, Clone, Copy, PartialEq, Eq)]
+#[serde(rename_all = "lowercase")]
+pub enum ApiStatus {
+    Ok,
+    Queued,
+    Error,
+}
+
 #[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
-pub struct ActionStatus {
-    pub status: &'static str,
+pub struct DownloadStartResponse {
+    pub status: ApiStatus,
     pub message: String,
 }
 
@@ -39,5 +47,5 @@ pub struct TrackRecord {
 #[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct HealthResponse {
-    pub status: &'static str,
+    pub status: ApiStatus,
 }

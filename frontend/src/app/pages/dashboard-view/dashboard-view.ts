@@ -6,7 +6,6 @@ import {DownloadTrackingService} from '@app/services/download-tracking.service';
 import {ActivityChartComponent} from './components/activity-chart/activity-chart.component';
 import {FormatBreakdownComponent} from './components/format-breakdown/format-breakdown.component';
 import {RecentTracksComponent} from './components/recent-tracks/recent-tracks.component';
-import {ActiveQueueComponent} from './components/active-queue/active-queue.component';
 import {StatCardComponent} from './components/stat-card/stat-card.component';
 import {FileSizePipe} from '@shared/pipes/file-size.pipe';
 import {AudioFormat, Track} from '@shared/models/track.model';
@@ -22,7 +21,6 @@ const FORMATS_CONFIG: { format: AudioFormat, color: string }[] = [
 @Component({
     selector: 'app-dashboard-view',
     imports: [
-        ActiveQueueComponent,
         ActivityChartComponent,
         FormatBreakdownComponent,
         RecentTracksComponent,
@@ -34,9 +32,12 @@ const FORMATS_CONFIG: { format: AudioFormat, color: string }[] = [
     changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class DashboardView implements OnInit {
+    private readonly _api = inject(MusicTracksViewService);
+    private readonly _state = inject(MusicTracksViewState);
+
     public readonly tracking = inject(DownloadTrackingService);
     protected readonly player = inject(PlayerService);
-    private readonly _state = inject(MusicTracksViewState);
+
     public readonly stats = computed<DashboardStat[]>(() => [
         {
             icon: 'library_music',
@@ -95,16 +96,10 @@ export class DashboardView implements OnInit {
             heightPercent: (count / max) * 100 || 5
         }));
     });
-    private readonly _api = inject(MusicTracksViewService);
 
     public ngOnInit() {
         this._api.getAll().subscribe({
             next: t => this._state.setTracks = t
         });
-    }
-
-    protected playTrack(track: Track) {
-        this.player.queue.set(this.recentTracks());
-        this.player.play(track);
     }
 }

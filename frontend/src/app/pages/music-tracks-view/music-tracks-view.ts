@@ -30,7 +30,7 @@ export class MusicTracksView {
     protected readonly tracks = this._state.sortedTracks;
 
     constructor() {
-        this._api.index().subscribe();
+        this._api.indexing().subscribe();
 
         effect(() => {
             const option = this._state.sortOption();
@@ -40,14 +40,14 @@ export class MusicTracksView {
 
                 this._api.getAll(sort, order)
                     .subscribe({
-                    next: tracks => this._state.setTracks = tracks
-                });
+                        next: tracks => this._state.setTracks = tracks
+                    });
             });
         });
     }
 
     protected playTrack(track: Track) {
-        this.player.queue.set(this.tracks());
+        this.player.setQueue(this.tracks());
         this.player.play(track);
     }
 
@@ -55,6 +55,7 @@ export class MusicTracksView {
         this._api.delete(track.id).subscribe({
             next: () => {
                 this._state.removeTrack(track);
+                this.player.removeFromQueue(track.id);
             },
         });
     }

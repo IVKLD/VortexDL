@@ -1,5 +1,3 @@
-use std::fs;
-
 use axum::{
     Json,
     extract::{Path, Query, State},
@@ -36,7 +34,6 @@ pub async fn get_tracks(
         .iter()
         .filter_map(|(id, data)| {
             let path = &data.path;
-            let metadata = path.metadata().ok()?;
             let extension_str = path.extension()?.to_string_lossy().to_string();
             let format = match extension_str.to_lowercase().as_str() {
                 "mp3" => AudioFormat::Mp3,
@@ -52,15 +49,8 @@ pub async fn get_tracks(
                 format,
                 artwork_url: data.artwork_url.clone(),
                 source_url: data.source_url.clone(),
-                created_at: metadata
-                    .created()
-                    .map(|t| {
-                        t.duration_since(std::time::UNIX_EPOCH)
-                            .unwrap_or_default()
-                            .as_secs()
-                    })
-                    .unwrap_or(0),
-                size: metadata.len(),
+                created_at: data.created_at,
+                size: data.size,
                 position: data.position.unwrap_or(u32::MAX),
             })
         })
@@ -102,7 +92,8 @@ pub async fn remove_track(
 
     if let Some(data) = path {
         if data.path.exists() {
-            fs::remove_file(&data.path)
+            tokio::fs::remove_file(&data.path)
+                .await
                 .map_err(|e| ApiError::internal(format!("Failed to delete file: {e}")))?;
         }
 

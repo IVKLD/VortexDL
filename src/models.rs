@@ -31,10 +31,6 @@ pub struct ResolveQuery {
 pub struct ResolveResponse {
     pub id: i64,
     pub kind: String,
-    #[allow(dead_code)]
-    pub title: Option<String>,
-    #[allow(dead_code)]
-    pub artwork_url: Option<String>,
 }
 
 #[derive(Deserialize, Debug)]

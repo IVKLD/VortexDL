@@ -19,10 +19,11 @@ import {MusicTracksViewService} from '@app/pages/music-tracks-view/music-tracks-
 import {MatSnackBar} from '@angular/material/snack-bar';
 import {DownloadProgressSnackbar} from '@shared/components/download-progress-snackbar/download-progress-snackbar';
 import {DownloadTrackingService} from '@app/services/download-tracking.service';
+import {MatTooltip} from "@angular/material/tooltip";
 
 @Component({
     selector: 'app-header',
-    imports: [MatIcon, MatButton, MatMenu, MatMenuItem, MatMenuTrigger, MatFormField, MatInput, MatPrefix, MatDivider, FormField],
+    imports: [MatIcon, MatButton, MatMenu, MatMenuItem, MatMenuTrigger, MatFormField, MatInput, MatPrefix, MatDivider, FormField, MatTooltip],
     templateUrl: './header.html',
     styleUrl: './header.scss',
     changeDetection: ChangeDetectionStrategy.OnPush,
@@ -83,7 +84,7 @@ export class Header {
         this._settingsService.getSettings().subscribe({
             next: (settings) => {
                 if (!settings.soundcloud.profileUrl) {
-                    this._snackBar.open('Please configure SoundCloud URL in settings first', 'OK', {duration: 5000});
+                    this._snackBar.open('Please configure SoundCloud URL in settings first', 'OK');
                     this._localSyncing.set(false);
                     return;
                 }

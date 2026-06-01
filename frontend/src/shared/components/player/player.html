@@ -1,56 +1,7 @@
 @if (player.currentTrack(); as track) {
-    <div class="bar">
-        <div class="info">
-            <div class="artwork">
-                @if (track.artworkUrl) {
-                    <img [src]="track.artworkUrl" alt="Artwork">
-                } @else {
-                    <div class="placeholder">
-                        <mat-icon>music_note</mat-icon>
-                    </div>
-                }
-            </div>
-            <div class="details">
-                <div class="title">{{ track.title }}</div>
-                <div class="artist">{{ track.artist }}</div>
-            </div>
-        </div>
-
-        <div class="controls-wrapper">
-            <div class="playback-btns">
-                <button (click)="player.previous()" class="secondary-btn" mat-icon-button>
-                    <mat-icon>skip_previous</mat-icon>
-                </button>
-
-                <button (click)="player.togglePlay()" class="play-btn" mat-fab>
-                    <mat-icon>{{ playIcon() }}</mat-icon>
-                </button>
-
-                <button (click)="player.next()" class="secondary-btn" mat-icon-button>
-                    <mat-icon>skip_next</mat-icon>
-                </button>
-            </div>
-
-            <div class="progress-container">
-                <span class="time">{{ currentTimeFormatted() }}</span>
-                <mat-slider [max]="player.duration()" min="0" step="1">
-                    <input #progressSlider (input)="onSeekInput(progressSlider.value)"
-                           [value]="player.progress()"
-                           matSliderThumb>
-                </mat-slider>
-                <span class="time">{{ durationFormatted() }}</span>
-            </div>
-        </div>
-
-        <div class="volume-container">
-            <button class="vol-icon" mat-icon-button>
-                <mat-icon>{{ volumeIcon() }}</mat-icon>
-            </button>
-            <mat-slider max="1" min="0" step="0.01">
-                <input #volumeSlider (input)="onVolumeInput(volumeSlider.value)"
-                       [value]="player.volume()"
-                       matSliderThumb>
-            </mat-slider>
-        </div>
+    <div class="wrapper">
+        <app-player-info [data]="track"/>
+        <app-player-controls/>
+        <app-player-volume/>
     </div>
 }

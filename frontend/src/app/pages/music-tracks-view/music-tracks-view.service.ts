@@ -18,7 +18,7 @@ export class MusicTracksViewService {
         return this._http.get<Tracks>('/downloads', { params });
     }
 
-    public index() {
+    public indexing() {
         return this._http.get('/downloads/indexing_tracks');
     }
 

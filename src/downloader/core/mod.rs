@@ -13,10 +13,9 @@ use reqwest::Client as HttpClient;
 use crate::{
     downloader::{Context, TrackDownload, core::pipeline as pl},
     ui::{create_spinner, create_total_progress_bar},
-    utils::filename::format_track_filename,
+    utils::filename::clean_filename,
 };
 
-/// Executes the download pipeline for multiple tracks in parallel.
 pub(crate) async fn run_download_batch(ctx: &Context, tracks: Vec<TrackDownload>) {
     let mp = MultiProgress::new();
     let total_tracks = tracks.len();
@@ -46,14 +45,15 @@ pub(crate) async fn run_download_batch(ctx: &Context, tracks: Vec<TrackDownload>
 
             async move {
                 let pb = create_spinner(&mp);
-                let filename = format_track_filename(&track.artist, &track.title);
-                let file_path = format!("{}/{}.mp3", output_dir, filename);
+                let display_name = clean_filename(&format!("{} - {}", track.artist, track.title));
+                let file_path = format!("{output_dir}/{display_name}.mp3");
 
                 let task = pl::DownloadTask {
                     id: track.id,
-                    title: track.title.clone(),
-                    artist: track.artist.clone(),
-                    artwork_url: track.artwork_url.clone(),
+                    title: track.title,
+                    artist: track.artist,
+                    display_name,
+                    artwork_url: track.artwork_url,
                     position: track.position,
                     pb: pb.clone(),
                     output_dir,

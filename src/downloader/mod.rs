@@ -3,7 +3,7 @@ use std::collections::HashSet;
 use anyhow::{Result, anyhow};
 use colored::Colorize;
 
-use crate::adb_device;
+use crate::{adb_device, utils::metadata::update_track_position};
 
 pub mod core;
 pub(crate) mod discovery;
@@ -31,42 +31,16 @@ pub async fn download(ctx: &Context, url: &str) -> Result<()> {
         _ => return Err(anyhow!("Unsupported resource kind: {}", resolve_res.kind)),
     };
 
-    let mut to_download = Vec::with_capacity(all_tracks.len());
-    let mut remote_ids = HashSet::with_capacity(all_tracks.len());
-    let mut skipped = 0;
+    let remote_ids: HashSet<i64> = all_tracks.iter().map(|track| track.id).collect();
+    let to_download: Vec<TrackDownload> = {
+        let mut storage_write = ctx.storage.write().await;
+        all_tracks
+            .into_iter()
+            .filter_map(|track| process_track_download(&mut storage_write, track))
+            .collect()
+    };
 
-    {
-        let storage_read = ctx.storage.read().await;
-        for track in all_tracks {
-            let track_download = TrackDownload {
-                id: track.id,
-                title: track.title.clone(),
-                artist: track.artist.clone(),
-                artwork_url: track.artwork_url.clone(),
-                position: track.position,
-            };
-
-            remote_ids.insert(track.id);
-
-            let already_exists = if let Some(data) = storage_read.tracks.get(&track.id) {
-                data.path.exists()
-            } else {
-                false
-            };
-
-            if already_exists {
-                println!(
-                    "{} Skipping: {} - {}",
-                    "[SKIP]".yellow().bold(),
-                    track.artist,
-                    track.title
-                );
-                skipped += 1;
-            } else {
-                to_download.push(track_download);
-            }
-        }
-    }
+    let skipped = remote_ids.len() - to_download.len();
 
     if skipped > 0 {
         println!("{} Skipped {} tracks.", "[INFO]".blue().bold(), skipped);
@@ -79,6 +53,7 @@ pub async fn download(ctx: &Context, url: &str) -> Result<()> {
                 track.title.clone(),
                 track.artist.clone(),
                 track.artwork_url.clone(),
+                track.position,
             );
         }
     }
@@ -99,4 +74,33 @@ pub async fn download(ctx: &Context, url: &str) -> Result<()> {
     adb_device::sync_all_connected(ctx.storage.clone(), ctx.settings.clone()).await;
 
     Ok(())
+}
+
+fn process_track_download(
+    storage: &mut crate::storage::MusicStorage,
+    track: TrackDownload,
+) -> Option<TrackDownload> {
+    if let Some(data) = storage
+        .tracks
+        .get_mut(&track.id)
+        .filter(|d| d.path.exists())
+    {
+        if data.position != track.position {
+            data.position = track.position;
+            let path = data.path.clone();
+            let position = track.position;
+            tokio::task::spawn_blocking(move || {
+                let _ = update_track_position(&path.to_string_lossy(), position);
+            });
+        }
+        println!(
+            "{} {} - {}",
+            "[SKIP]".yellow().bold(),
+            track.artist,
+            track.title
+        );
+        None
+    } else {
+        Some(track)
+    }
 }

@@ -1,28 +1,8 @@
 <app-section-header [link]="{label: 'Library', url: '/musics'}" icon="history" title="Recently Added"/>
 
-<div class="list">
+<div>
     @for (track of tracks(); track track.id) {
-        <div class="card">
-            <div class="artwork">
-                @if (track.artworkUrl) {
-                    <img [alt]="track.title" [ngSrc]="track.artworkUrl" height="60" width="60">
-                } @else {
-                    <div class="placeholder-art">
-                        <mat-icon>music_note</mat-icon>
-                    </div>
-                }
-            </div>
-
-            <div class="info">
-                <h4 [title]="track.title" class="title">{{ track.title }}</h4>
-                <span class="artist">{{ track.artist }}</span>
-            </div>
-
-            <span class="format">{{ track.format }}</span>
-            <button (click)="playTrack.emit(track); $event.stopPropagation()" class="play-btn" mat-icon-button>
-                <mat-icon>play_arrow</mat-icon>
-            </button>
-        </div>
+        <app-music-card [track]="track"/>
     } @empty {
         <div class="empty">
             <mat-icon>music_off</mat-icon>

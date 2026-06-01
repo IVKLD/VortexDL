@@ -6,6 +6,7 @@ use crate::{
     downloader::{self, Context},
     models::SyncMode,
     settings::UserSettings,
+    storage::MusicStorage,
 };
 
 #[derive(Parser, Debug)]
@@ -35,6 +36,13 @@ pub struct Args {
 
     #[arg(
         long,
+        default_value_t = false,
+        help = "Sync music files with configured and connected ADB devices / music player"
+    )]
+    pub sync_player: bool,
+
+    #[arg(
+        long,
         default_value = "127.0.0.1",
         help = "Host address to bind the server to"
     )]
@@ -60,15 +68,63 @@ impl Args {
 }
 
 pub async fn execute_app(state: AppState, args: Args) -> Result<()> {
-    if args.serve {
-        api::run_server(state, &args).await
-    } else if let Some(ref url) = args.url {
-        run_cli_download(state, url, &args).await
-    } else {
-        Args::command().print_help()?;
-        println!();
-        Ok(())
+    match args {
+        Args { serve: true, .. } => api::run_server(state, &args).await,
+        Args {
+            sync_player: true, ..
+        } => run_cli_sync(state).await,
+        Args {
+            url: Some(ref url), ..
+        } => run_cli_download(state, url, &args).await,
+        _ => {
+            Args::command().print_help()?;
+            println!();
+            Ok(())
+        }
     }
+}
+
+async fn run_cli_sync(state: AppState) -> Result<()> {
+    println!("Indexing local music library...");
+    MusicStorage::run_background_indexing(state.storage.clone()).await;
+
+    let settings = state.settings.read().await;
+    if !settings.adb.enabled {
+        println!("ADB is disabled in settings. Please enable it to sync.");
+        return Ok(());
+    }
+
+    let connected = crate::adb_device::list_connected_devices().await?;
+    if connected.is_empty() {
+        println!("No connected ADB devices found.");
+        return Ok(());
+    }
+
+    let mut synced_any = false;
+    for id in &connected {
+        if let Some(cfg) = settings
+            .adb
+            .devices
+            .iter()
+            .find(|d| d.enabled && d.device_id == *id)
+        {
+            println!("Syncing with device: {} -> {}", id, cfg.remote_music_dir);
+            crate::adb_device::sync_device(id, &cfg.remote_music_dir, state.storage.clone())
+                .await?;
+            synced_any = true;
+        } else {
+            println!(
+                "Device {} is connected but either disabled or not configured in settings.",
+                id
+            );
+        }
+    }
+
+    if !synced_any {
+        println!("No configured and enabled ADB devices are currently connected.");
+    }
+
+    Ok(())
 }
 
 async fn run_cli_download(state: AppState, url: &str, args: &Args) -> Result<()> {

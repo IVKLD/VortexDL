@@ -10,40 +10,41 @@ use super::artwork::ArtworkDataHandle;
 use crate::{
     downloader::{Context, core::pipeline::DownloadTask},
     storage::TrackData,
-    utils::{
-        filename::format_track_filename,
-        metadata::{SaveTrackArgs, save_track_info},
-    },
+    utils::metadata::{SaveTrackArgs, save_track_info},
 };
 
-/// Handles successful download completion.
 pub fn finalize_and_persist(
     ctx: Context,
     task: DownloadTask,
     artwork_handle: Option<ArtworkDataHandle>,
     source_url: String,
 ) -> JoinHandle<()> {
-    task.pb.println(format!(
-        "{} Done: {}",
-        "[OK]".green().bold(),
-        format_track_filename(&task.artist, &task.title)
-    ));
+    task.pb
+        .println(format!("{} {}", "[OK]".green().bold(), task.display_name));
 
     tokio::spawn(persist(ctx, task, artwork_handle, source_url))
 }
 
-/// Persists the downloaded track (DB update, metadata tagging).
 async fn persist(
     ctx: Context,
     task: DownloadTask,
     artwork_handle: Option<ArtworkDataHandle>,
     source_url: String,
 ) {
-    let artwork_data = if let Some(h) = artwork_handle {
-        h.await.unwrap_or_default()
-    } else {
-        None
+    let artwork_data = match artwork_handle {
+        Some(h) => h.await.unwrap_or_default(),
+        None => None,
     };
+
+    let size = tokio::fs::metadata(&task.file_path)
+        .await
+        .map(|m| m.len())
+        .unwrap_or(0);
+
+    let now = SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .map(|d| d.as_secs())
+        .unwrap_or(0);
 
     ctx.storage.write().await.update_track(
         task.id,
@@ -54,11 +55,12 @@ async fn persist(
             artwork_url: task.artwork_url.clone(),
             source_url: Some(source_url.clone()),
             position: task.position,
+            created_at: now,
+            size,
         },
     );
 
     let id = task.id;
-    let file_path = task.file_path.clone();
     let source_url_clone = source_url.clone();
 
     let _ = tokio::task::spawn_blocking(move || {
@@ -77,24 +79,18 @@ async fn persist(
     .await;
 
     if let Some(m) = ctx.dm {
-        let now = SystemTime::now()
-            .duration_since(UNIX_EPOCH)
-            .map(|d| d.as_secs())
-            .unwrap_or(0);
-        let size = std::fs::metadata(&file_path).map(|m| m.len()).unwrap_or(0);
         m.update_finished(id, "mp3".to_string(), now, Some(source_url), size);
     }
 }
 
-/// Handles download failure.
 pub async fn on_failure(ctx: &Context, task: &DownloadTask, e: anyhow::Error) {
     if let Some(m) = &ctx.dm {
         m.update_failed(task.id, format!("{:#}", e));
     }
     task.pb.println(format!(
-        "{} Failed: {} — {:#}",
+        "{} {} — {:#}",
         "[ERROR]".red().bold(),
-        format_track_filename(&task.artist, &task.title),
+        task.display_name,
         e
     ));
 }

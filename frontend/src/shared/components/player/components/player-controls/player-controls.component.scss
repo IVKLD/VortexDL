@@ -1,0 +1,17 @@
+:host {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 16px;
+  width: 100%;
+  margin: 8px 0;
+}
+
+button {
+  color: rgba(255, 255, 255, 0.6);
+  transition: color 0.2s ease;
+
+  &:hover {
+    color: #fff;
+  }
+}
