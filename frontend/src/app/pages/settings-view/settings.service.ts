@@ -35,6 +35,17 @@ export class SettingsService {
         );
     }
 
+    public testProxy(proxyUrl: string) {
+        return this._http.post<string>('/settings/test/proxy', {proxyUrl}).pipe(
+            tap(() => this._snack.open('Proxy connection successful', 'OK')),
+            catchError((error) => {
+                const message = error.error || 'Proxy verification failed';
+                this._snack.open(message, 'Close');
+                return throwError(() => error);
+            })
+        );
+    }
+
     public getAdbDevices() {
         return this._http.get<string[]>('/devices');
     }

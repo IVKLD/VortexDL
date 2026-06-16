@@ -1,7 +1,6 @@
 import {ChangeDetectionStrategy, Component, computed, inject, OnInit} from '@angular/core';
 import {DashboardStat, FormatItem} from './dashboard-view.model';
 import {MusicTracksViewState} from '@app/pages/music-tracks-view/music-tracks-view.state';
-import {MusicTracksViewService} from '@app/pages/music-tracks-view/music-tracks-view.service';
 import {DownloadTrackingService} from '@app/services/download-tracking.service';
 import {ActivityChartComponent} from './components/activity-chart/activity-chart.component';
 import {FormatBreakdownComponent} from './components/format-breakdown/format-breakdown.component';
@@ -31,12 +30,10 @@ const FORMATS_CONFIG: { format: AudioFormat, color: string }[] = [
     styleUrl: './dashboard-view.scss',
     changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class DashboardView implements OnInit {
-    private readonly _api = inject(MusicTracksViewService);
-    private readonly _state = inject(MusicTracksViewState);
-
+export class DashboardView {
     public readonly tracking = inject(DownloadTrackingService);
     protected readonly player = inject(PlayerService);
+    private readonly _state = inject(MusicTracksViewState);
 
     public readonly stats = computed<DashboardStat[]>(() => [
         {
@@ -96,10 +93,4 @@ export class DashboardView implements OnInit {
             heightPercent: (count / max) * 100 || 5
         }));
     });
-
-    public ngOnInit() {
-        this._api.getAll().subscribe({
-            next: t => this._state.setTracks = t
-        });
-    }
 }

@@ -1,49 +1,82 @@
-use anyhow::{Result, anyhow};
-use soundcloud_rs::{Identifier, StreamType, Track};
+use anyhow::Result;
+use soundcloud_rs::{Client, Identifier, StreamType, Track};
 
-use crate::downloader::Context;
+use crate::{
+    downloader::Context,
+    utils::{proxy::race_proxies, soundcloud::init_client_with_settings},
+};
 
 #[derive(Debug, Clone)]
 pub enum DownloadProtocol {
-    Progressive(String),
-    Hls(String),
+    Progressive {
+        url: String,
+        proxy_url: Option<String>,
+    },
+    Hls {
+        url: String,
+        proxy_url: Option<String>,
+    },
 }
 
 impl DownloadProtocol {
     pub fn url(&self) -> &str {
         match self {
-            Self::Progressive(u) | Self::Hls(u) => u,
+            Self::Progressive { url, .. } | Self::Hls { url, .. } => url,
         }
     }
 }
 
-/// Resolves track metadata and available stream protocols.
 pub async fn resolve_track_metadata(
     ctx: &Context,
     id: i64,
 ) -> Result<(Track, Identifier, DownloadProtocol)> {
     let sc_id = Identifier::Id(id);
-    let track = ctx
-        .client
-        .get_track(&sc_id)
-        .await
-        .map_err(|e| anyhow!("Failed to resolve track {}: {}", id, e))?;
 
-    let protocol = match ctx
-        .client
-        .get_stream_url(&sc_id, Some(&StreamType::Progressive))
-        .await
-    {
-        Ok(url) => DownloadProtocol::Progressive(url),
+    match try_resolve_with_client(&ctx.client, &sc_id, None).await {
+        Ok((track, proto)) => Ok((track, sc_id, proto)),
+        Err(direct_err) => {
+            tracing::debug!("Direct stream resolution failed for track {id}: {direct_err}");
+
+            let settings = ctx.settings.read().await.clone();
+
+            race_proxies(&settings, move |s, proxy| {
+                let sc_id = sc_id.clone();
+                async move {
+                    let client = init_client_with_settings(&s, Some(&proxy)).await?;
+                    let (track, proto) =
+                        try_resolve_with_client(&client, &sc_id, Some(&proxy)).await?;
+                    Ok((track, sc_id, proto))
+                }
+            })
+            .await
+            .map_err(|e| {
+                tracing::error!("All fallback proxies failed resolving track {id}: {e}");
+                anyhow::anyhow!("All fallback proxies failed: {e}")
+            })
+        }
+    }
+}
+
+async fn try_resolve_with_client(
+    client: &Client,
+    sc_id: &Identifier,
+    proxy_url: Option<&str>,
+) -> Result<(Track, DownloadProtocol)> {
+    let track = client.get_track(sc_id).await?;
+    let protocol = match client.get_stream_url(sc_id, Some(&StreamType::Hls)).await {
+        Ok(url) => DownloadProtocol::Hls {
+            url,
+            proxy_url: proxy_url.map(|s| s.to_string()),
+        },
         Err(_) => {
-            let hls_url = ctx
-                .client
-                .get_stream_url(&sc_id, Some(&StreamType::Hls))
-                .await
-                .map_err(|e| anyhow!("Stream not available (Progressive & HLS failed): {}", e))?;
-            DownloadProtocol::Hls(hls_url)
+            let url = client
+                .get_stream_url(sc_id, Some(&StreamType::Progressive))
+                .await?;
+            DownloadProtocol::Progressive {
+                url,
+                proxy_url: proxy_url.map(|s| s.to_string()),
+            }
         }
     };
-
-    Ok((track, sc_id, protocol))
+    Ok((track, protocol))
 }

@@ -16,10 +16,10 @@ use crate::{
     api::{
         download_manager::{DownloadStatus, ServerEvent},
         errors::ApiError,
-        models::{ApiStatus, DownloadRequest, DownloadStartResponse},
         state::AppState,
     },
     downloader,
+    types::api::{ApiStatus, DownloadRequest, DownloadStartResponse},
 };
 
 pub async fn start_download(
@@ -43,13 +43,7 @@ pub async fn start_download(
     };
 
     spawn(async move {
-        let ctx = downloader::Context {
-            storage: state.storage.clone(),
-            client: state.client.clone(),
-            http: state.http.clone(),
-            dm: Some(state.download_manager.clone()),
-            settings: state.settings.clone(),
-        };
+        let ctx = downloader::Context::from_state(&state).with_dm(state.download_manager.clone());
 
         if let Err(e) = downloader::download(&ctx, &url).await {
             tracing::error!("Download failed for {url}: {e}");

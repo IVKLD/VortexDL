@@ -43,10 +43,11 @@
 }
 
 @keyframes rotate {
-    from { transform: rotate(0deg); }
-    to { transform: rotate(360deg); }
-}
+    from {
+        transform: rotate(0deg);
+    }
 
-.mb-1 {
-    margin-bottom: 8px;
+    to {
+        transform: rotate(360deg);
+    }
 }

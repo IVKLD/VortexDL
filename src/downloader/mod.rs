@@ -3,32 +3,70 @@ use std::collections::HashSet;
 use anyhow::{Result, anyhow};
 use colored::Colorize;
 
-use crate::{adb_device, utils::metadata::update_track_position};
+use crate::{
+    adb_device,
+    utils::{
+        metadata::update_track_position, proxy::race_proxies,
+        soundcloud::init_client_with_settings,
+    },
+};
 
 pub mod core;
-pub(crate) mod discovery;
-pub mod types;
+pub mod discovery;
 
 use discovery::{
-    DiscoveryContext, fetch_likes, fetch_playlist, fetch_track, resolve_with_feedback,
+    DiscoveryContext, fetch_likes, fetch_playlist, fetch_track, show_feedback,
 };
-pub use types::{Context, TrackDownload};
 
-/// Downloads and synchronizes a resource from a given URL.
-pub async fn download(ctx: &Context, url: &str) -> Result<()> {
+pub use crate::types::downloader::{Context, TrackDownload};
+
+async fn resolve_and_fetch_tracks(
+    ctx: &Context,
+    url: &str,
+    client: &soundcloud_rs::Client,
+) -> Result<Vec<TrackDownload>> {
     let discovery_ctx = DiscoveryContext {
-        client: &ctx.client,
+        client,
         settings: &ctx.settings,
         dm: ctx.dm.as_ref(),
     };
 
-    let resolve_res = resolve_with_feedback(&discovery_ctx, url, "Resolving URL...").await?;
+    let pb = show_feedback(&discovery_ctx, "Resolving URL...");
+    let resolve_res = crate::utils::soundcloud::resolve_url(discovery_ctx.client, url).await;
+    pb.finish_and_clear();
+    let resolve_res = resolve_res?;
 
     let all_tracks = match resolve_res.kind.as_str() {
         "user" | "likes" => fetch_likes(&discovery_ctx, resolve_res.id).await?,
         "playlist" => fetch_playlist(&discovery_ctx, resolve_res.id).await?,
         "track" => vec![fetch_track(&discovery_ctx, resolve_res.id).await?],
         _ => return Err(anyhow!("Unsupported resource kind: {}", resolve_res.kind)),
+    };
+
+    Ok(all_tracks)
+}
+
+pub async fn download(ctx: &Context, url: &str) -> Result<()> {
+    let all_tracks = match resolve_and_fetch_tracks(ctx, url, &ctx.client).await {
+        Ok(tracks) => tracks,
+        Err(e) => {
+            let settings = ctx.settings.read().await.clone();
+            tracing::debug!("Direct discovery failed: {e}. Trying fallback proxies...");
+
+            let ctx = ctx.clone();
+            let url = url.to_string();
+
+            race_proxies(&settings, |s, proxy| {
+                let ctx = ctx.clone();
+                let url = url.clone();
+                async move {
+                    let proxied_client = init_client_with_settings(&s, Some(&proxy)).await?;
+                    resolve_and_fetch_tracks(&ctx, &url, &proxied_client).await
+                }
+            })
+            .await
+            .map_err(|proxy_err| anyhow!("Discovery failed: {e} (proxies: {proxy_err})"))?
+        }
     };
 
     let remote_ids: HashSet<i64> = all_tracks.iter().map(|track| track.id).collect();
@@ -64,7 +102,7 @@ pub async fn download(ctx: &Context, url: &str) -> Result<()> {
         println!("{} Everything synced!", "[INFO]".blue().bold());
     }
 
-    let sync_mode = ctx.settings.read().await.downloads.sync_mode.clone();
+    let sync_mode = ctx.settings.read().await.downloads.sync_mode;
     ctx.storage
         .write()
         .await

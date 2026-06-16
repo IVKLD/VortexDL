@@ -4,9 +4,9 @@ use clap::{CommandFactory, Parser};
 use crate::{
     api::{self, state::AppState},
     downloader::{self, Context},
-    models::SyncMode,
     settings::UserSettings,
     storage::MusicStorage,
+    types::SyncMode,
 };
 
 #[derive(Parser, Debug)]
@@ -55,6 +55,13 @@ pub struct Args {
         help = "Port to listen on for the REST API and WebUI"
     )]
     pub port: u16,
+
+    #[arg(
+        long,
+        value_delimiter = ',',
+        help = "Fallback proxy URLs (comma-separated)"
+    )]
+    pub proxies: Vec<String>,
 }
 
 impl Args {
@@ -128,16 +135,13 @@ async fn run_cli_sync(state: AppState) -> Result<()> {
 }
 
 async fn run_cli_download(state: AppState, url: &str, args: &Args) -> Result<()> {
-    let ctx = Context {
-        storage: state.storage.clone(),
-        client: state.client.clone(),
-        http: state.http.clone(),
-        dm: None,
-        settings: state.settings.clone(),
-    };
+    let ctx = Context::from_state(&state);
 
     let mut current_settings = ctx.settings.read().await.clone();
-    current_settings.downloads.sync_mode = args.sync_mode.clone();
+    current_settings.downloads.sync_mode = args.sync_mode;
+    if !args.proxies.is_empty() {
+        current_settings.network.fallback_proxies = args.proxies.clone();
+    }
     ctx.settings.update(current_settings).await?;
 
     downloader::download(&ctx, url).await?;

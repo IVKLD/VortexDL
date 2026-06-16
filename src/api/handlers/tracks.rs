@@ -8,12 +8,9 @@ use serde::Deserialize;
 use tokio_util::io::ReaderStream;
 
 use crate::{
-    api::{
-        errors::ApiError,
-        models::{AudioFormat, TrackRecord},
-        state::AppState,
-    },
+    api::{errors::ApiError, state::AppState},
     storage::MusicStorage,
+    types::api::{AudioFormat, TrackRecord},
 };
 
 #[derive(Deserialize)]
@@ -34,13 +31,8 @@ pub async fn get_tracks(
         .iter()
         .filter_map(|(id, data)| {
             let path = &data.path;
-            let extension_str = path.extension()?.to_string_lossy().to_string();
-            let format = match extension_str.to_lowercase().as_str() {
-                "mp3" => AudioFormat::Mp3,
-                "flac" => AudioFormat::Flac,
-                "wav" => AudioFormat::Wav,
-                _ => AudioFormat::Unknown,
-            };
+            let extension_str = path.extension()?.to_string_lossy();
+            let format = AudioFormat::from_extension(&extension_str);
 
             Some(TrackRecord {
                 id: *id as u32,
@@ -87,12 +79,12 @@ pub async fn remove_track(
 ) -> Result<impl IntoResponse, ApiError> {
     let path = {
         let storage = state.storage.read().await;
-        storage.tracks.get(&id).cloned()
+        storage.tracks.get(&id).map(|d| d.path.clone())
     };
 
-    if let Some(data) = path {
-        if data.path.exists() {
-            tokio::fs::remove_file(&data.path)
+    if let Some(path) = path {
+        if path.exists() {
+            tokio::fs::remove_file(&path)
                 .await
                 .map_err(|e| ApiError::internal(format!("Failed to delete file: {e}")))?;
         }

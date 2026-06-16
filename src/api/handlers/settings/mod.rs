@@ -2,7 +2,7 @@ use axum::{Json, extract::State, http::StatusCode, response::IntoResponse};
 
 use crate::{api::state::AppState, settings::UserSettings};
 
-pub(crate) mod test;
+pub mod test;
 
 pub async fn get_settings(State(state): State<AppState>) -> impl IntoResponse {
     let current = state.settings.read().await.clone();

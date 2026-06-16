@@ -1,7 +1,7 @@
-import {ChangeDetectionStrategy, Component} from '@angular/core';
 import {RouterOutlet} from '@angular/router';
 import {Sidebar} from '@shared/components/sidebar/sidebar';
 import {GlobalLoader} from '@shared/components/global-loader/global-loader';
+import {ChangeDetectionStrategy, Component} from "@angular/core";
 
 @Component({
     selector: 'app-root',

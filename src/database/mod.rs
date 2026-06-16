@@ -7,10 +7,13 @@ use std::{
 use anyhow::{Error, anyhow};
 use redb::Database;
 
-use crate::constants::{APP_DIR, DB_NAME};
-
 pub mod settings;
 pub mod sync;
+
+pub use settings::{get_settings, update_settings};
+pub use sync::{get_previous_ids, save_sync_ids};
+
+use crate::constants::{APP_DIR, DB_NAME};
 
 static DB_FILE_PATH: LazyLock<PathBuf> = LazyLock::new(|| {
     dirs::config_dir()

@@ -14,7 +14,11 @@ use crate::{
             devices::list_adb_devices,
             download::{download_events, get_download_queue, remove_from_queue, start_download},
             health::health,
-            settings::{get_settings, test::test_soundcloud_url, update_settings},
+            settings::{
+                get_settings,
+                test::{test_proxy, test_soundcloud_url},
+                update_settings,
+            },
             tracks::{get_tracks, indexing_tracks, remove_track, stream_track},
         },
         state::AppState,
@@ -25,7 +29,6 @@ use crate::{
 pub mod download_manager;
 pub mod errors;
 pub mod handlers;
-pub mod models;
 pub mod state;
 #[cfg(feature = "web")]
 pub mod static_files;
@@ -77,6 +80,7 @@ fn settings_routes() -> Router<AppState> {
     Router::new()
         .route("/", get(get_settings).post(update_settings))
         .route("/test/soundcloud", post(test_soundcloud_url))
+        .route("/test/proxy", post(test_proxy))
 }
 
 fn apply_frontend_fallback(router: Router) -> Router {

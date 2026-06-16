@@ -30,9 +30,9 @@
 
 .row {
     display: flex;
-    gap: 16px;
     align-items: flex-start;
     flex-wrap: wrap;
+    gap: 1em;
 
     mat-form-field {
         flex: 1;
@@ -41,12 +41,6 @@
 
     .full-width {
         flex: 1 1 100%;
-    }
-
-    .test-btn {
-        height: 56px;
-        padding: 0 24px;
-        border-radius: 12px;
     }
 }
 

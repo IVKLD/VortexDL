@@ -1,26 +1,4 @@
-use std::fmt;
-
-use clap::ValueEnum;
 use serde::{Deserialize, Serialize};
-
-#[derive(ValueEnum, Clone, Debug, Serialize, Deserialize, PartialEq)]
-#[serde(rename_all = "lowercase")]
-#[value(rename_all = "lowercase")]
-pub enum SyncMode {
-    Silent,
-    Full,
-    Archive,
-}
-
-impl fmt::Display for SyncMode {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match self {
-            Self::Silent => write!(f, "silent"),
-            Self::Full => write!(f, "full"),
-            Self::Archive => write!(f, "archive"),
-        }
-    }
-}
 
 #[derive(Serialize)]
 pub struct ResolveQuery {
@@ -62,3 +40,20 @@ pub struct TrackLikesQuery {
     pub limit: u32,
     pub offset: Option<String>,
 }
+
+pub trait AsUsername {
+    fn username(&self) -> Option<&str>;
+}
+
+impl AsUsername for UserInfo {
+    fn username(&self) -> Option<&str> {
+        Some(&self.username)
+    }
+}
+
+impl AsUsername for soundcloud_rs::UserSummary {
+    fn username(&self) -> Option<&str> {
+        self.username.as_deref()
+    }
+}
+

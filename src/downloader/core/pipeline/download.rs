@@ -11,7 +11,7 @@ use crate::{
         core::pipeline::{DownloadTask, resolve::DownloadProtocol},
     },
     ui,
-    utils::verification::verify_file,
+    utils::{soundcloud::init_client_with_settings, verification::verify_file},
 };
 
 pub async fn download_with_retries(
@@ -26,19 +26,22 @@ pub async fn download_with_retries(
 
     loop {
         let result = match &protocol {
-            DownloadProtocol::Progressive(url) => try_download_progressive(ctx, task, url).await,
-            DownloadProtocol::Hls(_) => try_download_hls(ctx, task, track, sc_id).await,
+            DownloadProtocol::Progressive { url, proxy_url } => {
+                try_download_progressive(ctx, task, url, proxy_url.as_deref()).await
+            }
+            DownloadProtocol::Hls { proxy_url, .. } => {
+                try_download_hls(ctx, task, track, sc_id, proxy_url.as_deref()).await
+            }
         };
 
-        let Err(e) = result else {
+        if result.is_ok() {
             return Ok(());
-        };
+        }
 
         attempts_left -= 1;
-
         if attempts_left == 0 {
-            tokio::fs::remove_file(&task.file_path).await.ok();
-            return Err(e);
+            fs::remove_file(&task.file_path).await.ok();
+            return result;
         }
 
         task.pb.set_message(format!(
@@ -49,22 +52,35 @@ pub async fn download_with_retries(
     }
 }
 
-async fn try_download_progressive(ctx: &Context, task: &DownloadTask, url: &str) -> Result<()> {
-    let response = ctx.http.get(url).send().await?.error_for_status()?;
+async fn try_download_progressive(
+    ctx: &Context,
+    task: &DownloadTask,
+    url: &str,
+    proxy_url: Option<&str>,
+) -> Result<()> {
+    let response = if let Some(proxy) = proxy_url {
+        reqwest::Client::builder()
+            .proxy(reqwest::Proxy::all(proxy)?)
+            .build()?
+            .get(url)
+            .send()
+            .await?
+            .error_for_status()?
+    } else {
+        ctx.http.get(url).send().await?.error_for_status()?
+    };
     let total = response.content_length().unwrap_or(0);
 
     task.pb
         .set_message(format!("Downloading: {}", task.display_name));
-
     ui::upgrade_to_download_bar(&task.pb, total);
 
     let mut file = fs::File::create(&task.file_path).await?;
     let mut stream = response.bytes_stream();
 
     while let Some(chunk) = stream.next().await {
-        let chunk = chunk.map_err(|e| anyhow!("Stream error: {}", e))?;
+        let chunk = chunk.map_err(|e| anyhow!("Stream error: {e}"))?;
         file.write_all(&chunk).await?;
-
         task.pb.inc(chunk.len() as u64);
 
         if let Some(m) = &ctx.dm {
@@ -74,7 +90,6 @@ async fn try_download_progressive(ctx: &Context, task: &DownloadTask, url: &str)
 
     drop(file);
     verify_file(&task.file_path, total).await?;
-
     Ok(())
 }
 
@@ -83,20 +98,37 @@ async fn try_download_hls(
     task: &DownloadTask,
     track: &Track,
     sc_id: &Identifier,
+    proxy_url: Option<&str>,
 ) -> Result<()> {
     task.pb
         .set_message(format!("Downloading (HLS): {}", task.display_name));
 
-    ctx.client
-        .download_track(
-            track,
-            sc_id,
-            Some(&StreamType::Hls),
-            Some(&task.output_dir),
-            Some(&task.display_name),
-        )
-        .await
-        .map_err(|e| anyhow!("HLS download failed: {}", e))?;
+    let download_result = if let Some(proxy) = proxy_url {
+        let settings = ctx.settings.read().await;
+        let client = init_client_with_settings(&settings, Some(proxy))
+            .await
+            .map_err(|e| anyhow!("Failed to build proxied client: {e}"))?;
+        client
+            .download_track(
+                track,
+                sc_id,
+                Some(&StreamType::Hls),
+                Some(&task.output_dir),
+                Some(&task.display_name),
+            )
+            .await
+    } else {
+        ctx.client
+            .download_track(
+                track,
+                sc_id,
+                Some(&StreamType::Hls),
+                Some(&task.output_dir),
+                Some(&task.display_name),
+            )
+            .await
+    };
 
+    download_result.map_err(|e| anyhow!("HLS download failed: {e}"))?;
     verify_file(&task.file_path, 0).await
 }

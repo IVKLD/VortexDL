@@ -16,11 +16,6 @@ pub async fn sync_device(
         None => return Ok(()),
     };
 
-    let tracks = storage.read().await.tracks.clone();
-    if tracks.is_empty() {
-        return Ok(());
-    }
-
     if let Err(e) = commands::ensure_remote_dir(device, remote_dir).await {
         ui::remote_access_failed(remote_dir, device, &e);
         return Err(e);
@@ -31,16 +26,24 @@ pub async fn sync_device(
     let mut local_paths = HashSet::new();
     let mut to_push = Vec::new();
 
-    for track in tracks.values() {
-        let Some(name) = track.path.file_name().and_then(|f| f.to_str()) else {
-            continue;
-        };
-        let artist_dir = clean_filename(&track.artist);
-        let rel = format!("{artist_dir}/{name}");
-        local_paths.insert(rel.clone());
+    {
+        let storage_read = storage.read().await;
+        let tracks = &storage_read.tracks;
+        if tracks.is_empty() {
+            return Ok(());
+        }
 
-        if !remote_files.contains(&rel) {
-            to_push.push((rel, artist_dir, track.path.clone()));
+        for track in tracks.values() {
+            let Some(name) = track.path.file_name().and_then(|f| f.to_str()) else {
+                continue;
+            };
+            let artist_dir = clean_filename(&track.artist);
+            let rel = format!("{artist_dir}/{name}");
+            local_paths.insert(rel.clone());
+
+            if !remote_files.contains(&rel) {
+                to_push.push((rel, artist_dir, track.path.clone()));
+            }
         }
     }
 

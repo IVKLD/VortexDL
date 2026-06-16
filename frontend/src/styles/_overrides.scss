@@ -1,5 +1,6 @@
 /* Переопределения для Material Slider в плеере */
 app-player {
+
   .mdc-slider__thumb,
   .mdc-slider__track--active_fill {
     transition-duration: 0ms !important;
@@ -66,4 +67,24 @@ mat-form-field {
       padding: 0 !important;
     }
   }
+}
+
+::placeholder {
+  color: var(--mat-sys-on-surface-variant) !important;
+  opacity: 0.5 !important;
+}
+
+::-webkit-input-placeholder {
+  color: var(--mat-sys-on-surface-variant) !important;
+  opacity: 0.5 !important;
+}
+
+::-moz-placeholder {
+  color: var(--mat-sys-on-surface-variant) !important;
+  opacity: 0.5 !important;
+}
+
+:-ms-input-placeholder {
+  color: var(--mat-sys-on-surface-variant) !important;
+  opacity: 0.5 !important;
 }

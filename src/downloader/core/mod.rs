@@ -1,4 +1,4 @@
-pub(in crate::downloader) mod pipeline;
+pub mod pipeline;
 
 use std::{sync::Arc, time::Duration};
 
@@ -16,7 +16,7 @@ use crate::{
     utils::filename::clean_filename,
 };
 
-pub(crate) async fn run_download_batch(ctx: &Context, tracks: Vec<TrackDownload>) {
+pub async fn run_download_batch(ctx: &Context, tracks: Vec<TrackDownload>) {
     let mp = MultiProgress::new();
     let total_tracks = tracks.len();
     let total_pb = create_total_progress_bar(&mp, total_tracks as u64);

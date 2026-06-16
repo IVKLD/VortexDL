@@ -19,7 +19,7 @@ pub fn clean_filename(filename: &str) -> String {
             acc
         });
 
-    cleaned.trim().to_string()
+    cleaned.trim().trim_end_matches('.').trim().to_string()
 }
 
 pub fn clean_title(title: &str) -> String {
@@ -39,6 +39,8 @@ mod tests {
         assert_eq!(clean_filename("hello/world"), "hello_world");
         assert_eq!(clean_filename("a:b?c\"d<e>f|g*h"), "a_b_c_d_e_f_g_h");
         assert_eq!(clean_filename("normal.mp3"), "normal.mp3");
+        assert_eq!(clean_filename("Pilot."), "Pilot");
+        assert_eq!(clean_filename("KOVEN."), "KOVEN");
         assert_eq!(
             clean_filename("NEFFEX - Fight Back 👊 🔥 [Copyright Free]"),
             "NEFFEX - Fight Back punch fire [Copyright Free]"

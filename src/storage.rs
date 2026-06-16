@@ -12,8 +12,8 @@ use tokio::{sync::RwLock, task::spawn_blocking};
 
 use crate::{
     constants::{SC_ARTWORK_URL, SC_IDENTIFIER, SC_POSITION, SC_SOURCE_URL},
-    database::sync::{get_previous_ids, save_sync_ids},
-    models::SyncMode,
+    database::{get_previous_ids, save_sync_ids},
+    types::SyncMode,
     utils::metadata::read_custom_field,
 };
 

@@ -1,11 +1,11 @@
-use tokio::task::JoinHandle;
-
 pub mod artwork;
 pub mod complete;
 pub mod download;
 pub mod resolve;
 
-use crate::{api::download_manager::DownloadStatus, downloader::Context};
+use tokio::task::JoinHandle;
+
+use crate::downloader::Context;
 
 #[derive(Clone)]
 pub struct DownloadTask {
@@ -23,7 +23,7 @@ pub struct DownloadTask {
 pub async fn run_track_pipeline(ctx: Context, mut task: DownloadTask) -> Option<JoinHandle<()>> {
     let pipeline = async {
         if let Some(m) = &ctx.dm {
-            m.update_status(task.id, DownloadStatus::Downloading);
+            m.update_downloading(task.id);
         }
         task.pb
             .set_message(format!("Downloading: {}", task.display_name));

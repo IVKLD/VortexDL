@@ -1,6 +1,7 @@
-import {computed, Injectable, signal} from '@angular/core';
+import {computed, effect, inject, Injectable, signal, untracked} from '@angular/core';
 import {Track} from '@shared/models/track.model';
 import Fuse from 'fuse.js';
+import {MusicTracksViewService} from "@app/pages/music-tracks-view/music-tracks-view.service";
 
 export enum MusicSortOption {
     POSITION_ASC = 'position-asc',
@@ -14,10 +15,28 @@ export enum MusicSortOption {
     providedIn: 'root',
 })
 export class MusicTracksViewState {
+    private readonly _api = inject(MusicTracksViewService);
+
+    constructor() {
+        effect(() => {
+            const option = this.sortOption();
+            untracked(() => {
+                this.startLoading();
+                const [sort, order] = option.split('-');
+
+                this._api.getAll(sort, order)
+                    .subscribe({
+                        next: tracks => this.setTracks = tracks
+                    });
+            });
+        });
+    }
+
     private readonly _isLoading = signal<boolean>(true);
     public readonly isLoading = this._isLoading.asReadonly();
 
     private readonly _tracks = signal<Track[]>([]);
+    public readonly count_tracks = computed(() => this._tracks().length);
 
     private readonly _sortOption = signal<MusicSortOption>(MusicSortOption.POSITION_ASC);
     public readonly sortOption = this._sortOption.asReadonly();
@@ -47,9 +66,9 @@ export class MusicTracksViewState {
         const [sort, order] = option.split('-');
 
         return [...this._tracks()].sort((a, b) => {
-            const valA = sort === 'name' ? (a.title || '').toLowerCase() : sort === 'date' ? a.createdAt : (a.position ?? 4294967295);
-            const valB = sort === 'name' ? (b.title || '').toLowerCase() : sort === 'date' ? b.createdAt : (b.position ?? 4294967295);
-            const cmp = typeof valA === 'string' ? valA.localeCompare(valB as string) : (valA as number) - (valB as number);
+            const valA = sort === 'name' ? (a.title).toLowerCase() : sort === 'date' ? a.createdAt : (a.position ?? 4294967295);
+            const valB = sort === 'name' ? (b.title).toLowerCase() : sort === 'date' ? b.createdAt : (b.position ?? 4294967295);
+            const cmp = typeof valA === 'string' ? valA.localeCompare(valB as string) : +valA - +valB;
             return order === 'desc' ? -cmp : cmp;
         });
     });

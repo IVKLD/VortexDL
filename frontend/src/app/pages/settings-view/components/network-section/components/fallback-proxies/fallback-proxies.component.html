@@ -1,0 +1,79 @@
+<div class="header">
+    <div class="header-title">
+        <mat-icon>vpn_lock</mat-icon>
+        <h3>Fallback Proxies</h3>
+    </div>
+
+    <div class="actions-list">
+        <button mat-stroked-button type="button" (click)="testAllProxies()"
+                [disabled]="isTestingAll()">
+            <mat-icon>play_circle</mat-icon>
+            Test All
+        </button>
+        <button mat-stroked-button type="button" (click)="pruneFailedActive()"
+                [disabled]="isTestingAll()">
+            <mat-icon>cleaning_services</mat-icon>
+            Prune Failed
+        </button>
+        <button mat-stroked-button type="button" (click)="clearAllActive()"
+                [disabled]="isTestingAll()">
+            <mat-icon>delete_sweep</mat-icon>
+            Clear All
+        </button>
+
+        <mat-divider vertical/>
+
+        <button mat-icon-button type="button" (click)="openProxyChecker()">
+            <mat-icon>analytics</mat-icon>
+        </button>
+    </div>
+</div>
+
+@if (form().fallbackProxies().value().length > 0) {
+    <div class="proxy-items">
+        @for (proxy of form().fallbackProxies().value(); track proxy) {
+            <div class="proxy-item" [class.item-success]="proxyStatuses()[proxy]?.valid === true"
+                 [class.item-failed]="proxyStatuses()[proxy]?.valid === false">
+                <div class="proxy-url-container">
+                    <mat-icon class="proxy-icon">network_ping</mat-icon>
+                    <span class="proxy-url" [title]="proxy">{{ proxy }}</span>
+                </div>
+                <div class="proxy-actions">
+                    @if (proxyStatuses()[proxy]?.loading) {
+                        <span class="status-badge checking">
+                                <mat-icon class="rotating">sync</mat-icon> Checking...
+                            </span>
+                    } @else if (proxyStatuses()[proxy]?.valid === true) {
+                        <span class="status-badge success">
+                                <mat-icon>check_circle</mat-icon> Working
+                            </span>
+                    } @else if (proxyStatuses()[proxy]?.valid === false) {
+                        <span class="status-badge failed"
+                              [matTooltip]="proxyStatuses()[proxy]?.error || 'Verification failed'">
+                                <mat-icon>error</mat-icon> Failed
+                            </span>
+                    } @else {
+                        <span class="status-badge idle">
+                                <mat-icon>help_outline</mat-icon> Untested
+                            </span>
+                    }
+
+                    <button mat-icon-button type="button" (click)="testIndividualProxy(proxy)"
+                            [disabled]="proxyStatuses()[proxy]?.loading" matTooltip="Test connection">
+                        <mat-icon>play_circle</mat-icon>
+                    </button>
+
+                    <button mat-icon-button type="button" color="warn" (click)="remove(proxy)"
+                            matTooltip="Remove proxy">
+                        <mat-icon>delete</mat-icon>
+                    </button>
+                </div>
+            </div>
+        }
+    </div>
+} @else {
+    <div class="empty-state">
+        <mat-icon class="empty-icon">dns</mat-icon>
+        <p>No fallback proxies configured. Click "Open Proxy Checker" to paste and test a list of proxies!</p>
+    </div>
+}

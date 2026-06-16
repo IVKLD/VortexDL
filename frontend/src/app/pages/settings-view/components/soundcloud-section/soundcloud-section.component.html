@@ -5,7 +5,7 @@
 
 <div class="fields">
     <div class="row">
-        <mat-form-field class="full-width">
+        <mat-form-field>
             <mat-label>Profile URL</mat-label>
             <input [formField]="form().profileUrl" matInput placeholder="https://soundcloud.com/your-username"/>
             <mat-icon matSuffix>link</mat-icon>
@@ -16,13 +16,13 @@
             }
         </mat-form-field>
 
-        <button (click)="test.emit()" [disabled]="form().profileUrl().invalid() || isTesting()" class="test-btn"
+        <button (click)="test.emit()" [disabled]="form().profileUrl().invalid() || isTesting()"
                 mat-stroked-button type="button">
             <mat-icon [class.rotating]="isTesting()">{{
                     isTesting() ? 'sync' : 'check_circle'
                 }}
             </mat-icon>
-            Test Connection
+            Test
         </button>
     </div>
 

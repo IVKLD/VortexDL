@@ -30,6 +30,17 @@ pub enum AudioFormat {
     Unknown,
 }
 
+impl AudioFormat {
+    pub fn from_extension(ext: &str) -> Self {
+        match ext.to_lowercase().as_str() {
+            "mp3" => Self::Mp3,
+            "flac" => Self::Flac,
+            "wav" => Self::Wav,
+            _ => Self::Unknown,
+        }
+    }
+}
+
 #[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct TrackRecord {

@@ -4,20 +4,19 @@ use indicatif::ProgressBar;
 use crate::{
     api::download_manager::ServerEvent,
     downloader::discovery::DiscoveryContext,
-    models::{ResolveResponse, TrackLikesQuery, TrackLikesResponse},
+    types::discovery::{AsUsername, TrackLikesQuery, TrackLikesResponse},
     ui::create_standalone_spinner,
-    utils::soundcloud::resolve_url,
+    utils::filename::clean_title,
 };
 
-pub async fn resolve_with_feedback(
-    ctx: &DiscoveryContext<'_>,
-    url: &str,
-    msg: &str,
-) -> Result<ResolveResponse> {
-    let pb = show_feedback(ctx, msg);
-    let res = resolve_url(ctx.client, url).await;
-    pb.finish_and_clear();
-    res
+pub fn extract_artist<T: AsUsername>(user: Option<&T>) -> String {
+    user.and_then(|u| u.username())
+        .unwrap_or("Unknown")
+        .to_string()
+}
+
+pub fn extract_title(title: Option<&str>) -> String {
+    clean_title(title.unwrap_or("Unknown"))
 }
 
 pub fn show_feedback(ctx: &DiscoveryContext<'_>, msg: &str) -> ProgressBar {

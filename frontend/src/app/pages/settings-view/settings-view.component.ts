@@ -9,6 +9,7 @@ import { SoundcloudSectionComponent } from "./components/soundcloud-section/soun
 import { DownloadsSectionComponent } from "./components/downloads-section/downloads-section.component";
 import { SystemSectionComponent } from "./components/system-section/system-section.component";
 import { AdbSectionComponent } from "./components/adb-section/adb-section.component";
+import { NetworkSettingsComponent } from "./components/network-section/network-section.component";
 import { UserSettingsDto } from "@app/pages/settings-view/models/user-settings.dto";
 import { SettingsFormModel, SyncMode } from "@app/pages/settings-view/models/settings-form.model";
 import { UserSettingsRdo } from "@app/pages/settings-view/models/user-settings.rdo";
@@ -17,7 +18,8 @@ import { UserSettingsRdo } from "@app/pages/settings-view/models/user-settings.r
     selector: 'app-settings-view',
     imports: [
         MatIcon, FormRoot, MatButton,
-        SoundcloudSectionComponent, DownloadsSectionComponent, SystemSectionComponent, AdbSectionComponent
+        SoundcloudSectionComponent, DownloadsSectionComponent, SystemSectionComponent, AdbSectionComponent,
+        NetworkSettingsComponent
     ],
     templateUrl: './settings-view.component.html',
     styleUrl: './settings-view.component.scss',
@@ -41,6 +43,11 @@ export class SettingsView implements OnInit {
         system: {
             limitPerPage: 100,
             maxRetries: 5
+        },
+        network: {
+            useProxy: false,
+            proxyUrl: '',
+            fallbackProxies: []
         },
         adb: {
             enabled: true,
@@ -76,11 +83,15 @@ export class SettingsView implements OnInit {
                             soundcloud: val.soundcloud,
                             downloads: val.downloads,
                             adb: val.adb,
+                            network: {
+                                useProxy: val.network.useProxy,
+                                proxyUrl: val.network.proxyUrl,
+                                fallbackProxies: val.network.fallbackProxies
+                            },
                             limitPerPage: val.system.limitPerPage,
                             maxRetries: val.system.maxRetries
                         };
 
-                        console.log('Saving settings:', payload);
                         this._api.updateSettings(payload).subscribe()
                     }
                 },
@@ -93,6 +104,11 @@ export class SettingsView implements OnInit {
                     this.settingsForm().reset({
                         soundcloud: res.soundcloud,
                         downloads: res.downloads,
+                        network: {
+                            useProxy: res.network?.useProxy ?? false,
+                            proxyUrl: res.network?.proxyUrl ?? '',
+                            fallbackProxies: res.network?.fallbackProxies ?? []
+                        },
                         adb: res.adb ?? { enabled: true, autoSync: true, devices: [] },
                         system: {
                             limitPerPage: res.limitPerPage,
@@ -108,6 +124,14 @@ export class SettingsView implements OnInit {
 
         this._api.testSoundCloudUrl(this.settingsForm.soundcloud.profileUrl().value())
             .pipe(finalize(() => this.isTesting.set(false)))
+            .subscribe();
+    }
+
+    protected testProxy() {
+        this.isNetworkTesting.set(true);
+
+        this._api.testProxy(this.settingsForm.network.proxyUrl().value())
+            .pipe(finalize(() => this.isNetworkTesting.set(false)))
             .subscribe();
     }
 

@@ -6,10 +6,10 @@ use std::{
 use colored::Colorize;
 use tokio::task::JoinHandle;
 
-use super::artwork::ArtworkDataHandle;
 use crate::{
-    downloader::{Context, core::pipeline::DownloadTask},
+    downloader::{Context, core::pipeline::{DownloadTask, artwork::ArtworkDataHandle}},
     storage::TrackData,
+    types::api::AudioFormat,
     utils::metadata::{SaveTrackArgs, save_track_info},
 };
 
@@ -61,7 +61,15 @@ async fn persist(
     );
 
     let id = task.id;
-    let source_url_clone = source_url.clone();
+
+    if let Some(m) = ctx.dm {
+        let ext = std::path::Path::new(&task.file_path)
+            .extension()
+            .and_then(|ext| ext.to_str())
+            .unwrap_or("mp3");
+        let format = AudioFormat::from_extension(ext);
+        m.update_finished(id, format, now, Some(source_url.clone()), size);
+    }
 
     let _ = tokio::task::spawn_blocking(move || {
         let sc_id = task.id.to_string();
@@ -71,16 +79,12 @@ async fn persist(
             title: &task.title,
             artist: &task.artist,
             artwork_url: task.artwork_url.as_deref(),
-            source_url: Some(&source_url_clone),
+            source_url: Some(&source_url),
             position: task.position,
             artwork_data,
         });
     })
     .await;
-
-    if let Some(m) = ctx.dm {
-        m.update_finished(id, "mp3".to_string(), now, Some(source_url), size);
-    }
 }
 
 pub async fn on_failure(ctx: &Context, task: &DownloadTask, e: anyhow::Error) {

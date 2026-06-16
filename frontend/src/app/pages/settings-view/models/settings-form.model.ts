@@ -23,6 +23,12 @@ export type SystemSettings = {
     maxRetries: number;
 }
 
+export type NetworkSettings = {
+    useProxy: boolean;
+    proxyUrl: string;
+    fallbackProxies: string[];
+}
+
 export type AdbDeviceSettings = {
     deviceId: string;
     remoteMusicDir: string;
@@ -39,5 +45,6 @@ export type SettingsFormModel = {
     soundcloud: SoundcloudSettings;
     downloads: DownloadSettings;
     system: SystemSettings;
+    network: NetworkSettings;
     adb: AdbSettings;
 }

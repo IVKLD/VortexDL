@@ -23,9 +23,14 @@ impl AppState {
         storage: Arc<RwLock<MusicStorage>>,
         settings: UserSettings,
     ) -> Self {
+        let mut builder = reqwest::Client::builder();
+        if let Some(proxy) = settings.network.get_proxy() {
+            builder = builder.proxy(proxy);
+        }
+
         Self {
             client,
-            http: Arc::new(reqwest::Client::new()),
+            http: Arc::new(builder.build().unwrap_or_default()),
             storage,
             download_manager: Arc::new(DownloadManager::default()),
             settings: SettingsManager::new(settings),

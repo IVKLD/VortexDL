@@ -32,7 +32,7 @@ export const routes: CustomRoutes = [
         data: {
             header: {
                 title: 'Library',
-                features: [HeaderFeature.Search, HeaderFeature.Sort, HeaderFeature.Stats],
+                features: [HeaderFeature.Stats, HeaderFeature.Search, HeaderFeature.Sort],
             },
         },
         component: MusicTracksView,
@@ -43,7 +43,7 @@ export const routes: CustomRoutes = [
         data: {
             header: {
                 title: 'Control Panel',
-                features: [],
+                features: [HeaderFeature.Stats],
             },
         },
         component: SettingsView,

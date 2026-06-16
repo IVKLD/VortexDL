@@ -6,6 +6,8 @@ use std::{
 use serde::{Deserialize, Serialize};
 use tokio::sync::broadcast;
 
+use crate::types::api::AudioFormat;
+
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(rename_all = "lowercase")]
 pub enum DownloadStatus {
@@ -23,7 +25,7 @@ pub struct DownloadItem {
     pub artist: String,
     pub status: DownloadStatus,
     pub artwork_url: Option<String>,
-    pub format: Option<String>,
+    pub format: Option<AudioFormat>,
     pub created_at: Option<u64>,
     pub source_url: Option<String>,
     pub progress: Option<f64>,
@@ -72,6 +74,16 @@ impl DownloadManager {
         }
     }
 
+    fn modify_task(&self, id: i64, f: impl FnOnce(&mut DownloadItem)) {
+        let mut state = self.lock_state();
+        if let Some(item) = state.tasks.get_mut(&id) {
+            f(item);
+            let snapshot = item.clone();
+            self.notify_update(snapshot);
+            self.check_queue_finished(&state);
+        }
+    }
+
     pub fn reserve_url(&self, url: &str) -> bool {
         self.lock_state().reserved_urls.insert(url.to_string())
     }
@@ -107,47 +119,35 @@ impl DownloadManager {
         self.notify_update(item);
     }
 
-    pub fn update_status(&self, id: i64, status: DownloadStatus) {
-        let mut state = self.lock_state();
-        if let Some(item) = state.tasks.get_mut(&id) {
-            item.status = status;
-            let item_clone = item.clone();
-            self.notify_update(item_clone);
-            self.check_queue_finished(&state);
-        }
+    pub fn update_downloading(&self, id: i64) {
+        self.modify_task(id, |item| {
+            item.status = DownloadStatus::Downloading;
+        });
     }
 
     pub fn update_failed(&self, id: i64, error_message: String) {
-        let mut state = self.lock_state();
-        if let Some(item) = state.tasks.get_mut(&id) {
+        self.modify_task(id, |item| {
             item.status = DownloadStatus::Failed;
             item.error = Some(error_message);
-            let item_clone = item.clone();
-            self.notify_update(item_clone);
-            self.check_queue_finished(&state);
-        }
+        });
     }
 
     pub fn update_finished(
         &self,
         id: i64,
-        format: String,
+        format: AudioFormat,
         created_at: u64,
         source_url: Option<String>,
         size: u64,
     ) {
-        let mut state = self.lock_state();
-        if let Some(item) = state.tasks.get_mut(&id) {
+        self.modify_task(id, |item| {
             item.status = DownloadStatus::Finished;
             item.format = Some(format);
             item.created_at = Some(created_at);
             item.source_url = source_url;
             item.progress = Some(100.0);
             item.size = Some(size);
-            let item_clone = item.clone();
-            self.notify_update(item_clone);
-            self.check_queue_finished(&state);
-        }
+        });
     }
 
     pub fn update_progress(&self, id: i64, current: u64, total: u64) {

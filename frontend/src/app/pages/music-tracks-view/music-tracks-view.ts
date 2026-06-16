@@ -31,19 +31,6 @@ export class MusicTracksView {
 
     constructor() {
         this._api.indexing().subscribe();
-
-        effect(() => {
-            const option = this._state.sortOption();
-            untracked(() => {
-                this._state.startLoading();
-                const [sort, order] = option.split('-');
-
-                this._api.getAll(sort, order)
-                    .subscribe({
-                        next: tracks => this._state.setTracks = tracks
-                    });
-            });
-        });
     }
 
     protected playTrack(track: Track) {

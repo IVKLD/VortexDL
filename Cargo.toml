@@ -30,7 +30,7 @@ async-stream = "0.3"
 futures-util = "0.3"
 tokio-stream = { version = "0.1", features = ["sync"] }
 tokio-util = { version = "0.7", features = ["io"] }
-reqwest = { version = "0.13", default-features = false, features = ["json", "stream", "rustls", "query"] }
+reqwest = { version = "0.13", default-features = false, features = ["json", "stream", "rustls", "query", "socks"] }
 anyhow = "1.0.102"
 rust-embed = "8.11.0"
 mime_guess = "2.0.5"

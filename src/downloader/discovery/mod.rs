@@ -10,7 +10,7 @@ pub mod playlist;
 pub mod track;
 
 pub use self::{
-    helpers::{extract_artist, extract_title, get_likes, resolve_with_feedback, show_feedback},
+    helpers::{extract_artist, extract_title, get_likes, show_feedback},
     likes::fetch_likes,
     playlist::fetch_playlist,
     track::fetch_track,

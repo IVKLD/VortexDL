@@ -7,11 +7,14 @@
 
         <app-system-section [form]="settingsForm.system"/>
 
+        <app-network-settings (test)="testProxy()" [form]="settingsForm.network"
+                               [isTesting]="isNetworkTesting()"/>
+
         <app-adb-section [form]="settingsForm.adb"/>
     </div>
 
     <div class="footer">
-        <button [disabled]="settingsForm().invalid() || isTesting()" mat-flat-button type="submit">
+        <button [disabled]="settingsForm().invalid() || isTesting() || isNetworkTesting()" mat-flat-button type="submit">
             <mat-icon>save</mat-icon>
             Save All
         </button>
