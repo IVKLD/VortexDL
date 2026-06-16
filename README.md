@@ -15,6 +15,12 @@
   <img src="https://img.shields.io/badge/Angular-v21-DD0031?style=flat-square&logo=angular&logoColor=white" alt="Angular">
 </p>
 
+<!-- screenshot-start -->
+<p align="center">
+  <img src="./website-screenshot.png" alt="Website Screenshot" width="800">
+</p>
+<!-- screenshot-end -->
+
 ## Motivation
 Streaming services are a piece of shit with subscriptions and censorship, and modern phones without a 3.5mm jack are a technological failure. This project was written to download music in one click and listen to it like a human being on a proper player (e.g., **Cayin N3 Ultra**).
 

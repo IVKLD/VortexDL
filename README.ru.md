@@ -15,6 +15,12 @@
   <img src="https://img.shields.io/badge/Angular-v21-DD0031?style=flat-square&logo=angular&logoColor=white" alt="Angular">
 </p>
 
+<!-- screenshot-start -->
+<p align="center">
+  <img src="./website-screenshot.png" alt="Website Screenshot" width="800">
+</p>
+<!-- screenshot-end -->
+
 ## Мотивация
 Стриминговые сервисы — это ебаная помойка с подписками и цензурой, а современные телефоны без 3.5mm jack — технологический проёб. Проект написан, чтобы выкачивать музыку в один клик и слушать её как человек на нормальном плеере (например, **Cayin N3 Ultra**).
 
