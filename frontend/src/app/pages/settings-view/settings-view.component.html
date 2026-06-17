@@ -3,9 +3,7 @@
         <app-soundcloud-section (test)="testSoundcloudUrl()" [form]="settingsForm.soundcloud"
                                 [isTesting]="isTesting()"/>
 
-        <app-downloads-section [form]="settingsForm.downloads"/>
-
-        <app-system-section [form]="settingsForm.system"/>
+        <app-downloads-section [downloadsForm]="settingsForm.downloads" [systemForm]="settingsForm.system"/>
 
         <app-network-settings (test)="testProxy()" [form]="settingsForm.network"
                                [isTesting]="isNetworkTesting()"/>

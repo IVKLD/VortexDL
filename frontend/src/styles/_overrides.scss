@@ -36,10 +36,18 @@ app-player {
   display: inline-flex !important;
 }
 
+.mat-mdc-form-field-input-control.mat-mdc-form-field-input-control {
+  font-size: 0.85rem !important;
+}
+
 mat-form-field {
-  --mat-form-field-container-vertical-padding: .75em;
-  --mat-form-field-container-height: 3em;
+  --mat-form-field-container-vertical-padding: .5em;
+  --mat-form-field-container-height: 2.5em;
   --mat-form-field-outlined-container-shape: 5em;
+
+  input {
+    font-size: 2em;
+  }
 
   .mdc-text-field--outlined {
     padding-right: calc(min(16px, var(--mat-form-field-outlined-container-shape, var(--mat-sys-corner-extra-small))) * 2);

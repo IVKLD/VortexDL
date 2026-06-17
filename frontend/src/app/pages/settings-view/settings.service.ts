@@ -4,6 +4,7 @@ import {MatSnackBar} from '@angular/material/snack-bar';
 import {catchError, tap, throwError} from 'rxjs';
 import {UserSettingsRdo} from './models/user-settings.rdo';
 import {UserSettingsDto} from './models/user-settings.dto';
+import {parseErrorMessage} from '@shared/error-utils';
 
 @Injectable({providedIn: 'root'})
 export class SettingsService {
@@ -18,7 +19,7 @@ export class SettingsService {
         return this._http.post('/settings', userSettings).pipe(
             tap(() => this._snack.open('Settings updated', 'OK')),
             catchError((error) => {
-                this._snack.open('Failed to update settings', 'Close');
+                this._snack.open(parseErrorMessage(error, 'Failed to update settings'), 'Close');
                 return throwError(() => error);
             })
         );
@@ -28,8 +29,7 @@ export class SettingsService {
         return this._http.post<string>('/settings/test/soundcloud', {url}).pipe(
             tap(() => this._snack.open('SoundCloud URL is valid', 'OK')),
             catchError((error) => {
-                const message = error.error || 'Invalid configuration';
-                this._snack.open(message, 'Close');
+                this._snack.open(parseErrorMessage(error, 'Invalid configuration'), 'Close');
                 return throwError(() => error);
             })
         );
@@ -39,8 +39,7 @@ export class SettingsService {
         return this._http.post<string>('/settings/test/proxy', {proxyUrl}).pipe(
             tap(() => this._snack.open('Proxy connection successful', 'OK')),
             catchError((error) => {
-                const message = error.error || 'Proxy verification failed';
-                this._snack.open(message, 'Close');
+                this._snack.open(parseErrorMessage(error, 'Proxy verification failed'), 'Close');
                 return throwError(() => error);
             })
         );

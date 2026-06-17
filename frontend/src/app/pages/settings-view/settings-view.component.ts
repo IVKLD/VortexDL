@@ -7,7 +7,6 @@ import { finalize } from "rxjs";
 import { englishOnly, soundCloudUrl } from "@shared/validators/form.validators";
 import { SoundcloudSectionComponent } from "./components/soundcloud-section/soundcloud-section.component";
 import { DownloadsSectionComponent } from "./components/downloads-section/downloads-section.component";
-import { SystemSectionComponent } from "./components/system-section/system-section.component";
 import { AdbSectionComponent } from "./components/adb-section/adb-section.component";
 import { NetworkSettingsComponent } from "./components/network-section/network-section.component";
 import { UserSettingsDto } from "@app/pages/settings-view/models/user-settings.dto";
@@ -18,7 +17,7 @@ import { UserSettingsRdo } from "@app/pages/settings-view/models/user-settings.r
     selector: 'app-settings-view',
     imports: [
         MatIcon, FormRoot, MatButton,
-        SoundcloudSectionComponent, DownloadsSectionComponent, SystemSectionComponent, AdbSectionComponent,
+        SoundcloudSectionComponent, DownloadsSectionComponent, AdbSectionComponent,
         NetworkSettingsComponent
     ],
     templateUrl: './settings-view.component.html',

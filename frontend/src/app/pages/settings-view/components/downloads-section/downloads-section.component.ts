@@ -4,7 +4,7 @@ import { FieldTree, FormField } from '@angular/forms/signals';
 import { MatInput } from "@angular/material/input";
 import { MatFormField, MatHint, MatLabel, MatPrefix } from "@angular/material/form-field";
 import { MatSelect, MatOption } from "@angular/material/select";
-import { DownloadSettings } from "@app/pages/settings-view/models/settings-form.model";
+import { DownloadSettings, SystemSettings } from "@app/pages/settings-view/models/settings-form.model";
 
 @Component({
     selector: 'app-downloads-section',
@@ -14,5 +14,6 @@ import { DownloadSettings } from "@app/pages/settings-view/models/settings-form.
     changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class DownloadsSectionComponent {
-    public readonly form = input.required<FieldTree<DownloadSettings>>();
+    public readonly downloadsForm = input.required<FieldTree<DownloadSettings>>();
+    public readonly systemForm = input.required<FieldTree<SystemSettings>>();
 }

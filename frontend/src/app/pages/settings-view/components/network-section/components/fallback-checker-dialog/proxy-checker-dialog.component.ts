@@ -7,6 +7,7 @@ import { MatFormField, MatLabel, MatHint } from '@angular/material/form-field';
 import { MatInput } from '@angular/material/input';
 import { MatTooltip } from '@angular/material/tooltip';
 import {SettingsService} from "@app/pages/settings-view/settings.service";
+import {parseErrorMessage} from '@shared/error-utils';
 
 @Component({
     selector: 'app-proxy-checker-dialog',
@@ -77,7 +78,7 @@ export class ProxyCheckerDialogComponent {
                     if (completed === proxies.length) this.isTesting.set(false);
                 },
                 error: (err: any) => {
-                    const errorDetail = err.error || err.message || 'Verification failed';
+                    const errorDetail = parseErrorMessage(err, 'Verification failed');
                     this.importStatuses.update(prev => ({
                         ...prev,
                         [proxy]: { loading: false, valid: false, error: errorDetail }

@@ -12,6 +12,7 @@ import {
 } from "@app/pages/settings-view/components/network-section/components/fallback-checker-dialog/proxy-checker-dialog.component";
 import {NetworkSettings} from "@app/pages/settings-view/models/settings-form.model";
 import {SettingsService} from "@app/pages/settings-view/settings.service";
+import {parseErrorMessage} from '@shared/error-utils';
 
 @Component({
     selector: 'app-fallback-proxies',
@@ -80,7 +81,7 @@ export class FallbackProxiesComponent {
                 }));
             },
             error: (err: any) => {
-                const errorDetail = err.error || err.message || 'Verification failed';
+                const errorDetail = parseErrorMessage(err, 'Verification failed');
                 this.proxyStatuses.update(prev => ({
                     ...prev,
                     [proxy]: {loading: false, valid: false, error: errorDetail}
@@ -112,7 +113,7 @@ export class FallbackProxiesComponent {
                     if (completed === proxies.length) this.isTestingAll.set(false);
                 },
                 error: (err: any) => {
-                    const errorDetail = err.error || err.message || 'Verification failed';
+                    const errorDetail = parseErrorMessage(err, 'Verification failed');
                     this.proxyStatuses.update(prev => ({
                         ...prev,
                         [proxy]: {loading: false, valid: false, error: errorDetail}

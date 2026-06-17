@@ -8,7 +8,7 @@
         <mat-form-field>
             <mat-label>Profile URL</mat-label>
             <input [formField]="form().profileUrl" matInput placeholder="https://soundcloud.com/your-username"/>
-            <mat-icon matSuffix>link</mat-icon>
+            <mat-icon matIconPrefix>link</mat-icon>
             <mat-hint>Used for quick discovery and "Sync All" features</mat-hint>
 
             @if (form().profileUrl().invalid()) {
@@ -30,7 +30,7 @@
         <mat-form-field>
             <mat-label>Sync Interval (minutes)</mat-label>
             <input [formField]="form().syncInterval" matInput type="number">
-            <mat-icon matSuffix>timer</mat-icon>
+            <mat-icon matIconPrefix>timer</mat-icon>
         </mat-form-field>
     </div>
 
