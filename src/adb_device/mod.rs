@@ -3,7 +3,7 @@ pub mod state;
 pub mod sync;
 pub mod ui;
 
-use std::{collections::HashSet, sync::Arc, time::Duration};
+use std::{sync::Arc, time::Duration};
 
 use anyhow::Result;
 pub use commands::list_connected_devices;
@@ -27,18 +27,23 @@ pub fn init(storage: Arc<RwLock<MusicStorage>>, settings: SettingsManager) {
 }
 
 async fn poll_devices(storage: Arc<RwLock<MusicStorage>>, settings: SettingsManager) -> Result<()> {
-    if !settings.read().await.adb.enabled {
+    let settings_read = settings.read().await;
+    if !settings_read.adb.enabled {
         return Ok(());
     }
 
     let current = list_connected_devices().await?;
-    let mut state = state::CONNECTED_DEVICES.lock().await;
-    let previous = state.get_or_insert_with(HashSet::new);
+    let mut previous = state::CONNECTED_DEVICES.lock().await;
 
-    for id in current.difference(previous) {
+    for id in current.difference(&previous) {
         tracing::info!(device = %id, "connected");
-        if let Some(cfg) = find_device(&settings, id).await {
-            spawn_sync(id.clone(), cfg, storage.clone());
+        if let Some(cfg) = settings_read
+            .adb
+            .devices
+            .iter()
+            .find(|d| d.enabled && d.device_id == *id)
+        {
+            spawn_sync(id.clone(), cfg.clone(), storage.clone());
         }
     }
 
@@ -58,27 +63,12 @@ pub async fn sync_all_connected(storage: Arc<RwLock<MusicStorage>>, settings: Se
     let devices = s.adb.devices.clone();
     drop(s);
 
-    let state = state::CONNECTED_DEVICES.lock().await;
-    let Some(connected) = state.as_ref() else {
-        return;
-    };
-
-    for id in connected {
+    let connected = state::CONNECTED_DEVICES.lock().await;
+    for id in connected.iter() {
         if let Some(cfg) = devices.iter().find(|d| d.enabled && d.device_id == *id) {
             spawn_sync(id.clone(), cfg.clone(), storage.clone());
         }
     }
-}
-
-async fn find_device(settings: &SettingsManager, id: &str) -> Option<AdbDeviceSettings> {
-    settings
-        .read()
-        .await
-        .adb
-        .devices
-        .iter()
-        .find(|d| d.enabled && d.device_id == id)
-        .cloned()
 }
 
 fn spawn_sync(device_id: String, cfg: AdbDeviceSettings, storage: Arc<RwLock<MusicStorage>>) {

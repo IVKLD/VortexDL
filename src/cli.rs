@@ -19,10 +19,9 @@ pub struct Args {
     #[arg(
         short,
         long,
-        default_value = "./downloads",
         help = "Directory where the music will be saved"
     )]
-    pub output: String,
+    pub output: Option<String>,
 
     #[arg(long, default_value_t = SyncMode::Silent, help = "Sync behavior: silent (accumulate), archive (move removed to Archive), or full (delete removed)")]
     pub sync_mode: SyncMode,
@@ -66,11 +65,9 @@ pub struct Args {
 
 impl Args {
     pub fn resolve_output_dir(&self, settings: &UserSettings) -> String {
-        if !self.output.is_empty() {
-            self.output.clone()
-        } else {
-            settings.downloads.output_path.clone()
-        }
+        self.output
+            .clone()
+            .unwrap_or_else(|| settings.downloads.output_path.clone())
     }
 }
 

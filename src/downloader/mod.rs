@@ -15,7 +15,7 @@ pub mod core;
 pub mod discovery;
 
 use discovery::{
-    DiscoveryContext, fetch_likes, fetch_playlist, fetch_track, show_feedback,
+    fetch_likes, fetch_playlist, fetch_track, show_feedback,
 };
 
 pub use crate::types::downloader::{Context, TrackDownload};
@@ -25,21 +25,15 @@ async fn resolve_and_fetch_tracks(
     url: &str,
     client: &soundcloud_rs::Client,
 ) -> Result<Vec<TrackDownload>> {
-    let discovery_ctx = DiscoveryContext {
-        client,
-        settings: &ctx.settings,
-        dm: ctx.dm.as_ref(),
-    };
-
-    let pb = show_feedback(&discovery_ctx, "Resolving URL...");
-    let resolve_res = crate::utils::soundcloud::resolve_url(discovery_ctx.client, url).await;
+    let pb = show_feedback(ctx, "Resolving URL...");
+    let resolve_res = crate::utils::soundcloud::resolve_url(client, url).await;
     pb.finish_and_clear();
     let resolve_res = resolve_res?;
 
     let all_tracks = match resolve_res.kind.as_str() {
-        "user" | "likes" => fetch_likes(&discovery_ctx, resolve_res.id).await?,
-        "playlist" => fetch_playlist(&discovery_ctx, resolve_res.id).await?,
-        "track" => vec![fetch_track(&discovery_ctx, resolve_res.id).await?],
+        "user" | "likes" => fetch_likes(ctx, client, resolve_res.id).await?,
+        "playlist" => fetch_playlist(ctx, client, resolve_res.id).await?,
+        "track" => vec![fetch_track(client, resolve_res.id).await?],
         _ => return Err(anyhow!("Unsupported resource kind: {}", resolve_res.kind)),
     };
 
@@ -128,7 +122,7 @@ fn process_track_download(
             let path = data.path.clone();
             let position = track.position;
             tokio::task::spawn_blocking(move || {
-                let _ = update_track_position(&path.to_string_lossy(), position);
+                let _ = update_track_position(path, position);
             });
         }
         println!(

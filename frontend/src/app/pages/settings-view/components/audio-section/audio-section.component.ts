@@ -1,9 +1,14 @@
 import {ChangeDetectionStrategy, Component, input} from '@angular/core';
 import {MatIcon} from '@angular/material/icon';
-import {FormField} from '@angular/forms/signals';
+import {FieldTree, FormField} from '@angular/forms/signals';
 import {MatFormField, MatLabel} from "@angular/material/input";
 import {MatSlideToggle} from "@angular/material/slide-toggle";
 import {MatOption, MatSelect} from "@angular/material/select";
+
+export type AudioSettings = {
+    embedMetadata: boolean;
+    coverArtQuality: 'standard' | 'high';
+}
 
 @Component({
     selector: 'app-audio-settings',
@@ -13,5 +18,6 @@ import {MatOption, MatSelect} from "@angular/material/select";
     changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class AudioSettingsComponent {
-    public readonly form = input.required<any>();
+    public readonly form = input.required<FieldTree<AudioSettings>>();
 }
+

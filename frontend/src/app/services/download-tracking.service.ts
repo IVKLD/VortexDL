@@ -41,7 +41,7 @@ export class DownloadTrackingService {
     private readonly _zone = inject(NgZone);
 
     private eventSource?: EventSource;
-    private reconnectTimeout?: any;
+    private reconnectTimeout?: ReturnType<typeof setTimeout>;
 
     constructor() {
         this.syncActiveDownloads();

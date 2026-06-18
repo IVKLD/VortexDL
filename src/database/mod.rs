@@ -1,7 +1,7 @@
 use std::{
     fs,
     path::PathBuf,
-    sync::{Arc, LazyLock, OnceLock},
+    sync::{LazyLock, OnceLock},
 };
 
 use anyhow::{Error, anyhow};
@@ -22,12 +22,11 @@ static DB_FILE_PATH: LazyLock<PathBuf> = LazyLock::new(|| {
         .join(DB_NAME)
 });
 
-static DB: OnceLock<Arc<Database>> = OnceLock::new();
+static DB: OnceLock<Database> = OnceLock::new();
 
-pub fn get_db() -> Arc<Database> {
+pub fn get_db() -> &'static Database {
     DB.get()
         .expect("Database not initialized. Call database::init() first.")
-        .clone()
 }
 
 pub fn init() -> Result<(), Error> {
@@ -36,7 +35,7 @@ pub fn init() -> Result<(), Error> {
     }
 
     let db = Database::create(&*DB_FILE_PATH)?;
-    DB.set(Arc::new(db))
+    DB.set(db)
         .map_err(|_| anyhow!("Database already initialized"))?;
 
     Ok(())

@@ -1,4 +1,4 @@
-import {ChangeDetectionStrategy, Component, computed, inject, OnInit} from '@angular/core';
+import {ChangeDetectionStrategy, Component, computed, inject} from '@angular/core';
 import {DashboardStat, FormatItem} from './dashboard-view.model';
 import {MusicTracksViewState} from '@app/pages/music-tracks-view/music-tracks-view.state';
 import {DownloadTrackingService} from '@app/services/download-tracking.service';

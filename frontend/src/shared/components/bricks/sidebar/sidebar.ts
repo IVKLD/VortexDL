@@ -2,10 +2,10 @@ import {ChangeDetectionStrategy, Component} from '@angular/core';
 import {MatButton} from '@angular/material/button';
 import {MatSidenav, MatSidenavContainer, MatSidenavContent} from '@angular/material/sidenav';
 import {RouterLink, RouterLinkActive} from '@angular/router';
-import {LogoComponent} from '../logo/logo';
-import {ActiveDownloadsComponent} from '../active-downloads/active-downloads';
+import {LogoComponent} from '../../logo/logo';
+import {ActiveDownloadsComponent} from '../../active-downloads/active-downloads';
 import {MatIcon} from '@angular/material/icon';
-import {Header} from "@shared/components/header/header";
+import {Header} from "@shared/components/bricks/header/header";
 import {PlayerComponent} from '@shared/components/player/player';
 
 interface SidebarNavItem {

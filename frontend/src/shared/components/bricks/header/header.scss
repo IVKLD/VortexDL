@@ -1,0 +1,32 @@
+:host {
+  z-index: 10;
+}
+
+header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: .75rem 0;
+  background: var(--mat-sys-surface);
+  height: 72px;
+
+  app-header-left,
+  app-header-right {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    min-width: 0;
+  }
+
+  app-header-right {
+    justify-content: flex-end;
+  }
+
+  app-header-center {
+    flex: 1;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-width: 0;
+  }
+}

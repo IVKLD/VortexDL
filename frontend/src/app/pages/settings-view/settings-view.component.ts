@@ -1,8 +1,6 @@
-import { ChangeDetectionStrategy, Component, inject, OnInit, signal } from '@angular/core';
-import { MatIcon } from '@angular/material/icon';
+import { ChangeDetectionStrategy, Component, inject, OnInit, signal, computed } from '@angular/core';
 import { form, FormRoot, max, min, required } from '@angular/forms/signals';
 import { SettingsService } from './settings.service';
-import { MatButton } from "@angular/material/button";
 import { finalize } from "rxjs";
 import { englishOnly, soundCloudUrl } from "@shared/validators/form.validators";
 import { SoundcloudSectionComponent } from "./components/soundcloud-section/soundcloud-section.component";
@@ -12,13 +10,15 @@ import { NetworkSettingsComponent } from "./components/network-section/network-s
 import { UserSettingsDto } from "@app/pages/settings-view/models/user-settings.dto";
 import { SettingsFormModel, SyncMode } from "@app/pages/settings-view/models/settings-form.model";
 import { UserSettingsRdo } from "@app/pages/settings-view/models/user-settings.rdo";
+import { HeaderTemplateDirective } from '@shared/components/bricks/header/header-template.directive';
+import { SettingsSaveButtonComponent } from './components/settings-save-button.component';
 
 @Component({
     selector: 'app-settings-view',
     imports: [
-        MatIcon, FormRoot, MatButton,
+        FormRoot,
         SoundcloudSectionComponent, DownloadsSectionComponent, AdbSectionComponent,
-        NetworkSettingsComponent
+        NetworkSettingsComponent, HeaderTemplateDirective, SettingsSaveButtonComponent
     ],
     templateUrl: './settings-view.component.html',
     styleUrl: './settings-view.component.scss',
@@ -55,6 +55,7 @@ export class SettingsView implements OnInit {
         }
     });
     private readonly _api = inject(SettingsService);
+    protected readonly saveButtonDisabled = computed(() => this.settingsForm().invalid() || this.isTesting() || this.isNetworkTesting());
     protected readonly settingsForm =
         form(this.settingsModel, (f) => {
             required(f.soundcloud.profileUrl, { message: 'Profile URL is required' });

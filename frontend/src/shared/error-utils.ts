@@ -1,26 +1,35 @@
 import { HttpErrorResponse } from '@angular/common/http';
 
-export function parseErrorMessage(error: any, fallback = 'Operation failed'): string {
+export function parseErrorMessage(error: HttpErrorResponse | Error | string | null | undefined, fallback = 'Operation failed'): string {
     if (!error) {
         return fallback;
     }
 
-    // Extract the raw server error body
-    const errObj = error instanceof HttpErrorResponse ? error.error : (error.error || error);
+    if (typeof error === 'string') {
+        return error;
+    }
 
-    if (errObj && typeof errObj === 'object') {
-        const message = errObj.error;
-        const code = errObj.code;
-        if (message && code) {
-            return `${message} [${code}]`;
+    if (error instanceof HttpErrorResponse) {
+        const errObj = error.error;
+        if (errObj && typeof errObj === 'object') {
+            const message = 'error' in errObj && typeof errObj.error === 'string' ? errObj.error : undefined;
+            const code = 'code' in errObj && typeof errObj.code === 'string' ? errObj.code : undefined;
+            
+            if (message && code) {
+                return `${message} [${code}]`;
+            }
+            if (message) return message;
+            if (code) return code;
         }
-        if (message) return message;
-        if (code) return code;
+        return error.message || fallback;
     }
 
-    if (typeof errObj === 'string') {
-        return errObj;
+    if (error instanceof Error) {
+        return error.message;
     }
 
-    return error.message || fallback;
+    return fallback;
 }
+
+
+

@@ -1,4 +1,4 @@
-import {ChangeDetectionStrategy, Component, effect, inject, untracked} from '@angular/core';
+import {ChangeDetectionStrategy, Component, inject} from '@angular/core';
 import {MusicTracksViewService} from './music-tracks-view.service';
 import {Track} from '@shared/models/track.model';
 import {MusicCard} from '@shared/components/music-card/music-card';

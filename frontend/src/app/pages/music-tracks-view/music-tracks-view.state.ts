@@ -68,8 +68,16 @@ export class MusicTracksViewState {
         return [...this._tracks()].sort((a, b) => {
             const valA = sort === 'name' ? (a.title).toLowerCase() : sort === 'date' ? a.createdAt : (a.position ?? 4294967295);
             const valB = sort === 'name' ? (b.title).toLowerCase() : sort === 'date' ? b.createdAt : (b.position ?? 4294967295);
-            const cmp = typeof valA === 'string' ? valA.localeCompare(valB as string) : +valA - +valB;
-            return order === 'desc' ? -cmp : cmp;
+            
+            if (typeof valA === 'string' && typeof valB === 'string') {
+                const cmp = valA.localeCompare(valB);
+                return order === 'desc' ? -cmp : cmp;
+            }
+            if (typeof valA === 'number' && typeof valB === 'number') {
+                const cmp = valA - valB;
+                return order === 'desc' ? -cmp : cmp;
+            }
+            return 0;
         });
     });
 

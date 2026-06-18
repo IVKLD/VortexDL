@@ -1,31 +1,38 @@
 use anyhow::Result;
+use soundcloud_rs::Client;
 use url::Url;
 
 use crate::downloader::{
-    TrackDownload,
-    discovery::{DiscoveryContext, extract_artist, extract_title, get_likes, show_feedback},
+    Context, TrackDownload,
+    discovery::{get_likes, show_feedback},
 };
 
-pub async fn fetch_likes(ctx: &DiscoveryContext<'_>, id: i64) -> Result<Vec<TrackDownload>> {
+pub async fn fetch_likes(
+    ctx: &Context,
+    client: &Client,
+    id: i64,
+) -> Result<Vec<TrackDownload>> {
     let mut current_offset: Option<String> = None;
     let pb = show_feedback(ctx, "Fetching track list...");
     let mut all_tracks = Vec::new();
     let limit = ctx.settings.read().await.limit_per_page;
 
     loop {
-        let res = get_likes(ctx.client, id, current_offset.as_deref(), limit).await?;
+        let res = get_likes(client, id, current_offset.as_deref(), limit).await?;
         if res.collection.is_empty() {
             break;
         }
 
         for item in res.collection {
-            all_tracks.push(TrackDownload {
-                id: item.track.id,
-                title: extract_title(Some(&item.track.title)),
-                artist: extract_artist(item.track.user.as_ref()),
-                artwork_url: item.track.artwork_url,
-                position: Some(all_tracks.len() as u32),
-            });
+            if let Some(track) = item.track {
+                all_tracks.push(TrackDownload::new(
+                    track.id,
+                    Some(&track.title),
+                    track.user.as_ref(),
+                    track.artwork_url,
+                    Some(all_tracks.len() as u32),
+                ));
+            }
         }
 
         let Some(href) = res.next_href else {

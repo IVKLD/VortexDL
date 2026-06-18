@@ -20,12 +20,10 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Capture Website Screenshot
-        uses: swinton/screenshot-website@v1.x
+        uses: karol-brejna-i/webpage-screenshot-action@v1
         with:
-          source: https://github.com/IVKLD/VortexDL
-          destination: website-screenshot.png
-          width: 1920
-          height: 1080
+          url: https://github.com/IVKLD/VortexDL
+          output: website-screenshot.png
           
       - name: Commit and push screenshot
         uses: stefanzweifel/git-auto-commit-action@v5

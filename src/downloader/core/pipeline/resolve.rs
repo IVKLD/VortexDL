@@ -39,14 +39,12 @@ pub async fn resolve_track_metadata(
 
             let settings = ctx.settings.read().await.clone();
 
-            race_proxies(&settings, move |s, proxy| {
-                let sc_id = sc_id.clone();
-                async move {
-                    let client = init_client_with_settings(&s, Some(&proxy)).await?;
-                    let (track, proto) =
-                        try_resolve_with_client(&client, &sc_id, Some(&proxy)).await?;
-                    Ok((track, sc_id, proto))
-                }
+            race_proxies(&settings, move |s, proxy| async move {
+                let client = init_client_with_settings(&s, Some(&proxy)).await?;
+                let sc_id = Identifier::Id(id);
+                let (track, proto) =
+                    try_resolve_with_client(&client, &sc_id, Some(&proxy)).await?;
+                Ok((track, sc_id, proto))
             })
             .await
             .map_err(|e| {
@@ -63,10 +61,11 @@ async fn try_resolve_with_client(
     proxy_url: Option<&str>,
 ) -> Result<(Track, DownloadProtocol)> {
     let track = client.get_track(sc_id).await?;
+    let proxy_str = proxy_url.map(String::from);
     let protocol = match client.get_stream_url(sc_id, Some(&StreamType::Hls)).await {
         Ok(url) => DownloadProtocol::Hls {
             url,
-            proxy_url: proxy_url.map(|s| s.to_string()),
+            proxy_url: proxy_str,
         },
         Err(_) => {
             let url = client
@@ -74,7 +73,7 @@ async fn try_resolve_with_client(
                 .await?;
             DownloadProtocol::Progressive {
                 url,
-                proxy_url: proxy_url.map(|s| s.to_string()),
+                proxy_url: proxy_str,
             }
         }
     };

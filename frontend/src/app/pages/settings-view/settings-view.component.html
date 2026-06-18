@@ -1,20 +1,15 @@
-<form [formRoot]="settingsForm">
+<form id="settings-form" [formRoot]="settingsForm">
+    <ng-template appHeaderTemplate>
+        <app-settings-save-button [disabled]="saveButtonDisabled()"/>
+    </ng-template>
     <div class="settings-content">
         <app-soundcloud-section (test)="testSoundcloudUrl()" [form]="settingsForm.soundcloud"
-                                [isTesting]="isTesting()"/>
+            [isTesting]="isTesting()" />
 
-        <app-downloads-section [downloadsForm]="settingsForm.downloads" [systemForm]="settingsForm.system"/>
+        <app-downloads-section [downloadsForm]="settingsForm.downloads" [systemForm]="settingsForm.system" />
 
-        <app-network-settings (test)="testProxy()" [form]="settingsForm.network"
-                               [isTesting]="isNetworkTesting()"/>
+        <app-network-settings (test)="testProxy()" [form]="settingsForm.network" [isTesting]="isNetworkTesting()" />
 
-        <app-adb-section [form]="settingsForm.adb"/>
-    </div>
-
-    <div class="footer">
-        <button [disabled]="settingsForm().invalid() || isTesting() || isNetworkTesting()" mat-flat-button type="submit">
-            <mat-icon>save</mat-icon>
-            Save All
-        </button>
+        <app-adb-section [form]="settingsForm.adb" />
     </div>
 </form>

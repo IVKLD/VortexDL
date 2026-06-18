@@ -7,14 +7,12 @@ use std::{
 };
 
 use anyhow::Result;
-use id3::TagLike;
 use tokio::{sync::RwLock, task::spawn_blocking};
 
 use crate::{
-    constants::{SC_ARTWORK_URL, SC_IDENTIFIER, SC_POSITION, SC_SOURCE_URL},
     database::{get_previous_ids, save_sync_ids},
     types::SyncMode,
-    utils::metadata::read_custom_field,
+    utils::metadata::extract_track_metadata,
 };
 
 #[derive(Default, Clone)]
@@ -45,11 +43,16 @@ impl MusicStorage {
     pub fn update_track(&mut self, id: i64, data: TrackData) {
         self.tracks.insert(id, data);
     }
-
-    pub fn remove_track(&mut self, id: i64) {
-        self.tracks.remove(&id);
+    pub fn remove_track(&mut self, id: i64) -> Result<Option<TrackData>, std::io::Error> {
+        if let Some(data) = self.tracks.remove(&id) {
+            if data.path.exists() {
+                fs::remove_file(&data.path)?;
+            }
+            Ok(Some(data))
+        } else {
+            Ok(None)
+        }
     }
-
     pub async fn run_background_indexing(storage: Arc<RwLock<Self>>) {
         let root = {
             let s = storage.read().await;
@@ -73,53 +76,28 @@ impl MusicStorage {
                         continue;
                     }
 
-                    let Some(p_str) = path.to_str() else { continue };
-                    let Some(id_str) = read_custom_field(p_str, SC_IDENTIFIER) else {
-                        continue;
-                    };
-                    let Ok(id) = id_str.parse::<i64>() else {
+                    let Some(meta) = extract_track_metadata(&path) else {
                         continue;
                     };
 
-                    let (artist, title) = id3::Tag::read_from_path(&path)
-                        .ok()
-                        .map(|t| {
-                            (
-                                t.artist().unwrap_or("Unknown").to_string(),
-                                t.title().unwrap_or("Unknown").to_string(),
-                            )
-                        })
-                        .unwrap_or_else(|| Self::parse_filename_fallback(&path));
-
-                    let artwork_url = read_custom_field(p_str, SC_ARTWORK_URL);
-                    let source_url = read_custom_field(p_str, SC_SOURCE_URL);
-                    let position =
-                        read_custom_field(p_str, SC_POSITION).and_then(|s| s.parse().ok());
-
-                    let (created_at, size) = entry
-                        .metadata()
-                        .ok()
-                        .map(|m| {
-                            (
-                                m.created()
-                                    .ok()
-                                    .and_then(|t| t.duration_since(UNIX_EPOCH).ok())
-                                    .map(|d| d.as_secs())
-                                    .unwrap_or(0),
-                                m.len(),
-                            )
-                        })
-                        .unwrap_or((0, 0));
+                    let (created_at, size) = entry.metadata().ok().map_or((0, 0), |m| {
+                        let created = m.created()
+                            .ok()
+                            .and_then(|t| t.duration_since(UNIX_EPOCH).ok())
+                            .unwrap_or_default()
+                            .as_secs();
+                        (created, m.len())
+                    });
 
                     new_tracks.insert(
-                        id,
+                        meta.id,
                         TrackData {
                             path,
-                            artist,
-                            title,
-                            artwork_url,
-                            source_url,
-                            position,
+                            artist: meta.artist,
+                            title: meta.title,
+                            artwork_url: meta.artwork_url,
+                            source_url: meta.source_url,
+                            position: meta.position,
                             created_at,
                             size,
                         },
@@ -140,35 +118,22 @@ impl MusicStorage {
         }
     }
 
-    fn parse_filename_fallback(path: &Path) -> (String, String) {
-        let clean_name = path
-            .file_stem()
-            .map(|s| s.to_string_lossy())
-            .unwrap_or_default()
-            .replace('_', " ");
-
-        if let Some((artist, title)) = clean_name.split_once(" - ") {
-            (artist.trim().to_string(), title.trim().to_string())
-        } else {
-            ("Unknown".to_string(), clean_name)
-        }
-    }
 
     pub async fn sync_storage(
-        &self,
+        &mut self,
         url: &str,
         remote_ids: &HashSet<i64>,
         mode: &SyncMode,
     ) -> Result<()> {
         let previous_ids = get_previous_ids(url)?;
 
-        let to_remove: Vec<_> = previous_ids
+        let remove_ids: Vec<i64> = previous_ids
             .iter()
             .filter(|id| !remote_ids.contains(id))
-            .filter_map(|id| self.tracks.get(id))
+            .copied()
             .collect();
 
-        if to_remove.is_empty() || matches!(mode, SyncMode::Silent) {
+        if remove_ids.is_empty() || matches!(mode, SyncMode::Silent) {
             save_sync_ids(url, remote_ids)?;
             return Ok(());
         }
@@ -178,20 +143,21 @@ impl MusicStorage {
             tokio::fs::create_dir_all(&archive_path).await?;
         }
 
-        for data in to_remove {
-            if !data.path.exists() {
-                continue;
-            }
-
-            match mode {
-                SyncMode::Full => tokio::fs::remove_file(&data.path).await?,
-                SyncMode::Archive => {
-                    if let Some(name) = data.path.file_name() {
-                        tokio::fs::rename(&data.path, archive_path.join(name)).await?;
+        for id in remove_ids {
+            if let Some(data) = self.tracks.get(&id).filter(|d| d.path.exists()) {
+                match mode {
+                    SyncMode::Full => {
+                        tokio::fs::remove_file(&data.path).await?;
                     }
+                    SyncMode::Archive => {
+                        if let Some(name) = data.path.file_name() {
+                            tokio::fs::rename(&data.path, archive_path.join(name)).await?;
+                        }
+                    }
+                    _ => {}
                 }
-                _ => {}
             }
+            self.tracks.remove(&id);
         }
 
         save_sync_ids(url, remote_ids)?;

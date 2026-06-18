@@ -1,7 +1,7 @@
 import {ChangeDetectionStrategy, Component, inject, OnInit, signal} from '@angular/core';
 import {MatButton, MatIconButton} from '@angular/material/button';
 import {MatDialogActions, MatDialogClose, MatDialogContent, MatDialogTitle} from '@angular/material/dialog';
-import {MatFormField, MatHint, MatLabel} from '@angular/material/form-field';
+import {MatFormField, MatHint, MatLabel, MatPrefix} from '@angular/material/form-field';
 import {MatInput} from '@angular/material/input';
 import {MatList, MatListItem} from '@angular/material/list';
 import {MusicTracksViewService} from '@app/pages/music-tracks-view/music-tracks-view.service';
@@ -31,18 +31,20 @@ const STORAGE_KEY = 'vortexdl_download_history';
         MatInput,
         MatIconButton,
         MatIcon,
+        MatPrefix,
     ],
     templateUrl: './download-dialog.component.html',
     styleUrl: './download-dialog.component.scss',
     changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class DownloadDialogComponent implements OnInit {
-    public history: string[] = [];
     private readonly _trackService = inject(MusicTracksViewService);
     private readonly _dialogRef = inject(DialogRef);
     private readonly _snackBar = inject(MatSnackBar);
     private readonly _urlValue = signal('');
-    public readonly urlForm = form(this._urlValue, (f) => {
+
+    protected history: string[] = [];
+    protected readonly urlForm = form(this._urlValue, (f) => {
         required(f, {message: 'URL is required'});
     });
 

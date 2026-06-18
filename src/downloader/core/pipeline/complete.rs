@@ -1,7 +1,4 @@
-use std::{
-    path::PathBuf,
-    time::{SystemTime, UNIX_EPOCH},
-};
+use std::time::{SystemTime, UNIX_EPOCH};
 
 use colored::Colorize;
 use tokio::task::JoinHandle;
@@ -38,18 +35,17 @@ async fn persist(
 
     let size = tokio::fs::metadata(&task.file_path)
         .await
-        .map(|m| m.len())
-        .unwrap_or(0);
+        .map_or(0, |m| m.len());
 
     let now = SystemTime::now()
         .duration_since(UNIX_EPOCH)
-        .map(|d| d.as_secs())
-        .unwrap_or(0);
+        .unwrap_or_default()
+        .as_secs();
 
     ctx.storage.write().await.update_track(
         task.id,
         TrackData {
-            path: PathBuf::from(&task.file_path),
+            path: task.file_path.clone(),
             artist: task.artist.clone(),
             title: task.title.clone(),
             artwork_url: task.artwork_url.clone(),
@@ -63,11 +59,7 @@ async fn persist(
     let id = task.id;
 
     if let Some(m) = ctx.dm {
-        let ext = std::path::Path::new(&task.file_path)
-            .extension()
-            .and_then(|ext| ext.to_str())
-            .unwrap_or("mp3");
-        let format = AudioFormat::from_extension(ext);
+        let format = AudioFormat::from_path(&task.file_path);
         m.update_finished(id, format, now, Some(source_url.clone()), size);
     }
 

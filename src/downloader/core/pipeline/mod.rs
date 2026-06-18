@@ -3,6 +3,7 @@ pub mod complete;
 pub mod download;
 pub mod resolve;
 
+use std::path::PathBuf;
 use tokio::task::JoinHandle;
 
 use crate::downloader::Context;
@@ -16,8 +17,8 @@ pub struct DownloadTask {
     pub artwork_url: Option<String>,
     pub position: Option<u32>,
     pub pb: indicatif::ProgressBar,
-    pub output_dir: String,
-    pub file_path: String,
+    pub output_dir: PathBuf,
+    pub file_path: PathBuf,
 }
 
 pub async fn run_track_pipeline(ctx: Context, mut task: DownloadTask) -> Option<JoinHandle<()>> {

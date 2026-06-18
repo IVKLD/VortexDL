@@ -2,7 +2,8 @@ use std::{collections::HashSet, sync::LazyLock};
 
 use tokio::sync::Mutex;
 
-pub static CONNECTED_DEVICES: Mutex<Option<HashSet<String>>> = Mutex::const_new(None);
+pub static CONNECTED_DEVICES: LazyLock<Mutex<HashSet<String>>> =
+    LazyLock::new(|| Mutex::new(HashSet::new()));
 
 static ACTIVE_SYNCS: LazyLock<std::sync::Mutex<HashSet<String>>> =
     LazyLock::new(|| std::sync::Mutex::new(HashSet::new()));

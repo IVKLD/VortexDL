@@ -1,66 +1,62 @@
 :host {
-    display: block;
-    background: var(--mat-sys-surface-container-low);
-    padding: 24px;
-    border-radius: 1em;
-    border: 1px solid var(--mat-sys-outline-variant);
+  display: block;
 
-    h2 {
-        display: flex;
-        align-items: center;
-        gap: 12px;
-        margin: 0 0 24px;
-        font-size: 1.1rem;
-        font-weight: 600;
-        color: var(--mat-sys-primary);
+  h2 {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin: 0 0 24px;
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: var(--mat-sys-primary);
 
-        mat-icon {
-            font-size: 24px;
-            width: 24px;
-            height: 24px;
-        }
+    mat-icon {
+      font-size: 24px;
+      width: 24px;
+      height: 24px;
     }
+  }
 
-    .fields {
-        display: flex;
-        flex-direction: column;
-        gap: 24px;
-    }
-
-    .controls {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-        gap: 24px;
-        padding-bottom: 8px;
-
-        .item {
-            display: flex;
-            flex-direction: column;
-            gap: 4px;
-
-            p {
-                margin: 0;
-                font-size: 0.75rem;
-                color: rgba(255, 255, 255, 0.4);
-                padding-left: 52px;
-            }
-        }
-    }
-
-    mat-divider {
-        opacity: 0.1;
-    }
-}
-
-.sync {
+  .fields {
     display: flex;
     flex-direction: column;
     gap: 24px;
-    transition: opacity 0.3s, pointer-events 0.3s;
+  }
 
-    &.disabled {
-        opacity: 0.3;
-        pointer-events: none;
-        filter: grayscale(0.5);
+  .controls {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 24px;
+    padding-bottom: 8px;
+
+    .item {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+
+      p {
+        margin: 0;
+        font-size: 0.75rem;
+        color: rgba(255, 255, 255, 0.4);
+        padding-left: 52px;
+      }
     }
+  }
+
+  mat-divider {
+    opacity: 0.1;
+  }
+}
+
+.sync {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  transition: opacity 0.3s, pointer-events 0.3s;
+
+  &.disabled {
+    opacity: 0.3;
+    pointer-events: none;
+    filter: grayscale(0.5);
+  }
 }

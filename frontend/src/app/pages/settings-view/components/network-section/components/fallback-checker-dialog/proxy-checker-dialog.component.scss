@@ -1,8 +1,3 @@
-.dialog-title-container {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-}
 
 .dialog-layout {
     display: flex;
@@ -194,11 +189,6 @@
     opacity: 0.8;
 }
 
-.dialog-actions-container {
-    padding: 16px 24px;
-    border-top: 1px solid var(--mat-sys-outline-variant);
-    background: var(--mat-sys-surface-container-low);
-}
 
 .rotating {
     animation: rotate 2s linear infinite;

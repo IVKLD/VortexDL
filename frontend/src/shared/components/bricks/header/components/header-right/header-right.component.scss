@@ -1,0 +1,54 @@
+:host {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  justify-content: flex-end;
+
+  .context-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .sync-download-block {
+    display: flex;
+
+    button {
+      mat-icon {
+        margin: 0;
+      }
+
+      --mat-button-filled-horizontal-padding: 0px;
+
+      &:first-child {
+        --mat-button-filled-container-shape: 10em 0 0 10em;
+      }
+
+      &:last-child {
+        --mat-button-filled-container-shape: 0 10em 10em 0;
+      }
+    }
+  }
+
+  button {
+    --mat-button-filled-label-text-weight: 600;
+  }
+}
+
+mat-divider {
+  height: 2rem;
+}
+
+.rotating {
+  animation: rotate 1.5s linear infinite;
+  display: inline-block;
+}
+
+@keyframes rotate {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}

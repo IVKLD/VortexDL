@@ -1,3 +1,5 @@
+use std::path::Path;
+
 use anyhow::Result;
 use colored::Colorize;
 use id3::{
@@ -7,7 +9,8 @@ use id3::{
 
 use crate::constants::{SC_ARTWORK_URL, SC_IDENTIFIER, SC_POSITION, SC_SOURCE_URL};
 
-fn get_tag(path: &str) -> Result<Tag> {
+fn get_tag(path: impl AsRef<Path>) -> Result<Tag> {
+    let path = path.as_ref();
     match Tag::read_from_path(path) {
         Ok(tag) => Ok(tag),
         Err(id3::Error {
@@ -18,7 +21,7 @@ fn get_tag(path: &str) -> Result<Tag> {
             eprintln!(
                 "{} Failed to read ID3 tag at {}: {}. Starting fresh.",
                 "[WARN]".yellow().bold(),
-                path,
+                path.display(),
                 e
             );
             Ok(Tag::new())
@@ -38,7 +41,7 @@ fn set_txxx(tag: &mut Tag, key: &str, value: &str) {
 }
 
 pub struct SaveTrackArgs<'a> {
-    pub path: &'a str,
+    pub path: &'a Path,
     pub sc_id: &'a str,
     pub title: &'a str,
     pub artist: &'a str,
@@ -83,15 +86,9 @@ pub fn save_track_info(args: SaveTrackArgs) -> Result<()> {
     Ok(())
 }
 
-pub fn read_custom_field(path: &str, key: &str) -> Option<String> {
-    Tag::read_from_path(path).ok().and_then(|tag| {
-        tag.extended_texts()
-            .find(|f| f.description == key)
-            .map(|f| f.value.clone())
-    })
-}
 
-pub fn update_track_position(path: &str, position: Option<u32>) -> Result<()> {
+pub fn update_track_position(path: impl AsRef<Path>, position: Option<u32>) -> Result<()> {
+    let path = path.as_ref();
     let mut tag = get_tag(path)?;
     if let Some(pos) = position {
         set_txxx(&mut tag, SC_POSITION, &pos.to_string());
@@ -100,4 +97,45 @@ pub fn update_track_position(path: &str, position: Option<u32>) -> Result<()> {
     }
     tag.write_to_path(path, Version::Id3v23)?;
     Ok(())
+}
+
+pub struct TrackMetadata {
+    pub id: i64,
+    pub artist: String,
+    pub title: String,
+    pub artwork_url: Option<String>,
+    pub source_url: Option<String>,
+    pub position: Option<u32>,
+}
+
+pub fn extract_track_metadata(path: impl AsRef<Path>) -> Option<TrackMetadata> {
+    let tag = Tag::read_from_path(path).ok()?;
+
+    let mut sc_id = None;
+    let mut artwork_url = None;
+    let mut source_url = None;
+    let mut position = None;
+
+    for f in tag.extended_texts() {
+        match f.description.as_str() {
+            SC_IDENTIFIER => sc_id = f.value.parse::<i64>().ok(),
+            SC_ARTWORK_URL => artwork_url = Some(f.value.clone()),
+            SC_SOURCE_URL => source_url = Some(f.value.clone()),
+            SC_POSITION => position = f.value.parse().ok(),
+            _ => {}
+        }
+    }
+
+    let id = sc_id?;
+    let artist = tag.artist().unwrap_or("Unknown").to_string();
+    let title = tag.title().unwrap_or("Unknown").to_string();
+
+    Some(TrackMetadata {
+        id,
+        artist,
+        title,
+        artwork_url,
+        source_url,
+        position,
+    })
 }

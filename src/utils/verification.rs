@@ -7,7 +7,8 @@ use symphonia::core::{
 };
 use tokio::fs;
 
-pub async fn verify_file(path: &str, expected_size: u64) -> Result<()> {
+pub async fn verify_file(path: impl AsRef<Path>, expected_size: u64) -> Result<()> {
+    let path = path.as_ref();
     let final_size = fs::metadata(path).await?.len();
 
     if final_size < 10_000 || (expected_size > 0 && final_size != expected_size) {
@@ -17,8 +18,8 @@ pub async fn verify_file(path: &str, expected_size: u64) -> Result<()> {
         ));
     }
 
-    let path_clone = path.to_string();
-    let is_valid = tokio::task::spawn_blocking(move || verify_audio_format(&path_clone))
+    let path_buf = path.to_path_buf();
+    let is_valid = tokio::task::spawn_blocking(move || verify_audio_format(&path_buf))
         .await
         .unwrap_or(false);
 
@@ -32,7 +33,7 @@ pub async fn verify_file(path: &str, expected_size: u64) -> Result<()> {
     Ok(())
 }
 
-fn verify_audio_format(path: &str) -> bool {
+fn verify_audio_format(path: &Path) -> bool {
     let Ok(file) = File::open(path) else {
         return false;
     };
@@ -40,7 +41,7 @@ fn verify_audio_format(path: &str) -> bool {
     let mut hint = Hint::new();
     let mss = MediaSourceStream::new(Box::new(file), Default::default());
 
-    if let Some(ext) = Path::new(path).extension().and_then(|e| e.to_str()) {
+    if let Some(ext) = path.extension().and_then(|e| e.to_str()) {
         hint.with_extension(ext);
     }
 

@@ -8,3 +8,4 @@ export interface HeaderConfig {
     title: string;
     features: HeaderFeature[];
 }
+

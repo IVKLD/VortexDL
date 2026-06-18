@@ -58,17 +58,13 @@ async fn try_download_progressive(
     url: &str,
     proxy_url: Option<&str>,
 ) -> Result<()> {
-    let response = if let Some(proxy) = proxy_url {
-        reqwest::Client::builder()
+    let client = match proxy_url {
+        Some(proxy) => reqwest::Client::builder()
             .proxy(reqwest::Proxy::all(proxy)?)
-            .build()?
-            .get(url)
-            .send()
-            .await?
-            .error_for_status()?
-    } else {
-        ctx.http.get(url).send().await?.error_for_status()?
+            .build()?,
+        None => ctx.http.clone(),
     };
+    let response = client.get(url).send().await?.error_for_status()?;
     let total = response.content_length().unwrap_or(0);
 
     task.pb
@@ -103,9 +99,8 @@ async fn try_download_hls(
     task.pb
         .set_message(format!("Downloading (HLS): {}", task.display_name));
 
-    let download_result = if let Some(proxy) = proxy_url {
-        let settings = ctx.settings.read().await;
-        let client = init_client_with_settings(&settings, Some(proxy))
+    if let Some(proxy) = proxy_url {
+        let client = init_client_with_settings(&*ctx.settings.read().await, Some(proxy))
             .await
             .map_err(|e| anyhow!("Failed to build proxied client: {e}"))?;
         client
@@ -113,7 +108,7 @@ async fn try_download_hls(
                 track,
                 sc_id,
                 Some(&StreamType::Hls),
-                Some(&task.output_dir),
+                task.output_dir.to_str(),
                 Some(&task.display_name),
             )
             .await
@@ -123,12 +118,12 @@ async fn try_download_hls(
                 track,
                 sc_id,
                 Some(&StreamType::Hls),
-                Some(&task.output_dir),
+                task.output_dir.to_str(),
                 Some(&task.display_name),
             )
             .await
-    };
+    }
+    .map_err(|e| anyhow!("HLS download failed: {e}"))?;
 
-    download_result.map_err(|e| anyhow!("HLS download failed: {e}"))?;
     verify_file(&task.file_path, 0).await
 }

@@ -7,6 +7,7 @@ import {MatDialog} from '@angular/material/dialog';
 import {FieldTree} from "@angular/forms/signals";
 import {MatDivider} from "@angular/material/list";
 import {filter} from "rxjs";
+import { HttpErrorResponse } from '@angular/common/http';
 import {
     ProxyCheckerDialogComponent
 } from "@app/pages/settings-view/components/network-section/components/fallback-checker-dialog/proxy-checker-dialog.component";
@@ -50,7 +51,7 @@ export class FallbackProxiesComponent {
             autoFocus: 'textarea',
         });
 
-        dialogRef.afterClosed().pipe(filter(u => u === undefined)).subscribe((workingProxies: string[]) => {
+        dialogRef.afterClosed().pipe(filter((u): u is string[] => u !== undefined)).subscribe((workingProxies: string[]) => {
             if (workingProxies.length > 0) {
                 const current = this.form().fallbackProxies().value() || [];
                 const next = Array.from(new Set([...current, ...workingProxies]));
@@ -80,7 +81,7 @@ export class FallbackProxiesComponent {
                     [proxy]: {loading: false, valid: true}
                 }));
             },
-            error: (err: any) => {
+            error: (err: HttpErrorResponse | Error) => {
                 const errorDetail = parseErrorMessage(err, 'Verification failed');
                 this.proxyStatuses.update(prev => ({
                     ...prev,
@@ -112,7 +113,7 @@ export class FallbackProxiesComponent {
                     completed++;
                     if (completed === proxies.length) this.isTestingAll.set(false);
                 },
-                error: (err: any) => {
+                error: (err: HttpErrorResponse | Error) => {
                     const errorDetail = parseErrorMessage(err, 'Verification failed');
                     this.proxyStatuses.update(prev => ({
                         ...prev,

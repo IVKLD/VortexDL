@@ -1,0 +1,41 @@
+<h2 mat-dialog-title>Download Music</h2>
+
+<mat-dialog-content>
+    <mat-form-field>
+        <mat-label>SoundCloud URL</mat-label>
+        <input
+                (keyup.enter)="onDownload()"
+                [formField]="urlForm"
+                matInput
+        />
+        <mat-icon matIconPrefix>link</mat-icon>
+        <mat-hint>Liked, Playlist, or Track URL</mat-hint>
+    </mat-form-field>
+
+    <div>
+        @if (history.length > 0) {
+            <div class="history-section">
+                <h3>Recent URLs</h3>
+                <mat-list>
+                    @for (item of history; track item) {
+                        <mat-list-item (click)="selectHistory(item)"
+                                       [class.active]="urlForm().value() === item"
+                        >
+                            <div class="item">
+                                <span>{{ item }}</span>
+                                <button (click)="removeFromHistory(item)" mat-icon-button>
+                                    <mat-icon>close</mat-icon>
+                                </button>
+                            </div>
+                        </mat-list-item>
+                    }
+                </mat-list>
+            </div>
+        }
+    </div>
+</mat-dialog-content>
+
+<mat-dialog-actions>
+    <button mat-button mat-dialog-close>Cancel</button>
+    <button (click)="onDownload()" [disabled]="urlForm().invalid()" mat-flat-button>Download</button>
+</mat-dialog-actions>

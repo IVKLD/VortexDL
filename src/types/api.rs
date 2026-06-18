@@ -31,13 +31,17 @@ pub enum AudioFormat {
 }
 
 impl AudioFormat {
-    pub fn from_extension(ext: &str) -> Self {
-        match ext.to_lowercase().as_str() {
-            "mp3" => Self::Mp3,
-            "flac" => Self::Flac,
-            "wav" => Self::Wav,
-            _ => Self::Unknown,
-        }
+    pub fn from_path(path: impl AsRef<std::path::Path>) -> Self {
+        path.as_ref()
+            .extension()
+            .and_then(|ext| ext.to_str())
+            .map(|ext| match ext.to_lowercase().as_str() {
+                "mp3" => Self::Mp3,
+                "flac" => Self::Flac,
+                "wav" => Self::Wav,
+                _ => Self::Unknown,
+            })
+            .unwrap_or(Self::Unknown)
     }
 }
 

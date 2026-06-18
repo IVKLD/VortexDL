@@ -35,8 +35,8 @@
     "strictInjectionParameters": true,
     "strictInputAccessModifiers": true,
     "strictTemplates": true,
-    "strictInputTypes": false,
-    "strictContextGenerics": false,
+    "strictInputTypes": true,
+    "strictContextGenerics": true,
     "strictDomLocalRefTypes": true,
     "strictStandalone": true,
     "strictControlFlowAnalysis": true

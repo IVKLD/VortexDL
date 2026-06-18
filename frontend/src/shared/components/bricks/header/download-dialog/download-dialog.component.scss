@@ -1,0 +1,67 @@
+:host {
+  h2 {
+    font-weight: 500;
+  }
+
+  mat-dialog-content {
+    > mat-form-field {
+      width: 100%;
+    }
+
+    .history-section {
+      margin-top: 24px;
+
+      h3 {
+        font-size: 0.9rem;
+        color: rgba(255, 255, 255, 0.6);
+        margin-bottom: 8px;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+      }
+
+      mat-list {
+        max-height: 200px;
+        overflow-y: auto;
+        background: rgba(255, 255, 255, 0.05);
+
+        padding: 1em;
+        border-radius: 1em;
+
+        display: flex;
+        flex-direction: column;
+        gap: .4em;
+
+        mat-list-item {
+          cursor: pointer;
+          transition: background 0.2s;
+          border-radius: 20em;
+
+          padding: 0 .4em 0 1em;
+
+          &:hover {
+            background: rgba(255, 255, 255, 0.1);
+          }
+
+          &.active {
+            background: rgba(255, 255, 255, 0.1);
+          }
+
+          .item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            width: 100%;
+            font-size: 0.85rem;
+
+            > span {
+              overflow: hidden;
+              text-overflow: ellipsis;
+              white-space: nowrap;
+              margin-right: 8px;
+            }
+          }
+        }
+      }
+    }
+  }
+}

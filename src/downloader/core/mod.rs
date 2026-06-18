@@ -1,14 +1,13 @@
 pub mod pipeline;
 
-use std::{sync::Arc, time::Duration};
-
 use colored::Colorize;
 use futures::{
     future::join_all,
     stream::{self, StreamExt},
 };
 use indicatif::MultiProgress;
-use reqwest::Client as HttpClient;
+
+use std::path::PathBuf;
 
 use crate::{
     downloader::{Context, TrackDownload, core::pipeline as pl},
@@ -20,12 +19,6 @@ pub async fn run_download_batch(ctx: &Context, tracks: Vec<TrackDownload>) {
     let mp = MultiProgress::new();
     let total_tracks = tracks.len();
     let total_pb = create_total_progress_bar(&mp, total_tracks as u64);
-    let http = Arc::new(
-        HttpClient::builder()
-            .timeout(Duration::from_secs(30))
-            .build()
-            .unwrap_or_default(),
-    );
 
     let (max_concurrent, output_path) = {
         let s = ctx.settings.read().await;
@@ -37,16 +30,15 @@ pub async fn run_download_batch(ctx: &Context, tracks: Vec<TrackDownload>) {
 
     let results: Vec<_> = stream::iter(tracks)
         .map(|track| {
-            let mut ctx = ctx.clone();
-            ctx.http = Arc::clone(&http);
+            let ctx = ctx.clone();
             let mp = mp.clone();
             let total_pb = total_pb.clone();
-            let output_dir = output_path.clone();
+            let output_dir = PathBuf::from(&output_path);
 
             async move {
                 let pb = create_spinner(&mp);
                 let display_name = clean_filename(&format!("{} - {}", track.artist, track.title));
-                let file_path = format!("{output_dir}/{display_name}.mp3");
+                let file_path = output_dir.join(format!("{display_name}.mp3"));
 
                 let task = pl::DownloadTask {
                     id: track.id,

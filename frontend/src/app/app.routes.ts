@@ -1,7 +1,7 @@
 import {DashboardView} from './pages/dashboard-view/dashboard-view';
 import {MusicTracksView} from './pages/music-tracks-view/music-tracks-view';
 import {Route} from '@angular/router';
-import {HeaderConfig, HeaderFeature} from '@shared/components/header/header.types';
+import {HeaderConfig, HeaderFeature} from '@shared/components/bricks/header/header.types';
 import {SettingsView} from './pages/settings-view/settings-view.component';
 
 export interface RouteData {
@@ -49,3 +49,4 @@ export const routes: CustomRoutes = [
         component: SettingsView,
     },
 ];
+

@@ -15,7 +15,7 @@ use tokio::spawn;
 use crate::{
     api::{
         download_manager::{DownloadStatus, ServerEvent},
-        errors::ApiError,
+        errors::{ApiError, ErrorCode},
         state::AppState,
     },
     downloader,
@@ -28,13 +28,13 @@ pub async fn start_download(
 ) -> Result<impl IntoResponse, ApiError> {
     let url = body.url;
     if url.is_empty() {
-        return Err(ApiError::bad_request("Empty URL"));
+        return Err(ApiError::bad_request("Empty URL").with_code(ErrorCode::EmptyUrl));
     }
 
     tracing::info!("Download request: {url}");
 
     if !state.download_manager.reserve_url(&url) {
-        return Err(ApiError::conflict("This URL is already being processed"));
+        return Err(ApiError::conflict("This URL is already being processed").with_code(ErrorCode::AlreadyProcessing));
     }
 
     let status = DownloadStartResponse {

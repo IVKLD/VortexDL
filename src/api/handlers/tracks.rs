@@ -8,7 +8,7 @@ use serde::Deserialize;
 use tokio_util::io::ReaderStream;
 
 use crate::{
-    api::{errors::ApiError, state::AppState},
+    api::{errors::{ApiError, ErrorCode}, state::AppState},
     storage::MusicStorage,
     types::api::{AudioFormat, TrackRecord},
 };
@@ -29,12 +29,11 @@ pub async fn get_tracks(
     let mut tracks = storage
         .tracks
         .iter()
-        .filter_map(|(id, data)| {
+        .map(|(id, data)| {
             let path = &data.path;
-            let extension_str = path.extension()?.to_string_lossy();
-            let format = AudioFormat::from_extension(&extension_str);
+            let format = AudioFormat::from_path(path);
 
-            Some(TrackRecord {
+            TrackRecord {
                 id: *id as u32,
                 artist: data.artist.clone(),
                 title: data.title.clone(),
@@ -44,7 +43,7 @@ pub async fn get_tracks(
                 created_at: data.created_at,
                 size: data.size,
                 position: data.position.unwrap_or(u32::MAX),
-            })
+            }
         })
         .collect::<Vec<_>>();
 
@@ -77,28 +76,20 @@ pub async fn remove_track(
     State(state): State<AppState>,
     Path(id): Path<i64>,
 ) -> Result<impl IntoResponse, ApiError> {
-    let path = {
-        let storage = state.storage.read().await;
-        storage.tracks.get(&id).map(|d| d.path.clone())
-    };
+    let mut storage = state.storage.write().await;
 
-    if let Some(path) = path {
-        if path.exists() {
-            tokio::fs::remove_file(&path)
-                .await
-                .map_err(|e| ApiError::internal(format!("Failed to delete file: {e}")))?;
-        }
+    storage
+        .remove_track(id)
+        .map_err(|e| {
+            ApiError::internal(format!("Failed to delete file: {e}"))
+                .with_code(ErrorCode::IoError)
+        })?
+        .ok_or_else(|| {
+            ApiError::not_found(format!("Track with ID {id} not found"))
+                .with_code(ErrorCode::TrackNotFound)
+        })?;
 
-        let mut storage = state.storage.write().await;
-        storage.remove_track(id);
-
-        return Ok(());
-    }
-
-    Err(ApiError::not_found(format!(
-        "Track with ID {} not found",
-        id
-    )))
+    Ok(())
 }
 
 pub async fn stream_track(
@@ -112,20 +103,20 @@ pub async fn stream_track(
         .tracks
         .get(&id)
         .map(|d| d.path.clone())
-        .ok_or_else(|| ApiError::not_found(format!("Track with ID {id} not found")))?;
+        .ok_or_else(|| ApiError::not_found(format!("Track with ID {id} not found")).with_code(ErrorCode::TrackNotFound))?;
 
     if !path.exists() {
-        return Err(ApiError::not_found(format!("File not found: {:?}", path)));
+        return Err(ApiError::not_found(format!("File not found: {:?}", path)).with_code(ErrorCode::FileNotFound));
     }
 
     let file = tokio::fs::File::open(&path)
         .await
-        .map_err(|e| ApiError::internal(format!("Failed to open file: {e}")))?;
+        .map_err(|e| ApiError::internal(format!("Failed to open file: {e}")).with_code(ErrorCode::IoError))?;
 
     let metadata = file
         .metadata()
         .await
-        .map_err(|e| ApiError::internal(format!("Failed to read metadata: {e}")))?;
+        .map_err(|e| ApiError::internal(format!("Failed to read metadata: {e}")).with_code(ErrorCode::IoError))?;
 
     let mime = mime_guess::from_path(&path).first_or_octet_stream();
     let body = axum::body::Body::from_stream(ReaderStream::new(file));
@@ -136,5 +127,5 @@ pub async fn stream_track(
         .header(header::CONTENT_LENGTH, metadata.len().to_string())
         .header(header::ACCEPT_RANGES, "bytes")
         .body(body)
-        .map_err(|e| ApiError::internal(format!("Failed to build response: {e}")))
+        .map_err(|e| ApiError::internal(format!("Failed to build response: {e}")).with_code(ErrorCode::InternalError))
 }

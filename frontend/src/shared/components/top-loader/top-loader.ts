@@ -3,12 +3,12 @@ import {LoadingService} from '@app/services/loading.service';
 import {MatProgressBar} from '@angular/material/progress-bar';
 
 @Component({
-    selector: 'app-global-loader',
+    selector: 'app-top-loader',
     imports: [MatProgressBar],
-    templateUrl: './global-loader.html',
-    styleUrl: './global-loader.scss',
+    templateUrl: './top-loader.html',
+    styleUrl: './top-loader.scss',
     changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class GlobalLoader {
+export class TopLoader {
     protected readonly loadingService = inject(LoadingService);
 }

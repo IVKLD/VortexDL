@@ -1,4 +1,4 @@
-<h2 mat-dialog-title class="dialog-title-container">
+<h2 mat-dialog-title>
     <span>Proxy Checker & Diagnostics</span>
     <button mat-icon-button mat-dialog-close type="button">
         <mat-icon>close</mat-icon>
@@ -87,7 +87,7 @@
     </div>
 </mat-dialog-content>
 
-<mat-dialog-actions align="end" class="dialog-actions-container">
+<mat-dialog-actions align="end">
     <button type="button" mat-button mat-dialog-close>Cancel</button>
     <button type="button" mat-flat-button color="accent" (click)="importWorking()" [disabled]="workingProxies().length === 0">
         <mat-icon>add_task</mat-icon>

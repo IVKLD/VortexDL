@@ -1,4 +1,5 @@
 import { ChangeDetectionStrategy, Component, inject, signal, computed } from '@angular/core';
+import { HttpErrorResponse } from '@angular/common/http';
 import { CommonModule } from '@angular/common';
 import { MatIcon } from '@angular/material/icon';
 import { MatButton, MatIconButton } from '@angular/material/button';
@@ -35,8 +36,10 @@ export class ProxyCheckerDialogComponent {
     public readonly isTesting = signal<boolean>(false);
 
     onTextChange(event: Event): void {
-        const value = (event.target as HTMLTextAreaElement).value;
-        this.pastedText.set(value);
+        const target = event.target;
+        if (target instanceof HTMLTextAreaElement) {
+            this.pastedText.set(target.value);
+        }
     }
 
     private parseProxies(text: string): string[] {
@@ -77,7 +80,7 @@ export class ProxyCheckerDialogComponent {
                     completed++;
                     if (completed === proxies.length) this.isTesting.set(false);
                 },
-                error: (err: any) => {
+                error: (err: HttpErrorResponse | Error) => {
                     const errorDetail = parseErrorMessage(err, 'Verification failed');
                     this.importStatuses.update(prev => ({
                         ...prev,

@@ -1,11 +1,12 @@
 import {ChangeDetectionStrategy, Component, input, output} from '@angular/core';
 import { MatIcon } from '@angular/material/icon';
-import { FormField } from '@angular/forms/signals';
+import { FieldTree, FormField } from '@angular/forms/signals';
 import { MatInput } from "@angular/material/input";
 import { MatError, MatFormField, MatLabel, MatSuffix } from "@angular/material/form-field";
 import { MatSlideToggle } from "@angular/material/slide-toggle";
 import { MatIconButton } from "@angular/material/button";
 import { FallbackProxiesComponent } from './components/fallback-proxies/fallback-proxies.component';
+import { NetworkSettings } from '@app/pages/settings-view/models/settings-form.model';
 
 @Component({
     selector: 'app-network-settings',
@@ -18,7 +19,8 @@ import { FallbackProxiesComponent } from './components/fallback-proxies/fallback
     changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class NetworkSettingsComponent {
-    public readonly form = input.required<any>();
+    public readonly form = input.required<FieldTree<NetworkSettings>>();
     public readonly isTesting = input<boolean>(false);
     public readonly test = output<void>();
 }
+

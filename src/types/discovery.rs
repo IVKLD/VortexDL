@@ -19,7 +19,7 @@ pub struct TrackLikesResponse {
 
 #[derive(Deserialize, Debug)]
 pub struct LikeItem {
-    pub track: TrackInfo,
+    pub track: Option<TrackInfo>,
 }
 
 #[derive(Deserialize, Debug)]
