@@ -1,3 +1,5 @@
+use std::io::ErrorKind;
+
 use axum::{
     Json,
     extract::{Path, Query, State},
@@ -8,9 +10,12 @@ use serde::Deserialize;
 use tokio_util::io::ReaderStream;
 
 use crate::{
-    api::{errors::{ApiError, ErrorCode}, state::AppState},
+    api::{
+        errors::{ApiError, ErrorCode},
+        state::AppState,
+        types::{AudioFormat, TrackRecord},
+    },
     storage::MusicStorage,
-    types::api::{AudioFormat, TrackRecord},
 };
 
 #[derive(Deserialize)]
@@ -34,7 +39,7 @@ pub async fn get_tracks(
             let format = AudioFormat::from_path(path);
 
             TrackRecord {
-                id: *id as u32,
+                id: *id,
                 artist: data.artist.clone(),
                 title: data.title.clone(),
                 format,
@@ -43,6 +48,7 @@ pub async fn get_tracks(
                 created_at: data.created_at,
                 size: data.size,
                 position: data.position.unwrap_or(u32::MAX),
+                archived: data.is_archived(),
             }
         })
         .collect::<Vec<_>>();
@@ -81,8 +87,7 @@ pub async fn remove_track(
     storage
         .remove_track(id)
         .map_err(|e| {
-            ApiError::internal(format!("Failed to delete file: {e}"))
-                .with_code(ErrorCode::IoError)
+            ApiError::internal(format!("Failed to delete file: {e}")).with_code(ErrorCode::IoError)
         })?
         .ok_or_else(|| {
             ApiError::not_found(format!("Track with ID {id} not found"))
@@ -103,20 +108,23 @@ pub async fn stream_track(
         .tracks
         .get(&id)
         .map(|d| d.path.clone())
-        .ok_or_else(|| ApiError::not_found(format!("Track with ID {id} not found")).with_code(ErrorCode::TrackNotFound))?;
-
-    if !path.exists() {
-        return Err(ApiError::not_found(format!("File not found: {:?}", path)).with_code(ErrorCode::FileNotFound));
-    }
+        .ok_or_else(|| {
+            ApiError::not_found(format!("Track with ID {id} not found"))
+                .with_code(ErrorCode::TrackNotFound)
+        })?;
 
     let file = tokio::fs::File::open(&path)
         .await
-        .map_err(|e| ApiError::internal(format!("Failed to open file: {e}")).with_code(ErrorCode::IoError))?;
+        .map_err(|e| match e.kind() {
+            ErrorKind::NotFound => ApiError::not_found(format!("File not found: {:?}", path))
+                .with_code(ErrorCode::FileNotFound),
+            _ => ApiError::internal(format!("Failed to open file: {e}"))
+                .with_code(ErrorCode::IoError),
+        })?;
 
-    let metadata = file
-        .metadata()
-        .await
-        .map_err(|e| ApiError::internal(format!("Failed to read metadata: {e}")).with_code(ErrorCode::IoError))?;
+    let metadata = file.metadata().await.map_err(|e| {
+        ApiError::internal(format!("Failed to read metadata: {e}")).with_code(ErrorCode::IoError)
+    })?;
 
     let mime = mime_guess::from_path(&path).first_or_octet_stream();
     let body = axum::body::Body::from_stream(ReaderStream::new(file));
@@ -127,5 +135,8 @@ pub async fn stream_track(
         .header(header::CONTENT_LENGTH, metadata.len().to_string())
         .header(header::ACCEPT_RANGES, "bytes")
         .body(body)
-        .map_err(|e| ApiError::internal(format!("Failed to build response: {e}")).with_code(ErrorCode::InternalError))
+        .map_err(|e| {
+            ApiError::internal(format!("Failed to build response: {e}"))
+                .with_code(ErrorCode::InternalError)
+        })
 }

@@ -5,9 +5,12 @@
         <mat-label>SoundCloud URL</mat-label>
         <input
                 (keyup.enter)="onDownload()"
-                [formField]="urlForm"
+                [formField]="urlField"
                 matInput
         />
+        @if (urlField().invalid()) {
+            <mat-error>{{ urlField().errors()[0]?.message }}</mat-error>
+        }
         <mat-icon matIconPrefix>link</mat-icon>
         <mat-hint>Liked, Playlist, or Track URL</mat-hint>
     </mat-form-field>
@@ -19,7 +22,7 @@
                 <mat-list>
                     @for (item of history; track item) {
                         <mat-list-item (click)="selectHistory(item)"
-                                       [class.active]="urlForm().value() === item"
+                                       [class.active]="urlField().value() === item"
                         >
                             <div class="item">
                                 <span>{{ item }}</span>
@@ -37,5 +40,5 @@
 
 <mat-dialog-actions>
     <button mat-button mat-dialog-close>Cancel</button>
-    <button (click)="onDownload()" [disabled]="urlForm().invalid()" mat-flat-button>Download</button>
+    <button (click)="onDownload()" [disabled]="urlField().invalid()" mat-flat-button>Download</button>
 </mat-dialog-actions>

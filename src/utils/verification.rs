@@ -70,6 +70,9 @@ fn verify_audio_format(path: &Path) -> bool {
             Ok(packet) => {
                 if packet.track_id() == track_id {
                     packet_count += 1;
+                    if packet_count > 100 {
+                        return true;
+                    }
                 }
             }
             Err(Error::IoError(err)) if err.kind() == ErrorKind::UnexpectedEof => {

@@ -3,16 +3,9 @@ use std::collections::HashMap;
 use anyhow::{Result, anyhow};
 use soundcloud_rs::{Client, Identifier, Track};
 
-use crate::downloader::{
-    Context, TrackDownload,
-    discovery::show_feedback,
-};
+use crate::downloader::{Context, TrackDownload, discovery::show_feedback};
 
-pub async fn fetch_playlist(
-    ctx: &Context,
-    client: &Client,
-    id: i64,
-) -> Result<Vec<TrackDownload>> {
+pub async fn fetch_playlist(ctx: &Context, client: &Client, id: i64) -> Result<Vec<TrackDownload>> {
     let playlist = client.get_playlist(&Identifier::Id(id)).await?;
     let collection = playlist
         .tracks
@@ -53,7 +46,10 @@ pub async fn fetch_playlist(
 
             if let Ok(fetched_tracks) = client.get::<_, Vec<Track>>("tracks", Some(&query)).await {
                 for ft in fetched_tracks {
-                    if let Some(t) = ft.id.and_then(|fid| tracks.iter_mut().find(|t| t.id == fid)) {
+                    if let Some(t) = ft
+                        .id
+                        .and_then(|fid| tracks.iter_mut().find(|t| t.id == fid))
+                    {
                         *t = TrackDownload::new(
                             t.id,
                             ft.title.as_deref(),

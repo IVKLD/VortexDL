@@ -4,7 +4,7 @@ use indicatif::ProgressBar;
 use crate::{
     api::download_manager::ServerEvent,
     downloader::Context,
-    types::discovery::{TrackLikesQuery, TrackLikesResponse},
+    types::core::{TrackLikesQuery, TrackLikesResponse},
     ui::create_standalone_spinner,
 };
 
@@ -20,7 +20,6 @@ pub fn show_feedback(ctx: &Context, msg: &str) -> ProgressBar {
 
     pb
 }
-
 
 pub async fn get_likes(
     client: &soundcloud_rs::Client,

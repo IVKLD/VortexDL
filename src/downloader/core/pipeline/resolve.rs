@@ -42,8 +42,7 @@ pub async fn resolve_track_metadata(
             race_proxies(&settings, move |s, proxy| async move {
                 let client = init_client_with_settings(&s, Some(&proxy)).await?;
                 let sc_id = Identifier::Id(id);
-                let (track, proto) =
-                    try_resolve_with_client(&client, &sc_id, Some(&proxy)).await?;
+                let (track, proto) = try_resolve_with_client(&client, &sc_id, Some(&proxy)).await?;
                 Ok((track, sc_id, proto))
             })
             .await

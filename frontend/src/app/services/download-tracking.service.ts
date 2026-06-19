@@ -14,6 +14,7 @@ export enum DownloadStatus {
 export interface DownloadItem extends Track {
     error?: string;
     status: DownloadStatus;
+    progress?: number;
 }
 
 export enum ServerEventType {
@@ -150,7 +151,7 @@ export class DownloadTrackingService {
 
     private updateActiveDownloads(item: DownloadItem): void {
         this.activeDownloads.update(downloads => {
-            const filtered = downloads.filter(d => d.id !== item.id);
+            const filtered = downloads.filter(d => Number(d.id) !== Number(item.id));
             if (item.status === DownloadStatus.Finished || item.status === DownloadStatus.Failed) {
                 return filtered;
             }

@@ -14,17 +14,18 @@ pub fn create_total_progress_bar(mp: &MultiProgress, len: u64) -> ProgressBar {
     total_pb
 }
 
-pub fn create_spinner(mp: &MultiProgress) -> ProgressBar {
-    let pb = mp.add(ProgressBar::new_spinner());
+fn setup_spinner(pb: ProgressBar) -> ProgressBar {
     pb.enable_steady_tick(Duration::from_millis(100));
     pb.set_style(get_spinner_style());
     pb
 }
 
+pub fn create_spinner(mp: &MultiProgress) -> ProgressBar {
+    setup_spinner(mp.add(ProgressBar::new_spinner()))
+}
+
 pub fn create_standalone_spinner(msg: &str) -> ProgressBar {
-    let pb = ProgressBar::new_spinner();
-    pb.enable_steady_tick(Duration::from_millis(100));
-    pb.set_style(get_spinner_style());
+    let pb = setup_spinner(ProgressBar::new_spinner());
     pb.set_message(msg.to_string());
     pb
 }

@@ -65,6 +65,7 @@ mat-form-field {
 }
 
 .mat-mdc-dialog-container {
+  --mat-dialog-with-actions-content-padding: 1em;
   --mdc-dialog-container-color: var(--mat-sys-surface-container-high);
   --mdc-dialog-container-shape: 20px;
   --mdc-dialog-container-elevation-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
@@ -97,9 +98,7 @@ mat-form-field {
 }
 
 .mat-mdc-dialog-content {
-  padding: 24px;
   padding-top: 1em !important;
-  margin: 0;
   max-height: 70vh;
 }
 
@@ -113,24 +112,4 @@ mat-form-field {
   background: rgba(255, 255, 255, 0.01);
   margin: 0;
   min-height: auto;
-}
-
-::placeholder {
-  color: var(--mat-sys-on-surface-variant) !important;
-  opacity: 0.5 !important;
-}
-
-::-webkit-input-placeholder {
-  color: var(--mat-sys-on-surface-variant) !important;
-  opacity: 0.5 !important;
-}
-
-::-moz-placeholder {
-  color: var(--mat-sys-on-surface-variant) !important;
-  opacity: 0.5 !important;
-}
-
-:-ms-input-placeholder {
-  color: var(--mat-sys-on-surface-variant) !important;
-  opacity: 0.5 !important;
 }

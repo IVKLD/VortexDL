@@ -10,10 +10,7 @@ pub use commands::list_connected_devices;
 pub use sync::sync_device;
 use tokio::sync::RwLock;
 
-use crate::{
-    settings::{AdbDeviceSettings, SettingsManager},
-    storage::MusicStorage,
-};
+use crate::{settings::SettingsManager, storage::MusicStorage};
 
 pub fn init(storage: Arc<RwLock<MusicStorage>>, settings: SettingsManager) {
     tokio::spawn(async move {
@@ -33,7 +30,7 @@ async fn poll_devices(storage: Arc<RwLock<MusicStorage>>, settings: SettingsMana
     }
 
     let current = list_connected_devices().await?;
-    let mut previous = state::CONNECTED_DEVICES.lock().await;
+    let mut previous = state::lock_connected();
 
     for id in current.difference(&previous) {
         tracing::info!(device = %id, "connected");
@@ -43,7 +40,7 @@ async fn poll_devices(storage: Arc<RwLock<MusicStorage>>, settings: SettingsMana
             .iter()
             .find(|d| d.enabled && d.device_id == *id)
         {
-            spawn_sync(id.clone(), cfg.clone(), storage.clone());
+            spawn_sync(id.clone(), cfg.remote_music_dir.clone(), storage.clone());
         }
     }
 
@@ -63,17 +60,17 @@ pub async fn sync_all_connected(storage: Arc<RwLock<MusicStorage>>, settings: Se
     let devices = s.adb.devices.clone();
     drop(s);
 
-    let connected = state::CONNECTED_DEVICES.lock().await;
+    let connected = state::lock_connected();
     for id in connected.iter() {
         if let Some(cfg) = devices.iter().find(|d| d.enabled && d.device_id == *id) {
-            spawn_sync(id.clone(), cfg.clone(), storage.clone());
+            spawn_sync(id.clone(), cfg.remote_music_dir.clone(), storage.clone());
         }
     }
 }
 
-fn spawn_sync(device_id: String, cfg: AdbDeviceSettings, storage: Arc<RwLock<MusicStorage>>) {
+fn spawn_sync(device_id: String, remote_music_dir: String, storage: Arc<RwLock<MusicStorage>>) {
     tokio::spawn(async move {
-        if let Err(e) = sync_device(&device_id, &cfg.remote_music_dir, storage).await {
+        if let Err(e) = sync_device(&device_id, &remote_music_dir, storage).await {
             tracing::error!(device = %device_id, error = %e, "sync failed");
         }
     });

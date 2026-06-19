@@ -19,16 +19,16 @@ pub enum ErrorCode {
     NetworkError,
     HttpClientError,
     SoundCloudError,
-    
+
     BadRequest,
     InvalidProxyUrl,
     EmptyUrl,
-    
+
     NotFound,
     TrackNotFound,
     FileNotFound,
     DeviceNotFound,
-    
+
     Conflict,
     AlreadyProcessing,
 }
@@ -59,7 +59,11 @@ impl ApiError {
     }
 
     pub fn internal(msg: impl Into<String>) -> Self {
-        Self::new(StatusCode::INTERNAL_SERVER_ERROR, ErrorCode::InternalError, msg)
+        Self::new(
+            StatusCode::INTERNAL_SERVER_ERROR,
+            ErrorCode::InternalError,
+            msg,
+        )
     }
 
     pub fn not_found(msg: impl Into<String>) -> Self {
@@ -89,6 +93,10 @@ impl From<AnyhowError> for ApiError {
 
 impl From<io::Error> for ApiError {
     fn from(err: io::Error) -> Self {
-        Self::new(StatusCode::INTERNAL_SERVER_ERROR, ErrorCode::IoError, err.to_string())
+        Self::new(
+            StatusCode::INTERNAL_SERVER_ERROR,
+            ErrorCode::IoError,
+            err.to_string(),
+        )
     }
 }

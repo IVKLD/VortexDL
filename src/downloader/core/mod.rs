@@ -1,5 +1,7 @@
 pub mod pipeline;
 
+use std::path::PathBuf;
+
 use colored::Colorize;
 use futures::{
     future::join_all,
@@ -7,12 +9,9 @@ use futures::{
 };
 use indicatif::MultiProgress;
 
-use std::path::PathBuf;
-
 use crate::{
     downloader::{Context, TrackDownload, core::pipeline as pl},
     ui::{create_spinner, create_total_progress_bar},
-    utils::filename::clean_filename,
 };
 
 pub async fn run_download_batch(ctx: &Context, tracks: Vec<TrackDownload>) {
@@ -20,35 +19,27 @@ pub async fn run_download_batch(ctx: &Context, tracks: Vec<TrackDownload>) {
     let total_tracks = tracks.len();
     let total_pb = create_total_progress_bar(&mp, total_tracks as u64);
 
-    let (max_concurrent, output_path) = {
-        let s = ctx.settings.read().await;
-        (
-            s.downloads.max_concurrent as usize,
-            s.downloads.output_path.clone(),
-        )
-    };
+    let max_concurrent = ctx.settings.read().await.downloads.max_concurrent as usize;
+    let output_dir = PathBuf::from(&ctx.storage.read().await.base_path);
 
     let results: Vec<_> = stream::iter(tracks)
         .map(|track| {
             let ctx = ctx.clone();
             let mp = mp.clone();
             let total_pb = total_pb.clone();
-            let output_dir = PathBuf::from(&output_path);
+            let output_dir = output_dir.clone();
 
             async move {
                 let pb = create_spinner(&mp);
-                let display_name = clean_filename(&format!("{} - {}", track.artist, track.title));
-                let file_path = output_dir.join(format!("{display_name}.mp3"));
+                let file_path = track.path(&output_dir);
 
                 let task = pl::DownloadTask {
                     id: track.id,
                     title: track.title,
                     artist: track.artist,
-                    display_name,
                     artwork_url: track.artwork_url,
                     position: track.position,
                     pb: pb.clone(),
-                    output_dir,
                     file_path,
                 };
 

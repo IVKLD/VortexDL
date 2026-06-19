@@ -4,9 +4,12 @@ use colored::Colorize;
 use tokio::task::JoinHandle;
 
 use crate::{
-    downloader::{Context, core::pipeline::{DownloadTask, artwork::ArtworkDataHandle}},
+    downloader::{
+        Context,
+        core::pipeline::{DownloadTask, artwork::ArtworkDataHandle},
+    },
     storage::TrackData,
-    types::api::AudioFormat,
+    api::types::AudioFormat,
     utils::metadata::{SaveTrackArgs, save_track_info},
 };
 
@@ -17,7 +20,7 @@ pub fn finalize_and_persist(
     source_url: String,
 ) -> JoinHandle<()> {
     task.pb
-        .println(format!("{} {}", "[OK]".green().bold(), task.display_name));
+        .println(format!("{} {}", "[OK]".green().bold(), task.display_name()));
 
     tokio::spawn(persist(ctx, task, artwork_handle, source_url))
 }
@@ -86,7 +89,7 @@ pub async fn on_failure(ctx: &Context, task: &DownloadTask, e: anyhow::Error) {
     task.pb.println(format!(
         "{} {} — {:#}",
         "[ERROR]".red().bold(),
-        task.display_name,
+        task.display_name(),
         e
     ));
 }

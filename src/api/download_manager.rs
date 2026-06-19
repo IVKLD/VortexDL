@@ -6,7 +6,7 @@ use std::{
 use serde::{Deserialize, Serialize};
 use tokio::sync::broadcast;
 
-use crate::types::api::AudioFormat;
+use crate::api::types::AudioFormat;
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(rename_all = "lowercase")]
@@ -78,8 +78,11 @@ impl DownloadManager {
         let mut state = self.lock_state();
         if let Some(item) = state.tasks.get_mut(&id) {
             f(item);
-            let snapshot = item.clone();
-            self.notify_update(snapshot);
+            let updated = item.clone();
+            self.notify_update(updated.clone());
+            if matches!(updated.status, DownloadStatus::Finished | DownloadStatus::Failed) {
+                state.tasks.remove(&id);
+            }
             self.check_queue_finished(&state);
         }
     }
@@ -162,8 +165,7 @@ impl DownloadManager {
             if item.progress.is_none_or(|p| (progress - p).abs() > 0.5) {
                 item.progress = Some(progress);
                 item.status = DownloadStatus::Downloading;
-                let item_clone = item.clone();
-                self.notify_update(item_clone);
+                self.notify_update(item.clone());
             }
         }
     }
@@ -182,7 +184,7 @@ impl DownloadManager {
                 DownloadStatus::Queued | DownloadStatus::Downloading
             )
         });
-        if !has_active && !state.tasks.is_empty() {
+        if !has_active {
             let _ = self.tx.send(ServerEvent::SyncFinished);
         }
     }

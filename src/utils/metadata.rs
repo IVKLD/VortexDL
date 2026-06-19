@@ -3,7 +3,7 @@ use std::path::Path;
 use anyhow::Result;
 use colored::Colorize;
 use id3::{
-    Content, Tag, TagLike, Version,
+    Content, Error as Id3Error, ErrorKind as Id3ErrorKind, Tag, TagLike, Version,
     frame::{ExtendedText, Frame, Picture, PictureType},
 };
 
@@ -13,8 +13,8 @@ fn get_tag(path: impl AsRef<Path>) -> Result<Tag> {
     let path = path.as_ref();
     match Tag::read_from_path(path) {
         Ok(tag) => Ok(tag),
-        Err(id3::Error {
-            kind: id3::ErrorKind::NoTag,
+        Err(Id3Error {
+            kind: Id3ErrorKind::NoTag,
             ..
         }) => Ok(Tag::new()),
         Err(e) => {
@@ -85,7 +85,6 @@ pub fn save_track_info(args: SaveTrackArgs) -> Result<()> {
     tag.write_to_path(args.path, Version::Id3v23)?;
     Ok(())
 }
-
 
 pub fn update_track_position(path: impl AsRef<Path>, position: Option<u32>) -> Result<()> {
     let path = path.as_ref();

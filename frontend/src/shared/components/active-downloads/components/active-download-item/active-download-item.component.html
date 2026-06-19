@@ -3,9 +3,9 @@
 <div [class.failed]="data.status === DownloadStatus.Failed" class="item">
     <div class="img-container">
         @if (data.artworkUrl) {
-            <img [alt]="data.title" [ngSrc]="data.artworkUrl" height="40" width="40"/>
+        <img [alt]="data.title" [ngSrc]="data.artworkUrl" height="40" width="40" />
         } @else {
-            <mat-icon>music_note</mat-icon>
+        <mat-icon>music_note</mat-icon>
         }
     </div>
 
@@ -13,13 +13,17 @@
         <strong>{{ data.title }}</strong>
 
         @if (data.status !== DownloadStatus.Downloading) {
-            <small [class.error-text]="data.status === DownloadStatus.Failed">
-                {{ data.status }}
-            </small>
+        <small [class.error-text]="data.status === DownloadStatus.Failed">
+            {{ data.status }}
+        </small>
         }
 
         @if (data.status === DownloadStatus.Downloading) {
-            <mat-progress-bar mode="indeterminate"/>
+        @if (data.progress) {
+        <mat-progress-bar mode="determinate" [value]="data.progress" />
+        } @else {
+        <mat-progress-bar mode="indeterminate" />
+        }
         }
     </div>
 

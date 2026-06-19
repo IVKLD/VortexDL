@@ -5,20 +5,20 @@ use colored::Colorize;
 
 use crate::{
     adb_device,
+    storage::MusicStorage,
     utils::{
-        metadata::update_track_position, proxy::race_proxies,
-        soundcloud::init_client_with_settings,
+        metadata::update_track_position,
+        proxy::race_proxies,
+        soundcloud::{init_client_with_settings, resolve_url, update_cached_client_id},
     },
 };
 
 pub mod core;
 pub mod discovery;
 
-use discovery::{
-    fetch_likes, fetch_playlist, fetch_track, show_feedback,
-};
+use discovery::{fetch_likes, fetch_playlist, fetch_track, show_feedback};
 
-pub use crate::types::downloader::{Context, TrackDownload};
+pub use crate::types::core::{Context, TrackDownload};
 
 async fn resolve_and_fetch_tracks(
     ctx: &Context,
@@ -26,7 +26,7 @@ async fn resolve_and_fetch_tracks(
     client: &soundcloud_rs::Client,
 ) -> Result<Vec<TrackDownload>> {
     let pb = show_feedback(ctx, "Resolving URL...");
-    let resolve_res = crate::utils::soundcloud::resolve_url(client, url).await;
+    let resolve_res = resolve_url(client, url).await;
     pb.finish_and_clear();
     let resolve_res = resolve_res?;
 
@@ -105,11 +105,13 @@ pub async fn download(ctx: &Context, url: &str) -> Result<()> {
 
     adb_device::sync_all_connected(ctx.storage.clone(), ctx.settings.clone()).await;
 
+    update_cached_client_id(&ctx.client, &ctx.settings).await;
+
     Ok(())
 }
 
 fn process_track_download(
-    storage: &mut crate::storage::MusicStorage,
+    storage: &mut MusicStorage,
     track: TrackDownload,
 ) -> Option<TrackDownload> {
     if let Some(data) = storage

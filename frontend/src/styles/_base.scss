@@ -24,6 +24,26 @@ body {
   ::-webkit-scrollbar-corner {
     background: transparent;
   }
+
+  ::placeholder {
+    color: var(--mat-sys-on-surface-variant) !important;
+    opacity: 0.5 !important;
+  }
+
+  ::-webkit-input-placeholder {
+    color: var(--mat-sys-on-surface-variant) !important;
+    opacity: 0.5 !important;
+  }
+
+  ::-moz-placeholder {
+    color: var(--mat-sys-on-surface-variant) !important;
+    opacity: 0.5 !important;
+  }
+
+  :-ms-input-placeholder {
+    color: var(--mat-sys-on-surface-variant) !important;
+    opacity: 0.5 !important;
+  }
 }
 
 * {

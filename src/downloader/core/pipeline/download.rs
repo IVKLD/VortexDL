@@ -46,7 +46,7 @@ pub async fn download_with_retries(
 
         task.pb.set_message(format!(
             "Retrying ({attempts_left} left): {}",
-            task.display_name
+            task.display_name()
         ));
         sleep(Duration::from_secs(1)).await;
     }
@@ -68,7 +68,7 @@ async fn try_download_progressive(
     let total = response.content_length().unwrap_or(0);
 
     task.pb
-        .set_message(format!("Downloading: {}", task.display_name));
+        .set_message(format!("Downloading: {}", task.display_name()));
     ui::upgrade_to_download_bar(&task.pb, total);
 
     let mut file = fs::File::create(&task.file_path).await?;
@@ -97,33 +97,28 @@ async fn try_download_hls(
     proxy_url: Option<&str>,
 ) -> Result<()> {
     task.pb
-        .set_message(format!("Downloading (HLS): {}", task.display_name));
+        .set_message(format!("Downloading (HLS): {}", task.display_name()));
 
-    if let Some(proxy) = proxy_url {
-        let client = init_client_with_settings(&*ctx.settings.read().await, Some(proxy))
+    let proxied_client;
+    let client = if let Some(proxy) = proxy_url {
+        proxied_client = init_client_with_settings(&*ctx.settings.read().await, Some(proxy))
             .await
             .map_err(|e| anyhow!("Failed to build proxied client: {e}"))?;
-        client
-            .download_track(
-                track,
-                sc_id,
-                Some(&StreamType::Hls),
-                task.output_dir.to_str(),
-                Some(&task.display_name),
-            )
-            .await
+        &proxied_client
     } else {
-        ctx.client
-            .download_track(
-                track,
-                sc_id,
-                Some(&StreamType::Hls),
-                task.output_dir.to_str(),
-                Some(&task.display_name),
-            )
-            .await
-    }
-    .map_err(|e| anyhow!("HLS download failed: {e}"))?;
+        &ctx.client
+    };
+
+    client
+        .download_track(
+            track,
+            sc_id,
+            Some(&StreamType::Hls),
+            task.file_path.parent().and_then(|p| p.to_str()),
+            Some(task.display_name()),
+        )
+        .await
+        .map_err(|e| anyhow!("HLS download failed: {e}"))?;
 
     verify_file(&task.file_path, 0).await
 }

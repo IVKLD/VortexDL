@@ -6,7 +6,7 @@ use tokio::sync::RwLock;
 
 use crate::{
     api::state::AppState, cli::Args, storage::MusicStorage, ui::create_standalone_spinner,
-    utils::soundcloud::init_client,
+    utils::soundcloud::init_client_with_settings,
 };
 
 mod adb_device;
@@ -38,16 +38,16 @@ async fn main() -> Result<()> {
     let storage = Arc::new(RwLock::new(MusicStorage::new(output_dir)));
 
     let pb = create_standalone_spinner("Initializing SoundCloud...");
-    let client = init_client(&mut settings).await?;
+    let client = init_client_with_settings(&mut settings, None).await?;
     pb.finish_with_message("SoundCloud ready");
 
-    let state = AppState::new(Arc::new(client), storage.clone(), settings);
+    let state = AppState::new(Arc::new(client), storage, settings);
+
+    let pb_idx = create_standalone_spinner("Indexing local library...");
+    MusicStorage::run_background_indexing(state.storage.clone()).await;
+    pb_idx.finish_with_message("Local library indexed");
 
     adb_device::init(state.storage.clone(), state.settings.clone());
-
-    tokio::spawn(async move {
-        MusicStorage::run_background_indexing(storage).await;
-    });
 
     cli::execute_app(state, args).await
 }

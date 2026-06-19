@@ -11,17 +11,14 @@ pub fn get_previous_ids(url: &str) -> Result<HashSet<i64>, Error> {
     let db = get_db();
     let read_txn = db.begin_read()?;
 
-    let table = match read_txn.open_table(SYNC_TABLE) {
-        Ok(t) => t,
-        Err(_) => return Ok(HashSet::new()),
-    };
+    let ids = read_txn
+        .open_table(SYNC_TABLE)
+        .ok()
+        .and_then(|table| table.get(url).ok().flatten())
+        .and_then(|data| serde_json::from_str(data.value()).ok())
+        .unwrap_or_default();
 
-    if let Some(data) = table.get(url)? {
-        let ids: HashSet<i64> = serde_json::from_str(data.value())?;
-        return Ok(ids);
-    }
-
-    Ok(HashSet::new())
+    Ok(ids)
 }
 
 pub fn save_sync_ids(url: &str, ids: &HashSet<i64>) -> Result<(), Error> {

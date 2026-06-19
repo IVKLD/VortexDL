@@ -48,7 +48,7 @@ impl AudioFormat {
 #[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct TrackRecord {
-    pub id: u32,
+    pub id: i64,
     pub artist: String,
     pub title: String,
     pub format: AudioFormat,
@@ -57,6 +57,7 @@ pub struct TrackRecord {
     pub created_at: u64,
     pub size: u64,
     pub position: u32,
+    pub archived: bool,
 }
 
 #[derive(Debug, Serialize)]

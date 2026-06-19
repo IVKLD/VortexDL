@@ -22,9 +22,16 @@ pub async fn test_soundcloud_url(
 ) -> Result<impl IntoResponse, ApiError> {
     resolve_url(&state.client, &payload.url)
         .await
-        .map(|_| (StatusCode::OK, Json("SoundCloud URL is valid and accessible")))
-        .map_err(|e| ApiError::bad_request(format!("SoundCloud verification failed: {e}"))
-            .with_code(ErrorCode::SoundCloudError))
+        .map(|_| {
+            (
+                StatusCode::OK,
+                Json("SoundCloud URL is valid and accessible"),
+            )
+        })
+        .map_err(|e| {
+            ApiError::bad_request(format!("SoundCloud verification failed: {e}"))
+                .with_code(ErrorCode::SoundCloudError)
+        })
 }
 
 #[derive(Deserialize)]
@@ -46,13 +53,15 @@ pub async fn test_proxy(
                 .with_code(ErrorCode::NetworkError)
         })?;
 
-    if client.health_check().await {
-        Ok((
+    client
+        .health_check()
+        .await
+        .then_some((
             StatusCode::OK,
             Json("Proxy is valid and SoundCloud API is reachable"),
         ))
-    } else {
-        Err(ApiError::bad_request("Proxy is not able to reach SoundCloud API")
-            .with_code(ErrorCode::NetworkError))
-    }
+        .ok_or_else(|| {
+            ApiError::bad_request("Proxy is not able to reach SoundCloud API")
+                .with_code(ErrorCode::NetworkError)
+        })
 }

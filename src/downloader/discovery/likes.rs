@@ -7,11 +7,7 @@ use crate::downloader::{
     discovery::{get_likes, show_feedback},
 };
 
-pub async fn fetch_likes(
-    ctx: &Context,
-    client: &Client,
-    id: i64,
-) -> Result<Vec<TrackDownload>> {
+pub async fn fetch_likes(ctx: &Context, client: &Client, id: i64) -> Result<Vec<TrackDownload>> {
     let mut current_offset: Option<String> = None;
     let pb = show_feedback(ctx, "Fetching track list...");
     let mut all_tracks = Vec::new();

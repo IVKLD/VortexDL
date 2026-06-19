@@ -1,14 +1,19 @@
-use std::{collections::HashSet, sync::LazyLock};
-
-use tokio::sync::Mutex;
+use std::{
+    collections::HashSet,
+    sync::{LazyLock, Mutex, MutexGuard},
+};
 
 pub static CONNECTED_DEVICES: LazyLock<Mutex<HashSet<String>>> =
     LazyLock::new(|| Mutex::new(HashSet::new()));
 
-static ACTIVE_SYNCS: LazyLock<std::sync::Mutex<HashSet<String>>> =
-    LazyLock::new(|| std::sync::Mutex::new(HashSet::new()));
+static ACTIVE_SYNCS: LazyLock<Mutex<HashSet<String>>> =
+    LazyLock::new(|| Mutex::new(HashSet::new()));
 
-fn lock_syncs() -> std::sync::MutexGuard<'static, HashSet<String>> {
+pub fn lock_connected() -> MutexGuard<'static, HashSet<String>> {
+    CONNECTED_DEVICES.lock().unwrap_or_else(|p| p.into_inner())
+}
+
+fn lock_syncs() -> MutexGuard<'static, HashSet<String>> {
     ACTIVE_SYNCS.lock().unwrap_or_else(|p| p.into_inner())
 }
 

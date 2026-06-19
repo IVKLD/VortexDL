@@ -2,6 +2,7 @@
     <ng-template appHeaderTemplate>
         <app-settings-save-button [disabled]="saveButtonDisabled()"/>
     </ng-template>
+
     <div class="settings-content">
         <app-soundcloud-section (test)="testSoundcloudUrl()" [form]="settingsForm.soundcloud"
             [isTesting]="isTesting()" />

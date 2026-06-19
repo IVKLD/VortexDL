@@ -10,15 +10,12 @@ pub fn get_settings() -> Result<UserSettings, Error> {
     let db = get_db();
     let read_txn = db.begin_read()?;
 
-    let table = match read_txn.open_table(SETTINGS_TABLE) {
-        Ok(t) => t,
-        Err(_) => return Ok(UserSettings::default()),
-    };
-
-    let settings = table
-        .get(SETTINGS_ID)?
+    let settings = read_txn
+        .open_table(SETTINGS_TABLE)
+        .ok()
+        .and_then(|table| table.get(SETTINGS_ID).ok().flatten())
         .and_then(|data| serde_json::from_str(data.value()).ok())
-        .unwrap_or_else(UserSettings::default);
+        .unwrap_or_default();
 
     Ok(settings)
 }

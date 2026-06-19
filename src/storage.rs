@@ -1,6 +1,6 @@
 use std::{
     collections::{HashMap, HashSet},
-    fs,
+    fs, io,
     path::{Path, PathBuf},
     sync::Arc,
     time::UNIX_EPOCH,
@@ -27,6 +27,12 @@ pub struct TrackData {
     pub size: u64,
 }
 
+impl TrackData {
+    pub fn is_archived(&self) -> bool {
+        self.path.iter().any(|c| c == "Archive")
+    }
+}
+
 #[derive(Clone)]
 pub struct MusicStorage {
     pub base_path: String,
@@ -43,7 +49,7 @@ impl MusicStorage {
     pub fn update_track(&mut self, id: i64, data: TrackData) {
         self.tracks.insert(id, data);
     }
-    pub fn remove_track(&mut self, id: i64) -> Result<Option<TrackData>, std::io::Error> {
+    pub fn remove_track(&mut self, id: i64) -> Result<Option<TrackData>, io::Error> {
         if let Some(data) = self.tracks.remove(&id) {
             if data.path.exists() {
                 fs::remove_file(&data.path)?;
@@ -81,7 +87,8 @@ impl MusicStorage {
                     };
 
                     let (created_at, size) = entry.metadata().ok().map_or((0, 0), |m| {
-                        let created = m.created()
+                        let created = m
+                            .created()
                             .ok()
                             .and_then(|t| t.duration_since(UNIX_EPOCH).ok())
                             .unwrap_or_default()
@@ -118,7 +125,6 @@ impl MusicStorage {
         }
     }
 
-
     pub async fn sync_storage(
         &mut self,
         url: &str,
@@ -127,11 +133,7 @@ impl MusicStorage {
     ) -> Result<()> {
         let previous_ids = get_previous_ids(url)?;
 
-        let remove_ids: Vec<i64> = previous_ids
-            .iter()
-            .filter(|id| !remote_ids.contains(id))
-            .copied()
-            .collect();
+        let remove_ids: Vec<i64> = previous_ids.difference(remote_ids).copied().collect();
 
         if remove_ids.is_empty() || matches!(mode, SyncMode::Silent) {
             save_sync_ids(url, remote_ids)?;
@@ -144,7 +146,7 @@ impl MusicStorage {
         }
 
         for id in remove_ids {
-            if let Some(data) = self.tracks.get(&id).filter(|d| d.path.exists()) {
+            if let Some(data) = self.tracks.remove(&id).filter(|d| d.path.exists()) {
                 match mode {
                     SyncMode::Full => {
                         tokio::fs::remove_file(&data.path).await?;
@@ -157,7 +159,6 @@ impl MusicStorage {
                     _ => {}
                 }
             }
-            self.tracks.remove(&id);
         }
 
         save_sync_ids(url, remote_ids)?;

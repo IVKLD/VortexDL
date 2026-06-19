@@ -1,37 +1,38 @@
 import {ChangeDetectionStrategy, Component, inject, OnInit, signal} from '@angular/core';
-import {MatButton, MatIconButton} from '@angular/material/button';
-import {MatDialogActions, MatDialogClose, MatDialogContent, MatDialogTitle} from '@angular/material/dialog';
-import {MatFormField, MatHint, MatLabel, MatPrefix} from '@angular/material/form-field';
-import {MatInput} from '@angular/material/input';
-import {MatList, MatListItem} from '@angular/material/list';
-import {MusicTracksViewService} from '@app/pages/music-tracks-view/music-tracks-view.service';
-import {DialogRef} from '@angular/cdk/dialog';
-import {DownloadProgressSnackbar} from '@shared/components/download-progress-snackbar/download-progress-snackbar';
-import {MatSnackBar} from '@angular/material/snack-bar';
-import {MatIcon} from '@angular/material/icon';
-import {form, FormField, required} from '@angular/forms/signals';
-import {ensureStringArray} from '@shared/utils/array.utils';
+import {MusicTracksViewService} from "@app/pages/music-tracks-view/music-tracks-view.service";
+import {DialogRef} from "@angular/cdk/dialog";
+import {MatSnackBar} from "@angular/material/snack-bar";
+import {form, FormField, required} from "@angular/forms/signals";
+import {soundCloudUrl} from "@shared/validators/form.validators";
+import {DownloadProgressSnackbar} from "@shared/components/download-progress-snackbar/download-progress-snackbar";
+import {ensureStringArray} from "@shared/utils/array.utils";
+import {MatError, MatFormField, MatHint, MatInput, MatLabel, MatPrefix} from "@angular/material/input";
+import {MatIcon} from "@angular/material/icon";
+import {MatDialogActions, MatDialogClose, MatDialogContent, MatDialogTitle} from "@angular/material/dialog";
+import {MatList, MatListItem} from "@angular/material/list";
+import {MatButton, MatIconButton} from "@angular/material/button";
 
 const STORAGE_KEY = 'vortexdl_download_history';
 
 @Component({
     selector: 'app-download-dialog',
     imports: [
-        FormField,
-        MatDialogTitle,
-        MatDialogContent,
-        MatFormField,
-        MatLabel,
-        MatHint,
-        MatList,
-        MatListItem,
-        MatDialogClose,
-        MatDialogActions,
-        MatButton,
-        MatInput,
-        MatIconButton,
+        MatError,
         MatIcon,
         MatPrefix,
+        MatHint,
+        MatDialogContent,
+        MatDialogTitle,
+        MatFormField,
+        MatLabel,
+        FormField,
+        MatInput,
+        MatList,
+        MatListItem,
+        MatIconButton,
+        MatDialogActions,
+        MatButton,
+        MatDialogClose
     ],
     templateUrl: './download-dialog.component.html',
     styleUrl: './download-dialog.component.scss',
@@ -44,8 +45,9 @@ export class DownloadDialogComponent implements OnInit {
     private readonly _urlValue = signal('');
 
     protected history: string[] = [];
-    protected readonly urlForm = form(this._urlValue, (f) => {
+    protected readonly urlField = form(this._urlValue, (f) => {
         required(f, {message: 'URL is required'});
+        soundCloudUrl(f);
     });
 
     public ngOnInit() {
@@ -58,12 +60,12 @@ export class DownloadDialogComponent implements OnInit {
     }
 
     protected selectHistory(item: string) {
-        this.urlForm().reset(item);
+        this.urlField().reset(item);
     }
 
     protected onDownload() {
-        if (this.urlForm().invalid()) return;
-        const url = this.urlForm().value();
+        if (this.urlField().invalid()) return;
+        const url = this.urlField().value();
 
         this.addToHistory(url);
         this._trackService.download(url).subscribe({

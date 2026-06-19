@@ -1,13 +1,23 @@
-use std::{time::Duration};
+use std::time::Duration;
 
 use anyhow::Result;
 use soundcloud_rs::{Client, ClientBuilder};
 
 use crate::{
-    database::update_settings,
-    settings::UserSettings,
-    types::discovery::{ResolveQuery, ResolveResponse},
+    settings::{SettingsManager, UserSettings},
+    types::core::{ResolveQuery, ResolveResponse},
 };
+
+pub async fn update_cached_client_id(client: &Client, settings: &SettingsManager) {
+    let active_client_id = client.get_client_id_value().await;
+    let mut current_settings = settings.read().await.clone();
+    if current_settings.soundcloud.cached_client_id.as_ref() != Some(&active_client_id) {
+        current_settings.soundcloud.cached_client_id = Some(active_client_id);
+        if let Err(e) = settings.update(current_settings).await {
+            tracing::error!("Failed to save refreshed SoundCloud client ID: {e}");
+        }
+    }
+}
 
 pub async fn init_client_with_settings(
     settings: &UserSettings,
@@ -32,18 +42,6 @@ pub async fn init_client_with_settings(
         .build()
         .await
         .map_err(|e| anyhow::anyhow!("Failed to build SoundCloud client: {e}"))
-}
-
-pub async fn init_client(settings: &mut UserSettings) -> Result<Client> {
-    let client = init_client_with_settings(settings, None).await?;
-
-    if settings.soundcloud.cached_client_id.is_none() {
-        let current_client_id = client.get_client_id_value().await;
-        settings.soundcloud.cached_client_id = Some(current_client_id);
-        update_settings(settings).ok();
-    }
-
-    Ok(client)
 }
 
 pub async fn resolve_url(client: &Client, url: &str) -> Result<ResolveResponse> {

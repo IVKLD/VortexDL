@@ -120,4 +120,8 @@ impl SettingsManager {
         *self.inner.write().await = new_settings;
         Ok(())
     }
+
+    pub async fn update_in_memory(&self, new_settings: UserSettings) {
+        *self.inner.write().await = new_settings;
+    }
 }

@@ -16,11 +16,7 @@ pub struct Args {
     #[arg(help = "The SoundCloud URL to download (track, playlist, or user likes)")]
     pub url: Option<String>,
 
-    #[arg(
-        short,
-        long,
-        help = "Directory where the music will be saved"
-    )]
+    #[arg(short, long, help = "Directory where the music will be saved")]
     pub output: Option<String>,
 
     #[arg(long, default_value_t = SyncMode::Silent, help = "Sync behavior: silent (accumulate), archive (move removed to Archive), or full (delete removed)")]
@@ -66,8 +62,9 @@ pub struct Args {
 impl Args {
     pub fn resolve_output_dir(&self, settings: &UserSettings) -> String {
         self.output
+            .as_ref()
+            .unwrap_or(&settings.downloads.output_path)
             .clone()
-            .unwrap_or_else(|| settings.downloads.output_path.clone())
     }
 }
 
@@ -139,7 +136,7 @@ async fn run_cli_download(state: AppState, url: &str, args: &Args) -> Result<()>
     if !args.proxies.is_empty() {
         current_settings.network.fallback_proxies = args.proxies.clone();
     }
-    ctx.settings.update(current_settings).await?;
+    ctx.settings.update_in_memory(current_settings).await;
 
     downloader::download(&ctx, url).await?;
     Ok(())

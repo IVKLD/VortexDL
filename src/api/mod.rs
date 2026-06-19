@@ -30,6 +30,7 @@ pub mod download_manager;
 pub mod errors;
 pub mod handlers;
 pub mod state;
+pub mod types;
 #[cfg(feature = "web")]
 pub mod static_files;
 

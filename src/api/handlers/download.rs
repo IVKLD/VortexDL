@@ -17,9 +17,9 @@ use crate::{
         download_manager::{DownloadStatus, ServerEvent},
         errors::{ApiError, ErrorCode},
         state::AppState,
+        types::{ApiStatus, DownloadRequest, DownloadStartResponse},
     },
     downloader,
-    types::api::{ApiStatus, DownloadRequest, DownloadStartResponse},
 };
 
 pub async fn start_download(
@@ -34,7 +34,8 @@ pub async fn start_download(
     tracing::info!("Download request: {url}");
 
     if !state.download_manager.reserve_url(&url) {
-        return Err(ApiError::conflict("This URL is already being processed").with_code(ErrorCode::AlreadyProcessing));
+        return Err(ApiError::conflict("This URL is already being processed")
+            .with_code(ErrorCode::AlreadyProcessing));
     }
 
     let status = DownloadStartResponse {
