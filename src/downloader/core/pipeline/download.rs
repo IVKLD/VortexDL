@@ -35,8 +35,8 @@ pub async fn download(
             Ok(()) => return Ok(()),
             Err(err) => {
                 attempts_left -= 1;
+                fs::remove_file(&task.file_path).await.ok();
                 if attempts_left == 0 {
-                    fs::remove_file(&task.file_path).await.ok();
                     return Err(err);
                 }
 

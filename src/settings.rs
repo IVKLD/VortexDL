@@ -58,8 +58,14 @@ impl NetworkSettings {
     }
 
     pub fn get_proxy(&self) -> Option<reqwest::Proxy> {
-        self.get_proxy_url()
-            .and_then(|url| reqwest::Proxy::all(url).ok())
+        let url = self.get_proxy_url()?;
+        match reqwest::Proxy::all(url) {
+            Ok(proxy) => Some(proxy),
+            Err(e) => {
+                tracing::warn!("Invalid proxy URL '{}': {e}", url);
+                None
+            }
+        }
     }
 }
 

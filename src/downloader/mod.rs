@@ -126,8 +126,11 @@ fn exclude_existing_track(
             data.position = track.position;
             let path = data.path.clone();
             let position = track.position;
-            tokio::task::spawn_blocking(move || {
-                if let Err(e) = update_track_position(path, position) {
+            let handle = tokio::task::spawn_blocking(move || {
+                update_track_position(path, position)
+            });
+            tokio::spawn(async move {
+                if let Ok(Err(e)) = handle.await {
                     tracing::warn!("Failed to update track position: {e}");
                 }
             });

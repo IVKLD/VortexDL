@@ -90,7 +90,7 @@ fn process_file(
     Some((cached.id, data, path_str, cached))
 }
 
-#[derive(Clone)]
+#[derive(Default)]
 pub struct MusicStorage {
     pub base_path: String,
     pub tracks: HashMap<i64, LocalTrack>,
@@ -196,8 +196,8 @@ impl MusicStorage {
         }
 
         for id in to_remove {
-            if let Some(data) = self.tracks.remove(&id).filter(|d| d.path.exists()) {
-                match mode {
+            match self.tracks.remove(&id) {
+                Some(data) if data.path.exists() => match mode {
                     SyncMode::Full => {
                         tokio::fs::remove_file(&data.path).await?;
                     }
@@ -207,7 +207,15 @@ impl MusicStorage {
                         }
                     }
                     _ => {}
+                },
+                Some(data) => {
+                    tracing::warn!(
+                        id,
+                        path = %data.path.display(),
+                        "Track removed from remote but file already missing on disk"
+                    );
                 }
+                None => {}
             }
         }
 

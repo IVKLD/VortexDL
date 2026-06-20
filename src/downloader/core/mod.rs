@@ -68,7 +68,8 @@ pub async fn run_download_batch(ctx: &Context, tracks: Vec<DiscoveredTrack>) {
         .await;
 
     let failed = results.iter().filter(|r| r.is_none()).count();
-    join_all(results.into_iter().flatten()).await;
+    let handles: Vec<_> = results.into_iter().flatten().collect();
+    join_all(handles).await;
 
     total_pb.finish_and_clear();
     println!(

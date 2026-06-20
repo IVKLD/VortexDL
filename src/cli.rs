@@ -87,7 +87,14 @@ async fn run_cli_sync(state: AppState) -> Result<()> {
         return Ok(());
     }
 
-    let connected = adb_device::list_devices().await?;
+    let connected = match adb_device::list_devices().await {
+        Ok(devices) => devices,
+        Err(adb_device::AdbError::NotAvailable) => {
+            println!("adb binary not found in PATH. Please install adb and ensure it is accessible.");
+            return Ok(());
+        }
+        Err(e) => return Err(anyhow::anyhow!(e)),
+    };
     if connected.is_empty() {
         println!("No connected ADB devices found.");
         return Ok(());

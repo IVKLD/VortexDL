@@ -71,8 +71,8 @@ pub async fn remove_from_queue(
 pub async fn download_events(
     State(state): State<AppState>,
 ) -> Sse<impl Stream<Item = Result<Event, Infallible>>> {
+    let queue = state.download_manager.get_queue();
     let mut rx = state.download_manager.subscribe();
-    let dm = state.download_manager.clone();
 
     let stream = async_stream::stream! {
         if let Ok(evt) = Event::default().json_data(ServerEvent::Message {
@@ -82,7 +82,6 @@ pub async fn download_events(
             yield Ok(evt);
         }
 
-        let queue = dm.get_queue();
         for item in queue {
             if matches!(item.status, DownloadStatus::Queued | DownloadStatus::Downloading) {
                 let res = Event::default().json_data(ServerEvent::TrackUpdate { item });

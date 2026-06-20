@@ -32,10 +32,14 @@ pub async fn discover_liked_tracks(
         let Some(href) = res.next_href else {
             break;
         };
-        offset = Url::parse(&href)?
+        match Url::parse(&href)?
             .query_pairs()
             .find(|(k, _)| k == "offset")
-            .map(|(_, v)| v.into_owned());
+            .map(|(_, v)| v.into_owned())
+        {
+            Some(next_offset) => offset = Some(next_offset),
+            None => break,
+        }
     }
 
     pb.finish_and_clear();

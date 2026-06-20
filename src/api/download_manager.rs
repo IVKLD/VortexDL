@@ -109,23 +109,32 @@ impl DownloadManager {
     }
 
     pub fn update_downloading(&self, id: i64) {
-        let mut state = self.lock_state();
-        if let Some(item) = state.tasks.get_mut(&id) {
+        let updated = {
+            let mut state = self.lock_state();
+            let Some(item) = state.tasks.get_mut(&id) else { return };
             item.status = DownloadStatus::Downloading;
-            let updated = item.clone();
-            self.notify_update(updated);
-        }
+            item.progress = Some(0.0);
+            item.clone()
+        };
+        self.notify_update(updated);
     }
 
     pub fn update_failed(&self, id: i64, error_message: String) {
-        let mut state = self.lock_state();
-        if let Some(item) = state.tasks.get_mut(&id) {
+        let updated = {
+            let mut state = self.lock_state();
+            let Some(item) = state.tasks.get_mut(&id) else { return };
             item.status = DownloadStatus::Failed;
             item.error = Some(error_message);
             let updated = item.clone();
             state.tasks.remove(&id);
-            self.notify_update(updated);
-            self.check_finished(&state);
+            updated
+        };
+        self.notify_update(updated);
+        let has_active = self.lock_state().tasks.values().any(|t| {
+            matches!(t.status, DownloadStatus::Queued | DownloadStatus::Downloading)
+        });
+        if !has_active {
+            let _ = self.tx.send(ServerEvent::SyncFinished);
         }
     }
 
@@ -137,8 +146,9 @@ impl DownloadManager {
         source_url: Option<String>,
         size: u64,
     ) {
-        let mut state = self.lock_state();
-        if let Some(item) = state.tasks.get_mut(&id) {
+        let updated = {
+            let mut state = self.lock_state();
+            let Some(item) = state.tasks.get_mut(&id) else { return };
             item.status = DownloadStatus::Finished;
             item.format = Some(format);
             item.created_at = Some(created_at);
@@ -147,46 +157,51 @@ impl DownloadManager {
             item.size = Some(size);
             let updated = item.clone();
             state.tasks.remove(&id);
-            self.notify_update(updated);
-            self.check_finished(&state);
-        }
-    }
-
-    pub fn update_progress(&self, id: i64, current: u64, total: u64) {
-        let mut state = self.lock_state();
-        if let Some(item) = state.tasks.get_mut(&id) {
-            let progress = if total > 0 {
-                (current as f64 / total as f64) * 100.0
-            } else {
-                0.0
-            };
-
-            if item.progress.is_none_or(|p| (progress - p).abs() > 0.5) {
-                item.progress = Some(progress);
-                item.status = DownloadStatus::Downloading;
-                self.notify_update(item.clone());
-            }
-        }
-    }
-
-    pub fn remove_task(&self, id: i64) {
-        let mut state = self.lock_state();
-        if state.tasks.remove(&id).is_some() {
-            self.check_finished(&state);
-        }
-    }
-
-    fn check_finished(&self, state: &ManagerState) {
-        let has_active = state.tasks.values().any(|t| {
-            matches!(
-                t.status,
-                DownloadStatus::Queued | DownloadStatus::Downloading
-            )
+            updated
+        };
+        self.notify_update(updated);
+        let has_active = self.lock_state().tasks.values().any(|t| {
+            matches!(t.status, DownloadStatus::Queued | DownloadStatus::Downloading)
         });
         if !has_active {
             let _ = self.tx.send(ServerEvent::SyncFinished);
         }
     }
+
+    pub fn update_progress(&self, id: i64, current: u64, total: u64) {
+        let to_notify = {
+            let mut state = self.lock_state();
+            let Some(item) = state.tasks.get_mut(&id) else { return };
+            let progress = if total > 0 {
+                (current as f64 / total as f64) * 100.0
+            } else {
+                0.0
+            };
+            if item.progress.is_none_or(|p| (progress - p).abs() > 0.5) {
+                item.progress = Some(progress);
+                item.status = DownloadStatus::Downloading;
+                Some(item.clone())
+            } else {
+                None
+            }
+        };
+        if let Some(updated) = to_notify {
+            self.notify_update(updated);
+        }
+    }
+
+    pub fn remove_task(&self, id: i64) {
+        let removed = self.lock_state().tasks.remove(&id).is_some();
+        if removed {
+            let has_active = self.lock_state().tasks.values().any(|t| {
+                matches!(t.status, DownloadStatus::Queued | DownloadStatus::Downloading)
+            });
+            if !has_active {
+                let _ = self.tx.send(ServerEvent::SyncFinished);
+            }
+        }
+    }
+
 
     pub fn broadcast_event(&self, event: ServerEvent) {
         let _ = self.tx.send(event);

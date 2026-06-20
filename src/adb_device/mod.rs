@@ -5,8 +5,7 @@ pub mod ui;
 
 use std::{sync::Arc, time::Duration};
 
-use anyhow::Result;
-pub use commands::{StorageInfo, get_device_storages, list_devices};
+pub use commands::{AdbError, StorageInfo, get_device_storages, list_devices};
 pub use sync::sync_device;
 use tokio::sync::RwLock;
 
@@ -15,15 +14,22 @@ use crate::{settings::SettingsManager, storage::MusicStorage};
 pub fn init(storage: Arc<RwLock<MusicStorage>>, settings: SettingsManager) {
     tokio::spawn(async move {
         loop {
-            if let Err(e) = poll_devices(storage.clone(), settings.clone()).await {
-                tracing::error!(error = %e, "ADB poll failed");
+            match poll_devices(storage.clone(), settings.clone()).await {
+                Ok(()) => {}
+                Err(AdbError::NotAvailable) => {
+                    tracing::warn!("adb binary not found in PATH — ADB polling disabled");
+                    break;
+                }
+                Err(e) => {
+                    tracing::warn!(error = %e, "ADB poll failed");
+                }
             }
             tokio::time::sleep(Duration::from_secs(3)).await;
         }
     });
 }
 
-async fn poll_devices(storage: Arc<RwLock<MusicStorage>>, settings: SettingsManager) -> Result<()> {
+async fn poll_devices(storage: Arc<RwLock<MusicStorage>>, settings: SettingsManager) -> Result<(), AdbError> {
     let settings_read = settings.read().await;
     if !settings_read.adb.enabled {
         return Ok(());

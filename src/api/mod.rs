@@ -70,10 +70,7 @@ fn download_routes() -> Router<AppState> {
     Router::new()
         .route("/", post(start_download))
         .route("/queue", get(get_download_queue))
-        .route(
-            "/queue/{id}",
-            get(remove_from_queue).delete(remove_from_queue),
-        )
+        .route("/queue/{id}", delete(remove_from_queue))
         .route("/events", get(download_events))
 }
 

@@ -1,7 +1,25 @@
-use std::collections::HashSet;
+use std::{collections::HashSet, io::ErrorKind};
 
 use anyhow::{Context, Result};
 use tokio::process::Command;
+
+#[derive(Debug)]
+pub enum AdbError {
+    NotAvailable,
+    Other(anyhow::Error),
+}
+
+impl std::fmt::Display for AdbError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::NotAvailable => write!(f, "adb binary not found in PATH"),
+            Self::Other(e) => write!(f, "{e}"),
+        }
+    }
+}
+
+impl std::error::Error for AdbError {}
+
 
 async fn adb(device: &str, args: &[&str]) -> Result<String> {
     let output = Command::new("adb")
@@ -19,22 +37,26 @@ async fn adb(device: &str, args: &[&str]) -> Result<String> {
     Ok(String::from_utf8_lossy(&output.stdout).into_owned())
 }
 
-fn shell_escape(s: &str) -> String {
-    format!("'{}'", s.replace('\'', "'\\''"))
-}
 
-pub async fn list_devices() -> Result<HashSet<String>> {
+
+pub async fn list_devices() -> Result<HashSet<String>, AdbError> {
     let output = Command::new("adb")
         .arg("devices")
         .output()
         .await
-        .context("Failed to run `adb devices`")?;
+        .map_err(|e| {
+            if e.kind() == ErrorKind::NotFound {
+                AdbError::NotAvailable
+            } else {
+                AdbError::Other(anyhow::anyhow!("Failed to run `adb devices`: {e}"))
+            }
+        })?;
 
     if !output.status.success() {
-        anyhow::bail!(
+        return Err(AdbError::Other(anyhow::anyhow!(
             "adb devices: {}",
             String::from_utf8_lossy(&output.stderr).trim()
-        );
+        )));
     }
 
     Ok(String::from_utf8_lossy(&output.stdout)
@@ -49,14 +71,13 @@ pub async fn list_devices() -> Result<HashSet<String>> {
 }
 
 pub async fn ensure_dir(device: &str, dir: &str) -> Result<()> {
-    adb(device, &["shell", "mkdir", "-p", &shell_escape(dir)])
+    adb(device, &["shell", "mkdir", "-p", dir])
         .await
         .map(|_| ())
 }
 
 pub async fn list_files(device: &str, dir: &str) -> Result<HashSet<String>> {
-    let escaped = shell_escape(dir);
-    let result = adb(device, &["shell", "find", &escaped, "-type", "f"]).await;
+    let result = adb(device, &["shell", "find", dir, "-type", "f"]).await;
 
     let stdout = match result {
         Ok(s) => s,
@@ -76,13 +97,13 @@ pub async fn push(device: &str, local: &str, remote: &str) -> Result<()> {
 }
 
 pub async fn rm(device: &str, path: &str) -> Result<()> {
-    adb(device, &["shell", "rm", "-f", &shell_escape(path)])
+    adb(device, &["shell", "rm", "-f", path])
         .await
         .map(|_| ())
 }
 
 pub async fn rmdir(device: &str, path: &str) -> Result<()> {
-    adb(device, &["shell", "rmdir", &shell_escape(path)])
+    adb(device, &["shell", "rmdir", path])
         .await
         .map(|_| ())
 }
