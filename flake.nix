@@ -85,7 +85,7 @@
               serviceConfig = {
                 DynamicUser = true;
                 Restart = "always";
-                ExecStart = "${self.packages.${pkgs.system}.default}/bin/vortexdl --port ${toString config.services.vortexdl.port}";
+                ExecStart = "${self.packages.${pkgs.system}.default}/bin/vortexdl --serve --port ${toString config.services.vortexdl.port}";
               };
             };
           };
