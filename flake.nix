@@ -121,9 +121,9 @@
                   "+${pkgs.coreutils}/bin/mkdir -p ${cfg.dataDir}"
                   "+${pkgs.coreutils}/bin/chown ${cfg.user}:${cfg.group} ${cfg.dataDir}"
                 ];
-                WorkingDirectory = cfg.dataDir;
+                WorkingDirectory = "/";
                 Environment = [ "HOME=${cfg.dataDir}" ];
-                ExecStart = "${self.packages.${pkgs.system}.default}/bin/vortexdl --serve --port ${toString cfg.port}";
+                ExecStart = "${pkgs.bash}/bin/bash -c 'cd ${cfg.dataDir} && exec ${self.packages.${pkgs.system}.default}/bin/vortexdl --serve --port ${toString cfg.port}'";
               };
             };
           };
