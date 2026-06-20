@@ -18,8 +18,8 @@
             version = "0.3.1";
 
             src = pkgs.fetchurl {
-              url = "https://github.com/IVKLD/VortexDL/releases/download/v${version}/vortex-dl";
-              hash = "sha256-05H+hnyrADJHkipkEZN9z6f1RR6rABaMAtVMzmsL6Fw=";
+              url = "https://github.com/IVKLD/VortexDL/releases/download/v${version}/vortex-dl-web";
+              hash = "sha256-FGykQMH1vGUjaphSz9SOHrRUOKEGFzt+emnl388PELQ=";
             };
 
             dontUnpack = true;
@@ -72,6 +72,18 @@
               type = lib.types.port;
               default = 3000;
             };
+            dataDir = lib.mkOption {
+              type = lib.types.path;
+              default = "/var/lib/vortexdl";
+            };
+            user = lib.mkOption {
+              type = lib.types.str;
+              default = "vortexdl";
+            };
+            group = lib.mkOption {
+              type = lib.types.str;
+              default = "vortexdl";
+            };
           };
 
           config = lib.mkIf cfg.enable {
@@ -79,17 +91,34 @@
               self.packages.${pkgs.system}.default
             ];
 
+            users.users = lib.optionalAttrs (cfg.user == "vortexdl") {
+              vortexdl = {
+                isSystemUser = true;
+                group = cfg.group;
+                home = cfg.dataDir;
+                createHome = true;
+              };
+            };
+
+            users.groups = lib.optionalAttrs (cfg.group == "vortexdl") {
+              vortexdl = {};
+            };
+
+            systemd.tmpfiles.rules = [
+              "d '${cfg.dataDir}' 0750 '${cfg.user}' '${cfg.group}' - -"
+            ];
+
             systemd.services.vortexdl = {
               after = [ "network.target" ];
               wantedBy = [ "multi-user.target" ];
               path = [ pkgs.ffmpeg ];
               serviceConfig = {
-                DynamicUser = true;
+                User = cfg.user;
+                Group = cfg.group;
                 Restart = "always";
-                StateDirectory = "vortexdl";
-                WorkingDirectory = "/var/lib/vortexdl";
-                Environment = [ "HOME=/var/lib/vortexdl" ];
-                ExecStart = "${self.packages.${pkgs.system}.default}/bin/vortexdl --serve --port ${toString config.services.vortexdl.port}";
+                WorkingDirectory = cfg.dataDir;
+                Environment = [ "HOME=${cfg.dataDir}" ];
+                ExecStart = "${self.packages.${pkgs.system}.default}/bin/vortexdl --serve --port ${toString cfg.port}";
               };
             };
           };
