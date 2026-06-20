@@ -82,9 +82,13 @@
             systemd.services.vortexdl = {
               after = [ "network.target" ];
               wantedBy = [ "multi-user.target" ];
+              path = [ pkgs.ffmpeg ];
               serviceConfig = {
                 DynamicUser = true;
                 Restart = "always";
+                StateDirectory = "vortexdl";
+                WorkingDirectory = "/var/lib/vortexdl";
+                Environment = [ "HOME=/var/lib/vortexdl" ];
                 ExecStart = "${self.packages.${pkgs.system}.default}/bin/vortexdl --serve --port ${toString config.services.vortexdl.port}";
               };
             };
