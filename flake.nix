@@ -2,113 +2,95 @@
   description = "VortexDL - High-performance SoundCloud downloader";
 
   inputs = {
-    nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
-    rust-overlay = {
-      url = "github:oxalica/rust-overlay";
-      inputs.nixpkgs.follows = "nixpkgs";
-    };
-    crane = {
-      url = "github:ipetkov/crane";
-    };
+    nixpkgs.url = "github:nixos/nixpkgs/nixos-unstable";
     flake-utils.url = "github:numtide/flake-utils";
-    flake-compat = {
-      url = "github:edolstra/flake-compat";
-      flake = false;
-    };
   };
 
-  outputs = { self, nixpkgs, rust-overlay, crane, flake-utils, ... }:
-    flake-utils.lib.eachDefaultSystem (system:
-      let
-        pkgs = import nixpkgs {
-          inherit system;
-          overlays = [ (import rust-overlay) ];
+  outputs = { self, nixpkgs, flake-utils }:
+    let
+      systemOutputs = flake-utils.lib.eachDefaultSystem (system:
+        let
+          pkgs = import nixpkgs { inherit system; };
+        in
+        {
+          packages.default = pkgs.stdenv.mkDerivation rec {
+            pname = "vortex-dl";
+            version = "0.3.1";
+
+            src = pkgs.fetchurl {
+              url = "https://github.com/IVKLD/VortexDL/releases/download/v${version}/vortex-dl";
+              hash = "sha256-FGykQMH1vGUjaphSz9SOHrRUOKEGFzt+emnl388PELQ=";
+            };
+
+            dontUnpack = true;
+
+            nativeBuildInputs = [
+              pkgs.autoPatchelfHook
+            ];
+
+            buildInputs = [
+              pkgs.openssl
+              pkgs.zlib
+              pkgs.xz
+              pkgs.stdenv.cc.cc.lib
+            ];
+
+            installPhase = ''
+              install -m755 -D $src $out/bin/vortexdl
+            '';
+          };
+
+          devShells.default = pkgs.mkShell {
+            nativeBuildInputs = with pkgs; [
+              pkg-config
+              rustup
+              cargo-dist
+              cargo-edit
+              cargo-watch
+              just
+              yarn
+              nodejs_24
+              clang
+              mold
+            ];
+
+            buildInputs = with pkgs; [
+              openssl
+              udev
+            ];
+          };
+        }
+      );
+    in
+    systemOutputs // {
+      nixosModules.default = { config, lib, pkgs, ... }:
+        let
+          cfg = config.services.vortexdl;
+        in
+        {
+          options.services.vortexdl = {
+            enable = lib.mkEnableOption "VortexDL";
+            port = lib.mkOption {
+              type = lib.types.port;
+              default = 3000;
+            };
+          };
+
+          config = lib.mkIf cfg.enable {
+            environment.systemPackages = [
+              self.packages.${pkgs.system}.default
+            ];
+
+            systemd.services.vortexdl = {
+              after = [ "network.target" ];
+              wantedBy = [ "multi-user.target" ];
+              serviceConfig = {
+                DynamicUser = true;
+                Restart = "always";
+                ExecStart = "${self.packages.${pkgs.system}.default}/bin/vortexdl --port ${toString config.services.vortexdl.port}";
+              };
+            };
+          };
         };
-
-        rustToolchain = pkgs.rust-bin.fromRustupToolchainFile ./rust-toolchain.toml;
-        craneLib = (crane.mkLib pkgs).overrideToolchain rustToolchain;
-
-        src = pkgs.lib.cleanSourceWith {
-          src = ./.;
-          filter = path: type:
-            (pkgs.lib.hasSuffix ".rs" path) ||
-            (pkgs.lib.hasSuffix ".toml" path) ||
-            (pkgs.lib.hasSuffix ".lock" path) ||
-            (pkgs.lib.hasInfix "/frontend/dist/" path) ||
-            (pkgs.lib.hasSuffix "build.rs" path) ||
-            (craneLib.filterCargoSources path type);
-        };
-
-        frontendDist = pkgs.buildNpmPackage {
-          pname = "vortex-dl-frontend";
-          version = "0.2.0";
-          src = ./frontend;
-          
-          npmDepsHash = "sha256-vS1y5pDqE1K7YI8Z5pE1K7YI8Z5pE1K7YI8Z5pE1K7Y="; 
-          
-          makeCacheWritable = true;
-          npmBuildScript = "build";
-          
-          installPhase = ''
-            mkdir -p $out
-            cp -r dist/voltexdl/browser/* $out/
-          '';
-        };
-
-        commonArgs = {
-          inherit src;
-          strictDeps = true;
-          buildInputs = with pkgs; [
-            openssl
-            pkg-config
-            ffmpeg
-            systemd
-          ];
-          nativeBuildInputs = with pkgs; [
-            pkg-config
-            makeWrapper
-          ];
-        };
-
-        cargoArtifacts = craneLib.buildDepsOnly commonArgs;
-
-        vortex-dl = craneLib.buildPackage (commonArgs // {
-          inherit cargoArtifacts;
-          pname = "vortex-dl";
-          version = "0.2.0";
-
-          preBuild = ''
-            mkdir -p frontend/dist/voltexdl/browser
-            cp -r ${frontendDist}/* frontend/dist/voltexdl/browser/
-          '';
-
-          postInstall = ''
-            wrapProgram $out/bin/vortex-dl \
-              --prefix PATH : ${pkgs.lib.makeBinPath [ pkgs.ffmpeg ]}
-          '';
-        });
-
-      in
-      {
-        packages.default = vortex-dl;
-
-        devShells.default = pkgs.mkShell {
-          inputsFrom = [ vortex-dl ];
-          buildInputs = with pkgs; [
-            rustToolchain
-            just
-            yarn
-            nodejs_24
-            mold
-            clang
-            cargo-edit
-            cargo-watch
-          ];
-          shellHook = ''
-            export RUST_BACKTRACE=1
-            echo "🚀 VortexLD Dev Shell Loaded"
-          '';
-        };
-      }
-    );
+    };
 }

@@ -30,7 +30,6 @@ pub mod download_manager;
 pub mod errors;
 pub mod handlers;
 pub mod state;
-#[cfg(feature = "web")]
 pub mod static_files;
 pub mod types;
 
@@ -59,7 +58,7 @@ pub async fn build_router(state: AppState, serve_frontend: bool) -> Router {
     let router = Router::new().nest("/api", api_routes).with_state(state);
 
     let router = if serve_frontend {
-        apply_frontend_fallback(router)
+        router.fallback(static_files::static_handler)
     } else {
         router
     };
@@ -83,15 +82,4 @@ fn settings_routes() -> Router<AppState> {
         .route("/", get(get_settings).post(update_settings))
         .route("/test/soundcloud", post(test_soundcloud))
         .route("/test/proxy", post(test_proxy))
-}
-
-fn apply_frontend_fallback(router: Router) -> Router {
-    #[cfg(feature = "web")]
-    return router.fallback(static_files::static_handler);
-
-    #[cfg(not(feature = "web"))]
-    {
-        tracing::warn!("Frontend requested but binary built without 'web' feature");
-        router
-    }
 }

@@ -32,14 +32,11 @@ jobs:
       - name: Build Releases
         run: |
           just dist
-          mv target/release/vortex-dl target/release/vortex-dl-web
-          just build
 
       - name: Upload Release Assets
         uses: softprops/action-gh-release@v2
         with:
           files: |
-            target/release/vortex-dl-web
             target/release/vortex-dl
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
