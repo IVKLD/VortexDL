@@ -67,26 +67,48 @@
         in
         {
           options.services.vortexdl = {
-            enable = lib.mkEnableOption "VortexDL";
+            enable = lib.mkEnableOption "VortexDL service";
+
             port = lib.mkOption {
               type = lib.types.port;
               default = 3000;
+              description = "Port to listen on.";
             };
+
+            host = lib.mkOption {
+              type = lib.types.str;
+              default = "0.0.0.0";
+              description = "Host IP to bind to. Use 0.0.0.0 to make it accessible outside localhost.";
+            };
+
+            openFirewall = lib.mkOption {
+              type = lib.types.bool;
+              default = false;
+              description = "Whether to open the firewall for the specified port.";
+            };
+
             dataDir = lib.mkOption {
               type = lib.types.path;
               default = "/var/lib/vortexdl";
+              description = "Directory to store VortexDL data.";
             };
+
             user = lib.mkOption {
               type = lib.types.str;
               default = "vortexdl";
+              description = "User account under which VortexDL runs.";
             };
+
             group = lib.mkOption {
               type = lib.types.str;
               default = "vortexdl";
+              description = "Group under which VortexDL runs.";
             };
           };
 
           config = lib.mkIf cfg.enable {
+            networking.firewall.allowedTCPPorts = lib.mkIf cfg.openFirewall [ cfg.port ];
+
             environment.systemPackages = [
               self.packages.${pkgs.system}.default
             ];
@@ -96,7 +118,7 @@
                 isSystemUser = true;
                 group = cfg.group;
                 home = cfg.dataDir;
-                createHome = true;
+                createHome = false; # tmpfiles создаст директорию с нужными правами
               };
             };
 
@@ -105,25 +127,26 @@
             };
 
             systemd.tmpfiles.rules = [
-              "d '${cfg.dataDir}' 0750 '${cfg.user}' '${cfg.group}' - -"
+              "d '${cfg.dataDir}' 0750 ${cfg.user} ${cfg.group} - -"
             ];
 
             systemd.services.vortexdl = {
+              description = "VortexDL Web Service";
               after = [ "network.target" ];
               wantedBy = [ "multi-user.target" ];
-              path = [ pkgs.ffmpeg ];
+              
+              path = [ pkgs.ffmpeg ]; 
+
               serviceConfig = {
+                Type = "simple";
                 User = cfg.user;
                 Group = cfg.group;
                 Restart = "always";
-                ExecStartPre = [
-                  "+${pkgs.bash}/bin/bash -c 'if [ -L \"${cfg.dataDir}\" ]; then rm \"${cfg.dataDir}\"; fi'"
-                  "+${pkgs.coreutils}/bin/mkdir -p ${cfg.dataDir}"
-                  "+${pkgs.coreutils}/bin/chown ${cfg.user}:${cfg.group} ${cfg.dataDir}"
-                ];
-                WorkingDirectory = "/";
+                RestartSec = "5s";
+                WorkingDirectory = cfg.dataDir;
                 Environment = [ "HOME=${cfg.dataDir}" ];
-                ExecStart = "${pkgs.bash}/bin/bash -c 'cd ${cfg.dataDir} && exec ${self.packages.${pkgs.system}.default}/bin/vortexdl --serve --port ${toString cfg.port}'";
+                
+                ExecStart = "${self.packages.${pkgs.system}.default}/bin/vortexdl --serve --port ${toString cfg.port} --host ${cfg.host}";
               };
             };
           };
