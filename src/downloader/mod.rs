@@ -17,7 +17,9 @@ use crate::{
 pub mod core;
 pub mod discovery;
 
-use discovery::{discover_liked_tracks, discover_playlist_tracks, discover_single_track, init_progress_spinner};
+use discovery::{
+    discover_liked_tracks, discover_playlist_tracks, discover_single_track, init_progress_spinner,
+};
 
 pub use crate::types::core::{Context, DiscoveredTrack};
 
@@ -111,7 +113,10 @@ pub async fn download(ctx: &Context, url: &str) -> Result<()> {
     Ok(())
 }
 
-fn exclude_existing_track(storage: &mut MusicStorage, track: DiscoveredTrack) -> Option<DiscoveredTrack> {
+fn exclude_existing_track(
+    storage: &mut MusicStorage,
+    track: DiscoveredTrack,
+) -> Option<DiscoveredTrack> {
     if let Some(data) = storage
         .tracks
         .get_mut(&track.id)

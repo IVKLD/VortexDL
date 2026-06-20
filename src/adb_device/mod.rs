@@ -6,7 +6,7 @@ pub mod ui;
 use std::{sync::Arc, time::Duration};
 
 use anyhow::Result;
-pub use commands::{list_devices, get_device_storages, StorageInfo};
+pub use commands::{StorageInfo, get_device_storages, list_devices};
 pub use sync::sync_device;
 use tokio::sync::RwLock;
 

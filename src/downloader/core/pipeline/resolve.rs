@@ -65,14 +65,22 @@ async fn resolve_with_client(
         .resolve_stream_url_from_track(&track, Some(&StreamType::Hls))
         .await
     {
-        Ok(url) => return Ok(StreamSource::Hls { url, proxy_url: proxy_str }),
+        Ok(url) => {
+            return Ok(StreamSource::Hls {
+                url,
+                proxy_url: proxy_str,
+            });
+        }
         Err(_) => {
             client
                 .resolve_stream_url_from_track(&track, Some(&StreamType::Progressive))
                 .await?
         }
     };
-    Ok(StreamSource::Progressive { url, proxy_url: proxy_str })
+    Ok(StreamSource::Progressive {
+        url,
+        proxy_url: proxy_str,
+    })
 }
 
 pub fn spawn_artwork_fetch(
@@ -81,7 +89,7 @@ pub fn spawn_artwork_fetch(
 ) -> Option<JoinHandle<Option<Vec<u8>>>> {
     let url = artwork_url?.to_string();
     let http = ctx.http.clone();
-    Some(tokio::spawn(async move {
-        fetch_artwork(&http, &url).await
-    }))
+    Some(tokio::spawn(
+        async move { fetch_artwork(&http, &url).await },
+    ))
 }

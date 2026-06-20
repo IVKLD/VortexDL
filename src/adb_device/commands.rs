@@ -134,15 +134,19 @@ pub async fn get_device_storages(device: &str) -> Result<Vec<StorageInfo>> {
         }
     }
 
-    if !storages.iter().any(|s| matches!(s.storage_type, StorageType::Internal)) {
-        storages.insert(0, StorageInfo {
-            name: "Internal Storage (Legacy)".to_string(),
-            path: "/sdcard/Music".to_string(),
-            storage_type: StorageType::Internal,
-        });
+    if !storages
+        .iter()
+        .any(|s| matches!(s.storage_type, StorageType::Internal))
+    {
+        storages.insert(
+            0,
+            StorageInfo {
+                name: "Internal Storage (Legacy)".to_string(),
+                path: "/sdcard/Music".to_string(),
+                storage_type: StorageType::Internal,
+            },
+        );
     }
 
     Ok(storages)
 }
-
-

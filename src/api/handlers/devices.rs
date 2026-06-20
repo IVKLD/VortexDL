@@ -1,7 +1,7 @@
 use axum::{Json, extract::Path};
 
 use crate::{
-    adb_device::{list_devices, get_device_storages, StorageInfo},
+    adb_device::{StorageInfo, get_device_storages, list_devices},
     api::errors::{ApiError, ErrorCode},
 };
 
@@ -21,10 +21,11 @@ pub async fn get_device_storage_info(
     Path(device_id): Path<String>,
 ) -> Result<Json<Vec<StorageInfo>>, ApiError> {
     let storages = get_device_storages(&device_id).await.map_err(|e| {
-        ApiError::internal(format!("Failed to list storage partitions for device {device_id}: {e}"))
-            .with_code(ErrorCode::AdbError)
+        ApiError::internal(format!(
+            "Failed to list storage partitions for device {device_id}: {e}"
+        ))
+        .with_code(ErrorCode::AdbError)
     })?;
 
     Ok(Json(storages))
 }
-

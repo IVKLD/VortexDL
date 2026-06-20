@@ -7,7 +7,11 @@ use crate::downloader::{
     discovery::{fetch_likes_page, init_progress_spinner},
 };
 
-pub async fn discover_liked_tracks(ctx: &Context, client: &Client, id: i64) -> Result<Vec<DiscoveredTrack>> {
+pub async fn discover_liked_tracks(
+    ctx: &Context,
+    client: &Client,
+    id: i64,
+) -> Result<Vec<DiscoveredTrack>> {
     let mut offset: Option<String> = None;
     let pb = init_progress_spinner(ctx, "Fetching track list...");
     let mut tracks = Vec::new();

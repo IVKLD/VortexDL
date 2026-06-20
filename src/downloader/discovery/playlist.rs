@@ -5,7 +5,11 @@ use soundcloud_rs::{Client, Identifier, Track};
 
 use crate::downloader::{Context, DiscoveredTrack, discovery::init_progress_spinner};
 
-pub async fn discover_playlist_tracks(ctx: &Context, client: &Client, id: i64) -> Result<Vec<DiscoveredTrack>> {
+pub async fn discover_playlist_tracks(
+    ctx: &Context,
+    client: &Client,
+    id: i64,
+) -> Result<Vec<DiscoveredTrack>> {
     let playlist = client.get_playlist(&Identifier::Id(id)).await?;
     let collection = playlist
         .tracks

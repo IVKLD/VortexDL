@@ -11,7 +11,7 @@ use tower_http::cors::CorsLayer;
 use crate::{
     api::{
         handlers::{
-            devices::{list_adb_devices, get_device_storage_info},
+            devices::{get_device_storage_info, list_adb_devices},
             download::{download_events, get_download_queue, remove_from_queue, start_download},
             health::health,
             settings::{
@@ -55,7 +55,6 @@ pub async fn build_router(state: AppState, serve_frontend: bool) -> Router {
         .route("/devices", get(list_adb_devices))
         .route("/devices/{device_id}/storage", get(get_device_storage_info))
         .nest("/settings", settings_routes());
-
 
     let router = Router::new().nest("/api", api_routes).with_state(state);
 

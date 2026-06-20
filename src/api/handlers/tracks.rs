@@ -177,7 +177,10 @@ pub async fn stream_track(
     if is_partial {
         builder = builder
             .status(StatusCode::PARTIAL_CONTENT)
-            .header(header::CONTENT_RANGE, format!("bytes {start}-{end}/{file_len}"))
+            .header(
+                header::CONTENT_RANGE,
+                format!("bytes {start}-{end}/{file_len}"),
+            )
             .header(header::CONTENT_LENGTH, length.to_string());
     } else {
         builder = builder
