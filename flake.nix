@@ -19,7 +19,7 @@
 
             src = pkgs.fetchurl {
               url = "https://github.com/IVKLD/VortexDL/releases/download/v${version}/vortex-dl";
-              hash = "sha256-FGykQMH1vGUjaphSz9SOHrRUOKEGFzt+emnl388PELQ=";
+              hash = "sha256-05H+hnyrADJHkipkEZN9z6f1RR6rABaMAtVMzmsL6Fw=";
             };
 
             dontUnpack = true;
@@ -41,23 +41,21 @@
           };
 
           devShells.default = pkgs.mkShell {
-            nativeBuildInputs = with pkgs; [
-              pkg-config
-              rustup
-              cargo-dist
-              cargo-edit
-              cargo-watch
-              just
-              yarn
-              nodejs_24
-              clang
-              mold
-            ];
-
             buildInputs = with pkgs; [
+              rustup
+              pkg-config
               openssl
               udev
+              systemd
+              just
+              nodejs
+              yarn
+              ffmpeg
             ];
+
+            shellHook = ''
+              export PKG_CONFIG_PATH="${pkgs.openssl.dev}/lib/pkgconfig:${pkgs.systemd.dev}/lib/pkgconfig:${pkgs.udev.dev}/lib/pkgconfig"
+            '';
           };
         }
       );
