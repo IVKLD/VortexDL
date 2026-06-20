@@ -5,6 +5,7 @@ use colored::Colorize;
 
 use crate::{
     adb_device,
+    api::download_manager,
     storage::MusicStorage,
     utils::{
         metadata::update_track_position,
@@ -16,24 +17,24 @@ use crate::{
 pub mod core;
 pub mod discovery;
 
-use discovery::{fetch_likes, fetch_playlist, fetch_track, show_feedback};
+use discovery::{discover_liked_tracks, discover_playlist_tracks, discover_single_track, init_progress_spinner};
 
-pub use crate::types::core::{Context, TrackDownload};
+pub use crate::types::core::{Context, DiscoveredTrack};
 
-async fn resolve_and_fetch_tracks(
+async fn discover_tracks_from_url(
     ctx: &Context,
     url: &str,
     client: &soundcloud_rs::Client,
-) -> Result<Vec<TrackDownload>> {
-    let pb = show_feedback(ctx, "Resolving URL...");
+) -> Result<Vec<DiscoveredTrack>> {
+    let pb = init_progress_spinner(ctx, "Resolving URL...");
     let resolve_res = resolve_url(client, url).await;
     pb.finish_and_clear();
     let resolve_res = resolve_res?;
 
     let all_tracks = match resolve_res.kind.as_str() {
-        "user" | "likes" => fetch_likes(ctx, client, resolve_res.id).await?,
-        "playlist" => fetch_playlist(ctx, client, resolve_res.id).await?,
-        "track" => vec![fetch_track(client, resolve_res.id).await?],
+        "user" | "likes" => discover_liked_tracks(ctx, client, resolve_res.id).await?,
+        "playlist" => discover_playlist_tracks(ctx, client, resolve_res.id).await?,
+        "track" => vec![discover_single_track(client, resolve_res.id).await?],
         _ => return Err(anyhow!("Unsupported resource kind: {}", resolve_res.kind)),
     };
 
@@ -41,7 +42,7 @@ async fn resolve_and_fetch_tracks(
 }
 
 pub async fn download(ctx: &Context, url: &str) -> Result<()> {
-    let all_tracks = match resolve_and_fetch_tracks(ctx, url, &ctx.client).await {
+    let all_tracks = match discover_tracks_from_url(ctx, url, &ctx.client).await {
         Ok(tracks) => tracks,
         Err(e) => {
             let settings = ctx.settings.read().await.clone();
@@ -55,7 +56,7 @@ pub async fn download(ctx: &Context, url: &str) -> Result<()> {
                 let url = url.clone();
                 async move {
                     let proxied_client = init_client_with_settings(&s, Some(&proxy)).await?;
-                    resolve_and_fetch_tracks(&ctx, &url, &proxied_client).await
+                    discover_tracks_from_url(&ctx, &url, &proxied_client).await
                 }
             })
             .await
@@ -64,11 +65,11 @@ pub async fn download(ctx: &Context, url: &str) -> Result<()> {
     };
 
     let remote_ids: HashSet<i64> = all_tracks.iter().map(|track| track.id).collect();
-    let to_download: Vec<TrackDownload> = {
+    let to_download: Vec<DiscoveredTrack> = {
         let mut storage_write = ctx.storage.write().await;
         all_tracks
             .into_iter()
-            .filter_map(|track| process_track_download(&mut storage_write, track))
+            .filter_map(|track| exclude_existing_track(&mut storage_write, track))
             .collect()
     };
 
@@ -80,13 +81,13 @@ pub async fn download(ctx: &Context, url: &str) -> Result<()> {
 
     if let Some(ref m) = ctx.dm {
         for track in &to_download {
-            m.add_task(
-                track.id,
-                track.title.clone(),
-                track.artist.clone(),
-                track.artwork_url.clone(),
-                track.position,
-            );
+            m.add_task(download_manager::AddTaskArgs {
+                id: track.id,
+                title: track.title.clone(),
+                artist: track.artist.clone(),
+                artwork_url: track.artwork_url.clone(),
+                position: track.position,
+            });
         }
     }
 
@@ -103,17 +104,14 @@ pub async fn download(ctx: &Context, url: &str) -> Result<()> {
         .sync_storage(url, &remote_ids, &sync_mode)
         .await?;
 
-    adb_device::sync_all_connected(ctx.storage.clone(), ctx.settings.clone()).await;
+    adb_device::sync_connected(ctx.storage.clone(), ctx.settings.clone()).await;
 
     update_cached_client_id(&ctx.client, &ctx.settings).await;
 
     Ok(())
 }
 
-fn process_track_download(
-    storage: &mut MusicStorage,
-    track: TrackDownload,
-) -> Option<TrackDownload> {
+fn exclude_existing_track(storage: &mut MusicStorage, track: DiscoveredTrack) -> Option<DiscoveredTrack> {
     if let Some(data) = storage
         .tracks
         .get_mut(&track.id)
@@ -124,7 +122,9 @@ fn process_track_download(
             let path = data.path.clone();
             let position = track.position;
             tokio::task::spawn_blocking(move || {
-                let _ = update_track_position(path, position);
+                if let Err(e) = update_track_position(path, position) {
+                    tracing::warn!("Failed to update track position: {e}");
+                }
             });
         }
         println!(

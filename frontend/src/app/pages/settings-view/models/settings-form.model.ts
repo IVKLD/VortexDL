@@ -48,3 +48,15 @@ export type SettingsFormModel = {
     network: NetworkSettings;
     adb: AdbSettings;
 }
+
+export enum StorageType {
+    Internal = 'internal',
+    SdCard = 'sdCard',
+}
+
+export type StorageInfo = {
+    name: string;
+    path: string;
+    storageType: StorageType;
+}
+

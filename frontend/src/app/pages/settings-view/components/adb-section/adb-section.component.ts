@@ -29,15 +29,11 @@ export class AdbSectionComponent {
         };
 
         this.form().devices().value.set([...current, device]);
+        this.form().devices().markAsDirty();
     }
 
     protected removeDevice(index: number) {
         this.form().devices().value.update(current => current.filter((_, i) => i !== index));
-    }
-
-    protected toggleDevice(index: number) {
-        this.form().devices().value.update(current =>
-            current.map((device, i) => i === index ? { ...device, enabled: !device.enabled } : device)
-        );
+        this.form().devices().markAsDirty();
     }
 }

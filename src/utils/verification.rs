@@ -7,7 +7,7 @@ use symphonia::core::{
 };
 use tokio::fs;
 
-pub async fn verify_file(path: impl AsRef<Path>, expected_size: u64) -> Result<()> {
+pub async fn verify(path: impl AsRef<Path>, expected_size: u64) -> Result<()> {
     let path = path.as_ref();
     let final_size = fs::metadata(path).await?.len();
 
@@ -19,7 +19,7 @@ pub async fn verify_file(path: impl AsRef<Path>, expected_size: u64) -> Result<(
     }
 
     let path_buf = path.to_path_buf();
-    let is_valid = tokio::task::spawn_blocking(move || verify_audio_format(&path_buf))
+    let is_valid = tokio::task::spawn_blocking(move || verify_format(&path_buf))
         .await
         .unwrap_or(false);
 
@@ -33,7 +33,7 @@ pub async fn verify_file(path: impl AsRef<Path>, expected_size: u64) -> Result<(
     Ok(())
 }
 
-fn verify_audio_format(path: &Path) -> bool {
+fn verify_format(path: &Path) -> bool {
     let Ok(file) = File::open(path) else {
         return false;
     };

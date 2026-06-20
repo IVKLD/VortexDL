@@ -4,7 +4,9 @@ import {MatSnackBar} from '@angular/material/snack-bar';
 import {catchError, tap, throwError} from 'rxjs';
 import {UserSettingsRdo} from './models/user-settings.rdo';
 import {UserSettingsDto} from './models/user-settings.dto';
+import {ProxyTestResponseRdo} from './models/proxy-test.rdo';
 import {parseErrorMessage} from '@shared/error-utils';
+import {StorageInfo} from './models/settings-form.model';
 
 @Injectable({providedIn: 'root'})
 export class SettingsService {
@@ -25,7 +27,21 @@ export class SettingsService {
         );
     }
 
-    public testSoundCloudUrl(url: string) {
+    public getAdbDevices() {
+        return this._http.get<string[]>('/devices');
+    }
+
+    public getDeviceStorages(deviceId: string) {
+        return this._http.get<StorageInfo[]>(`/devices/${deviceId}/storage`);
+    }
+}
+
+@Injectable({providedIn: 'root'})
+export class SettingsTestingService {
+    private readonly _http = inject(HttpClient);
+    private readonly _snack = inject(MatSnackBar);
+
+    public testSoundCloud(url: string) {
         return this._http.post<string>('/settings/test/soundcloud', {url}).pipe(
             tap(() => this._snack.open('SoundCloud URL is valid', 'OK')),
             catchError((error) => {
@@ -35,22 +51,7 @@ export class SettingsService {
         );
     }
 
-    public testProxy(proxyUrl: string) {
-        return this._http.post<string>('/settings/test/proxy', {proxyUrl}).pipe(
-            tap(() => this._snack.open('Proxy connection successful', 'OK')),
-            catchError((error) => {
-                this._snack.open(parseErrorMessage(error, 'Proxy verification failed'), 'Close');
-                return throwError(() => error);
-            })
-        );
+    public testProxy(proxyUrls: string[]) {
+        return this._http.post<ProxyTestResponseRdo>('/settings/test/proxy', {proxyUrls});
     }
-
-    public getAdbDevices() {
-        return this._http.get<string[]>('/devices');
-    }
-}
-
-@Injectable({providedIn: 'root'})
-export class SettingsTestingService {
-
 }

@@ -12,7 +12,7 @@ import {
     ProxyCheckerDialogComponent
 } from "@app/pages/settings-view/components/network-section/components/fallback-checker-dialog/proxy-checker-dialog.component";
 import {NetworkSettings} from "@app/pages/settings-view/models/settings-form.model";
-import {SettingsService} from "@app/pages/settings-view/settings.service";
+import {SettingsTestingService} from "@app/pages/settings-view/settings.service";
 import {parseErrorMessage} from '@shared/error-utils';
 
 @Component({
@@ -27,7 +27,7 @@ import {parseErrorMessage} from '@shared/error-utils';
 export class FallbackProxiesComponent {
     public readonly form = input.required<FieldTree<NetworkSettings>>();
 
-    private readonly _api = inject(SettingsService);
+    private readonly _testing = inject(SettingsTestingService);
     private readonly _dialog = inject(MatDialog);
 
     public readonly proxyStatuses = signal<Record<string, { loading: boolean; valid?: boolean; error?: string }>>({});
@@ -74,11 +74,12 @@ export class FallbackProxiesComponent {
             [proxy]: {loading: true}
         }));
 
-        this._api.testProxy(proxy).subscribe({
-            next: () => {
+        this._testing.testProxy([proxy]).subscribe({
+            next: (response) => {
+                const result = response.results[0];
                 this.proxyStatuses.update(prev => ({
                     ...prev,
-                    [proxy]: {loading: false, valid: true}
+                    [proxy]: {loading: false, valid: result?.valid ?? false, error: result?.error || undefined}
                 }));
             },
             error: (err: HttpErrorResponse | Error) => {
@@ -96,34 +97,38 @@ export class FallbackProxiesComponent {
         if (proxies.length === 0) return;
 
         this.isTestingAll.set(true);
-        let completed = 0;
-
         for (const proxy of proxies) {
             this.proxyStatuses.update(prev => ({
                 ...prev,
                 [proxy]: {loading: true}
             }));
+        }
 
-            this._api.testProxy(proxy).subscribe({
-                next: () => {
+        this._testing.testProxy(proxies).subscribe({
+            next: (response) => {
+                for (const result of response.results) {
                     this.proxyStatuses.update(prev => ({
                         ...prev,
-                        [proxy]: {loading: false, valid: true}
+                        [result.url]: {
+                            loading: false,
+                            valid: result.valid,
+                            error: result.error || undefined
+                        }
                     }));
-                    completed++;
-                    if (completed === proxies.length) this.isTestingAll.set(false);
-                },
-                error: (err: HttpErrorResponse | Error) => {
-                    const errorDetail = parseErrorMessage(err, 'Verification failed');
+                }
+                this.isTestingAll.set(false);
+            },
+            error: (err: HttpErrorResponse | Error) => {
+                const errorDetail = parseErrorMessage(err, 'Verification failed');
+                for (const proxy of proxies) {
                     this.proxyStatuses.update(prev => ({
                         ...prev,
                         [proxy]: {loading: false, valid: false, error: errorDetail}
                     }));
-                    completed++;
-                    if (completed === proxies.length) this.isTestingAll.set(false);
                 }
-            });
-        }
+                this.isTestingAll.set(false);
+            }
+        });
     }
 
     pruneFailedActive(): void {

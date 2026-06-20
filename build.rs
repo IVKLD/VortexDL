@@ -1,15 +1,12 @@
 use std::{env, process::Command};
 
 fn main() {
-    let opt_level = env::var("OPT_LEVEL").unwrap_or_else(|_| "0".to_string());
-    let is_release = opt_level != "0";
+    let profile = env::var("PROFILE").unwrap_or_else(|_| "debug".to_string());
+    let is_release = profile == "release";
     let needs_build = env::var("CARGO_FEATURE_WEB").is_ok();
 
     if needs_build {
-        println!(
-            "cargo:warning=Building frontend (opt-level: {})...",
-            opt_level
-        );
+        println!("cargo:warning=Building frontend (profile: {})...", profile);
 
         let status = Command::new("yarn")
             .args(["install"])

@@ -2,58 +2,56 @@ use std::time::Duration;
 
 use anyhow::{Result, anyhow};
 use futures::StreamExt;
-use soundcloud_rs::{Identifier, StreamType, Track};
 use tokio::{fs, io::AsyncWriteExt, time::sleep};
 
 use crate::{
     downloader::{
         Context,
-        core::pipeline::{DownloadTask, resolve::DownloadProtocol},
+        core::pipeline::{DownloadTask, resolve::StreamSource},
     },
     ui,
-    utils::{soundcloud::init_client_with_settings, verification::verify_file},
+    utils::{soundcloud::init_client_with_settings, verification::verify},
 };
 
-pub async fn download_with_retries(
-    ctx: &Context,
+pub async fn download(
+    context: &Context,
     task: &DownloadTask,
-    track: &Track,
-    sc_id: &Identifier,
-    protocol: DownloadProtocol,
+    stream_source: StreamSource,
 ) -> Result<()> {
-    let max_retries = ctx.settings.read().await.max_retries;
+    let max_retries = context.settings.read().await.max_retries;
     let mut attempts_left = max_retries.max(1);
 
     loop {
-        let result = match &protocol {
-            DownloadProtocol::Progressive { url, proxy_url } => {
-                try_download_progressive(ctx, task, url, proxy_url.as_deref()).await
+        let result = match &stream_source {
+            StreamSource::Progressive { url, proxy_url } => {
+                download_progressive(context, task, url, proxy_url.as_deref()).await
             }
-            DownloadProtocol::Hls { proxy_url, .. } => {
-                try_download_hls(ctx, task, track, sc_id, proxy_url.as_deref()).await
+            StreamSource::Hls { url, proxy_url } => {
+                download_hls(context, task, url, proxy_url.as_deref()).await
             }
         };
 
-        if result.is_ok() {
-            return Ok(());
-        }
+        match result {
+            Ok(()) => return Ok(()),
+            Err(err) => {
+                attempts_left -= 1;
+                if attempts_left == 0 {
+                    fs::remove_file(&task.file_path).await.ok();
+                    return Err(err);
+                }
 
-        attempts_left -= 1;
-        if attempts_left == 0 {
-            fs::remove_file(&task.file_path).await.ok();
-            return result;
+                task.pb.set_message(format!(
+                    "Retrying ({attempts_left} left): {}",
+                    task.display_name()
+                ));
+                sleep(Duration::from_secs(1)).await;
+            }
         }
-
-        task.pb.set_message(format!(
-            "Retrying ({attempts_left} left): {}",
-            task.display_name()
-        ));
-        sleep(Duration::from_secs(1)).await;
     }
 }
 
-async fn try_download_progressive(
-    ctx: &Context,
+async fn download_progressive(
+    context: &Context,
     task: &DownloadTask,
     url: &str,
     proxy_url: Option<&str>,
@@ -62,7 +60,7 @@ async fn try_download_progressive(
         Some(proxy) => reqwest::Client::builder()
             .proxy(reqwest::Proxy::all(proxy)?)
             .build()?,
-        None => ctx.http.clone(),
+        None => context.http.clone(),
     };
     let response = client.get(url).send().await?.error_for_status()?;
     let total = response.content_length().unwrap_or(0);
@@ -75,25 +73,24 @@ async fn try_download_progressive(
     let mut stream = response.bytes_stream();
 
     while let Some(chunk) = stream.next().await {
-        let chunk = chunk.map_err(|e| anyhow!("Stream error: {e}"))?;
+        let chunk = chunk.map_err(|err| anyhow!("Stream error: {err}"))?;
         file.write_all(&chunk).await?;
         task.pb.inc(chunk.len() as u64);
 
-        if let Some(m) = &ctx.dm {
-            m.update_progress(task.id, task.pb.position(), total);
+        if let Some(manager) = &context.dm {
+            manager.update_progress(task.id, task.pb.position(), total);
         }
     }
 
     drop(file);
-    verify_file(&task.file_path, total).await?;
+    verify(&task.file_path, total).await?;
     Ok(())
 }
 
-async fn try_download_hls(
-    ctx: &Context,
+async fn download_hls(
+    context: &Context,
     task: &DownloadTask,
-    track: &Track,
-    sc_id: &Identifier,
+    stream_url: &str,
     proxy_url: Option<&str>,
 ) -> Result<()> {
     task.pb
@@ -101,24 +98,18 @@ async fn try_download_hls(
 
     let proxied_client;
     let client = if let Some(proxy) = proxy_url {
-        proxied_client = init_client_with_settings(&*ctx.settings.read().await, Some(proxy))
+        proxied_client = init_client_with_settings(&*context.settings.read().await, Some(proxy))
             .await
-            .map_err(|e| anyhow!("Failed to build proxied client: {e}"))?;
+            .map_err(|err| anyhow!("Failed to build proxied client: {err}"))?;
         &proxied_client
     } else {
-        &ctx.client
+        &context.client
     };
 
     client
-        .download_track(
-            track,
-            sc_id,
-            Some(&StreamType::Hls),
-            task.file_path.parent().and_then(|p| p.to_str()),
-            Some(task.display_name()),
-        )
+        .download_hls_to_file(stream_url, &task.file_path)
         .await
-        .map_err(|e| anyhow!("HLS download failed: {e}"))?;
+        .map_err(|err| anyhow!("HLS download failed: {err}"))?;
 
-    verify_file(&task.file_path, 0).await
+    verify(&task.file_path, 0).await
 }

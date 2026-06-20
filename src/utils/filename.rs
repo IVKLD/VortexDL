@@ -1,5 +1,6 @@
 use deunicode::deunicode_with_tofu;
 
+#[allow(clippy::collapsible_if)]
 pub fn clean_filename(filename: &str) -> String {
     let ascii_str = deunicode_with_tofu(filename, "");
 
@@ -12,8 +13,14 @@ pub fn clean_filename(filename: &str) -> String {
         })
         .fold(String::new(), |mut acc, c| {
             let dominated = c == '_' || c == ' ';
-            if dominated && acc.ends_with(c) {
-                return acc;
+            if dominated {
+                if let Some(last_char) = acc.chars().last().filter(|&lc| lc == '_' || lc == ' ') {
+                    if c == '_' || last_char == '_' {
+                        acc.pop();
+                        acc.push('_');
+                    }
+                    return acc;
+                }
             }
             acc.push(c);
             acc
@@ -45,9 +52,12 @@ mod tests {
             clean_filename("NEFFEX - Fight Back 👊 🔥 [Copyright Free]"),
             "NEFFEX - Fight Back punch fire [Copyright Free]"
         );
-        assert_eq!(clean_filename("maji* & vai5000"), "maji_ & vai5000");
+        assert_eq!(clean_filename("maji* & vai5000"), "maji_& vai5000");
         assert_eq!(clean_filename("𝒌𝒃 𝒋𝒖𝒏𝒊𝒐𝒓™"), "kb juniortm");
         assert_eq!(clean_filename("743⁺Aether*✧"), "743+Aether_");
+        assert_eq!(clean_filename("track _ _ name"), "track_name");
+        assert_eq!(clean_filename("track   _name"), "track_name");
+        assert_eq!(clean_filename("track_   name"), "track_name");
     }
 
     #[test]

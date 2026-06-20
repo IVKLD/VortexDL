@@ -1,5 +1,7 @@
 use serde::{Deserialize, Serialize};
 
+use crate::storage::LocalTrack;
+
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct DownloadRequest {
@@ -58,6 +60,23 @@ pub struct TrackRecord {
     pub size: u64,
     pub position: u32,
     pub archived: bool,
+}
+
+impl TrackRecord {
+    pub fn from_local_track(id: i64, data: &LocalTrack) -> Self {
+        Self {
+            id,
+            artist: data.artist.clone(),
+            title: data.title.clone(),
+            format: AudioFormat::from_path(&data.path),
+            artwork_url: data.artwork_url.clone(),
+            source_url: data.source_url.clone(),
+            created_at: data.created_at,
+            size: data.size,
+            position: data.position.unwrap_or(u32::MAX),
+            archived: data.is_archived(),
+        }
+    }
 }
 
 #[derive(Debug, Serialize)]

@@ -48,6 +48,15 @@ struct ManagerState {
     reserved_urls: HashSet<String>,
 }
 
+#[derive(Debug, Clone)]
+pub struct AddTaskArgs {
+    pub id: i64,
+    pub title: String,
+    pub artist: String,
+    pub artwork_url: Option<String>,
+    pub position: Option<u32>,
+}
+
 pub struct DownloadManager {
     state: Mutex<ManagerState>,
     tx: broadcast::Sender<ServerEvent>,
@@ -68,23 +77,7 @@ impl Default for DownloadManager {
 
 impl DownloadManager {
     fn lock_state(&self) -> MutexGuard<'_, ManagerState> {
-        match self.state.lock() {
-            Ok(guard) => guard,
-            Err(poisoned) => poisoned.into_inner(),
-        }
-    }
-
-    fn modify_task(&self, id: i64, f: impl FnOnce(&mut DownloadItem)) {
-        let mut state = self.lock_state();
-        if let Some(item) = state.tasks.get_mut(&id) {
-            f(item);
-            let updated = item.clone();
-            self.notify_update(updated.clone());
-            if matches!(updated.status, DownloadStatus::Finished | DownloadStatus::Failed) {
-                state.tasks.remove(&id);
-            }
-            self.check_queue_finished(&state);
-        }
+        self.state.lock().unwrap_or_else(|e| e.into_inner())
     }
 
     pub fn reserve_url(&self, url: &str) -> bool {
@@ -95,44 +88,45 @@ impl DownloadManager {
         self.lock_state().reserved_urls.remove(url);
     }
 
-    pub fn add_task(
-        &self,
-        id: i64,
-        title: String,
-        artist: String,
-        artwork_url: Option<String>,
-        position: Option<u32>,
-    ) {
+    pub fn add_task(&self, args: AddTaskArgs) {
         let item = DownloadItem {
-            id,
-            title,
-            artist,
+            id: args.id,
+            title: args.title,
+            artist: args.artist,
             status: DownloadStatus::Queued,
-            artwork_url,
+            artwork_url: args.artwork_url,
             format: None,
             created_at: None,
             source_url: None,
             progress: None,
             size: None,
             error: None,
-            position,
+            position: args.position,
         };
         let mut state = self.lock_state();
-        state.tasks.insert(id, item.clone());
+        state.tasks.insert(args.id, item.clone());
         self.notify_update(item);
     }
 
     pub fn update_downloading(&self, id: i64) {
-        self.modify_task(id, |item| {
+        let mut state = self.lock_state();
+        if let Some(item) = state.tasks.get_mut(&id) {
             item.status = DownloadStatus::Downloading;
-        });
+            let updated = item.clone();
+            self.notify_update(updated);
+        }
     }
 
     pub fn update_failed(&self, id: i64, error_message: String) {
-        self.modify_task(id, |item| {
+        let mut state = self.lock_state();
+        if let Some(item) = state.tasks.get_mut(&id) {
             item.status = DownloadStatus::Failed;
             item.error = Some(error_message);
-        });
+            let updated = item.clone();
+            state.tasks.remove(&id);
+            self.notify_update(updated);
+            self.check_finished(&state);
+        }
     }
 
     pub fn update_finished(
@@ -143,14 +137,19 @@ impl DownloadManager {
         source_url: Option<String>,
         size: u64,
     ) {
-        self.modify_task(id, |item| {
+        let mut state = self.lock_state();
+        if let Some(item) = state.tasks.get_mut(&id) {
             item.status = DownloadStatus::Finished;
             item.format = Some(format);
             item.created_at = Some(created_at);
             item.source_url = source_url;
             item.progress = Some(100.0);
             item.size = Some(size);
-        });
+            let updated = item.clone();
+            state.tasks.remove(&id);
+            self.notify_update(updated);
+            self.check_finished(&state);
+        }
     }
 
     pub fn update_progress(&self, id: i64, current: u64, total: u64) {
@@ -173,11 +172,11 @@ impl DownloadManager {
     pub fn remove_task(&self, id: i64) {
         let mut state = self.lock_state();
         if state.tasks.remove(&id).is_some() {
-            self.check_queue_finished(&state);
+            self.check_finished(&state);
         }
     }
 
-    fn check_queue_finished(&self, state: &ManagerState) {
+    fn check_finished(&self, state: &ManagerState) {
         let has_active = state.tasks.values().any(|t| {
             matches!(
                 t.status,

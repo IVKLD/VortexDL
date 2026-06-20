@@ -57,6 +57,16 @@
     --mdc-filled-text-field-focus-active-indicator-height: 0px;
     --mdc-filled-text-field-input-text-color: rgba(255, 255, 255, 0.5);
     --mat-form-field-container-height: 32px;
+
+    mat-icon[matSuffix] {
+      cursor: pointer;
+      opacity: 0.7;
+      transition: opacity 0.2s;
+
+      &:hover {
+        opacity: 1;
+      }
+    }
   }
 
   button {
@@ -64,3 +74,14 @@
     &:hover { color: #ef5350; }
   }
 }
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.spinning {
+  animation: spin 1.5s linear infinite;
+  display: inline-block;
+}
+

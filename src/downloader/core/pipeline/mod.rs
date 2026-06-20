@@ -1,4 +1,3 @@
-pub mod artwork;
 pub mod complete;
 pub mod download;
 pub mod resolve;
@@ -29,32 +28,34 @@ impl DownloadTask {
     }
 }
 
-pub async fn run_track_pipeline(ctx: Context, mut task: DownloadTask) -> Option<JoinHandle<()>> {
+pub async fn run_track_pipeline(context: Context, task: DownloadTask) -> Option<JoinHandle<()>> {
     let pipeline = async {
-        if let Some(m) = &ctx.dm {
-            m.update_downloading(task.id);
+        if let Some(manager) = &context.dm {
+            manager.update_downloading(task.id);
         }
         let display_name = task.display_name().to_string();
         task.pb.set_message(format!("Downloading: {display_name}"));
 
-        let (track, sc_id, proto) = resolve::resolve_track_metadata(&ctx, task.id).await?;
-        let artwork_handle = artwork::spawn_artwork_download(&ctx, &mut task);
+        let proto = resolve::resolve_stream_source(&context, task.id).await?;
+
+        let artwork_handle = resolve::spawn_artwork_fetch(&context, task.artwork_url.as_deref());
+
         let url = proto.url().to_string();
 
-        download::download_with_retries(&ctx, &task, &track, &sc_id, proto).await?;
+        download::download(&context, &task, proto).await?;
 
         Ok((artwork_handle, url))
     };
 
     match pipeline.await {
-        Ok((artwork_handle, url)) => Some(complete::finalize_and_persist(
-            ctx,
+        Ok((artwork_handle, url)) => Some(tokio::spawn(complete::finalize(
+            context,
             task,
             artwork_handle,
             url,
-        )),
-        Err(e) => {
-            complete::on_failure(&ctx, &task, e).await;
+        ))),
+        Err(err) => {
+            complete::fail(&context, &task, err).await;
             None
         }
     }

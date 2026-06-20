@@ -1,5 +1,4 @@
 use axum::{Json, extract::State, http::StatusCode, response::IntoResponse};
-use serde::Deserialize;
 use soundcloud_rs::ClientBuilder;
 
 use crate::{
@@ -16,7 +15,7 @@ pub struct TestSoundCloudRequest {
     pub url: String,
 }
 
-pub async fn test_soundcloud_url(
+pub async fn test_soundcloud(
     State(state): State<AppState>,
     Json(payload): Json<TestSoundCloudRequest>,
 ) -> Result<impl IntoResponse, ApiError> {
@@ -34,34 +33,62 @@ pub async fn test_soundcloud_url(
         })
 }
 
+use serde::{Deserialize, Serialize};
+
 #[derive(Deserialize)]
 #[serde(rename_all = "camelCase")]
-pub struct TestProxyRequest {
-    pub proxy_url: String,
+pub struct TestProxiesRequest {
+    pub proxy_urls: Vec<String>,
+}
+
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ProxyTestResult {
+    pub url: String,
+    pub valid: bool,
+    pub error: Option<String>,
+}
+
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct TestProxiesResponse {
+    pub results: Vec<ProxyTestResult>,
 }
 
 pub async fn test_proxy(
     State(_state): State<AppState>,
-    Json(payload): Json<TestProxyRequest>,
+    Json(payload): Json<TestProxiesRequest>,
 ) -> Result<impl IntoResponse, ApiError> {
-    let client = ClientBuilder::new()
-        .with_proxy(payload.proxy_url)
-        .build()
-        .await
-        .map_err(|e| {
-            ApiError::bad_request(format!("Proxy connection failed: {e}"))
-                .with_code(ErrorCode::NetworkError)
-        })?;
+    let mut tasks = tokio::task::JoinSet::new();
 
-    client
-        .health_check()
-        .await
-        .then_some((
-            StatusCode::OK,
-            Json("Proxy is valid and SoundCloud API is reachable"),
-        ))
-        .ok_or_else(|| {
-            ApiError::bad_request("Proxy is not able to reach SoundCloud API")
-                .with_code(ErrorCode::NetworkError)
-        })
+    for url in payload.proxy_urls {
+        tasks.spawn(async move {
+            match ClientBuilder::new().with_proxy(url.clone()).build().await {
+                Ok(client) if client.health_check().await => ProxyTestResult {
+                    url,
+                    valid: true,
+                    error: None,
+                },
+                Ok(_) => ProxyTestResult {
+                    url,
+                    valid: false,
+                    error: Some("Proxy is not able to reach SoundCloud API".to_string()),
+                },
+                Err(e) => ProxyTestResult {
+                    url,
+                    valid: false,
+                    error: Some(format!("Failed to build client: {e}")),
+                },
+            }
+        });
+    }
+
+    let mut results = Vec::new();
+    while let Some(res) = tasks.join_next().await {
+        if let Ok(result) = res {
+            results.push(result);
+        }
+    }
+
+    Ok((StatusCode::OK, Json(TestProxiesResponse { results })))
 }

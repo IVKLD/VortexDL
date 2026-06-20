@@ -11,12 +11,12 @@ use tower_http::cors::CorsLayer;
 use crate::{
     api::{
         handlers::{
-            devices::list_adb_devices,
+            devices::{list_adb_devices, get_device_storage_info},
             download::{download_events, get_download_queue, remove_from_queue, start_download},
             health::health,
             settings::{
                 get_settings,
-                test::{test_proxy, test_soundcloud_url},
+                test::{test_proxy, test_soundcloud},
                 update_settings,
             },
             tracks::{get_tracks, indexing_tracks, remove_track, stream_track},
@@ -30,9 +30,9 @@ pub mod download_manager;
 pub mod errors;
 pub mod handlers;
 pub mod state;
-pub mod types;
 #[cfg(feature = "web")]
 pub mod static_files;
+pub mod types;
 
 pub async fn run_server(state: AppState, args: &Args) -> anyhow::Result<()> {
     let router = build_router(state, args.serve).await;
@@ -53,7 +53,9 @@ pub async fn build_router(state: AppState, serve_frontend: bool) -> Router {
         .route("/downloads/{id}/stream", get(stream_track))
         .route("/downloads/indexing_tracks", get(indexing_tracks))
         .route("/devices", get(list_adb_devices))
+        .route("/devices/{device_id}/storage", get(get_device_storage_info))
         .nest("/settings", settings_routes());
+
 
     let router = Router::new().nest("/api", api_routes).with_state(state);
 
@@ -80,7 +82,7 @@ fn download_routes() -> Router<AppState> {
 fn settings_routes() -> Router<AppState> {
     Router::new()
         .route("/", get(get_settings).post(update_settings))
-        .route("/test/soundcloud", post(test_soundcloud_url))
+        .route("/test/soundcloud", post(test_soundcloud))
         .route("/test/proxy", post(test_proxy))
 }
 

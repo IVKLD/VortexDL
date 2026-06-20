@@ -107,25 +107,20 @@ pub struct TrackMetadata {
     pub position: Option<u32>,
 }
 
+fn get_txxx(tag: &Tag, key: &str) -> Option<String> {
+    tag.extended_texts()
+        .find(|f| f.description == key)
+        .map(|f| f.value.clone())
+}
+
 pub fn extract_track_metadata(path: impl AsRef<Path>) -> Option<TrackMetadata> {
     let tag = Tag::read_from_path(path).ok()?;
 
-    let mut sc_id = None;
-    let mut artwork_url = None;
-    let mut source_url = None;
-    let mut position = None;
+    let id = get_txxx(&tag, SC_IDENTIFIER)?.parse().ok()?;
+    let artwork_url = get_txxx(&tag, SC_ARTWORK_URL);
+    let source_url = get_txxx(&tag, SC_SOURCE_URL);
+    let position = get_txxx(&tag, SC_POSITION).and_then(|v| v.parse().ok());
 
-    for f in tag.extended_texts() {
-        match f.description.as_str() {
-            SC_IDENTIFIER => sc_id = f.value.parse::<i64>().ok(),
-            SC_ARTWORK_URL => artwork_url = Some(f.value.clone()),
-            SC_SOURCE_URL => source_url = Some(f.value.clone()),
-            SC_POSITION => position = f.value.parse().ok(),
-            _ => {}
-        }
-    }
-
-    let id = sc_id?;
     let artist = tag.artist().unwrap_or("Unknown").to_string();
     let title = tag.title().unwrap_or("Unknown").to_string();
 

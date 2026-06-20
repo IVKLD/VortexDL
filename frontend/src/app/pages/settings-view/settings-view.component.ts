@@ -1,17 +1,19 @@
-import { ChangeDetectionStrategy, Component, inject, OnInit, signal, computed } from '@angular/core';
-import { form, FormRoot, max, min, required } from '@angular/forms/signals';
-import { SettingsService } from './settings.service';
-import { finalize } from "rxjs";
-import { englishOnly, soundCloudUrl } from "@shared/validators/form.validators";
-import { SoundcloudSectionComponent } from "./components/soundcloud-section/soundcloud-section.component";
-import { DownloadsSectionComponent } from "./components/downloads-section/downloads-section.component";
-import { AdbSectionComponent } from "./components/adb-section/adb-section.component";
-import { NetworkSettingsComponent } from "./components/network-section/network-section.component";
-import { UserSettingsDto } from "@app/pages/settings-view/models/user-settings.dto";
-import { SettingsFormModel, SyncMode } from "@app/pages/settings-view/models/settings-form.model";
-import { UserSettingsRdo } from "@app/pages/settings-view/models/user-settings.rdo";
-import { HeaderTemplateDirective } from '@shared/components/bricks/header/header-template.directive';
-import { SettingsSaveButtonComponent } from './components/settings-save-button.component';
+import {ChangeDetectionStrategy, Component, inject, OnInit, signal, computed} from '@angular/core';
+import {form, FormRoot, max, min, required} from '@angular/forms/signals';
+import {SettingsService, SettingsTestingService} from './settings.service';
+import {MatSnackBar} from '@angular/material/snack-bar';
+import {finalize, firstValueFrom} from "rxjs";
+import {parseErrorMessage} from '@shared/error-utils';
+import {englishOnly, soundCloudUrl} from "@shared/validators/form.validators";
+import {SoundcloudSectionComponent} from "./components/soundcloud-section/soundcloud-section.component";
+import {DownloadsSectionComponent} from "./components/downloads-section/downloads-section.component";
+import {AdbSectionComponent} from "./components/adb-section/adb-section.component";
+import {NetworkSettingsComponent} from "./components/network-section/network-section.component";
+import {UserSettingsDto} from "@app/pages/settings-view/models/user-settings.dto";
+import {SettingsFormModel, SyncMode} from "@app/pages/settings-view/models/settings-form.model";
+import {UserSettingsRdo} from "@app/pages/settings-view/models/user-settings.rdo";
+import {HeaderTemplateDirective} from '@shared/components/bricks/header/header-template.directive';
+import {SettingsSaveButtonComponent} from './components/settings-save-button.component';
 
 @Component({
     selector: 'app-settings-view',
@@ -55,44 +57,54 @@ export class SettingsView implements OnInit {
         }
     });
     private readonly _api = inject(SettingsService);
-    protected readonly saveButtonDisabled = computed(() => this.settingsForm().invalid() || this.isTesting() || this.isNetworkTesting());
+    private readonly _testing = inject(SettingsTestingService);
+    private readonly _snack = inject(MatSnackBar);
+
+    protected readonly saveButtonDisabled = computed(() => this.settingsForm().invalid() || this.isTesting() || this.isNetworkTesting() || !this.settingsForm().dirty());
+
     protected readonly settingsForm =
         form(this.settingsModel, (f) => {
-            required(f.soundcloud.profileUrl, { message: 'Profile URL is required' });
-            englishOnly(f.soundcloud.profileUrl);
-            soundCloudUrl(f.soundcloud.profileUrl);
+                required(f.soundcloud.profileUrl, {message: 'Profile URL is required'});
+                englishOnly(f.soundcloud.profileUrl);
+                soundCloudUrl(f.soundcloud.profileUrl);
 
-            min(f.soundcloud.syncInterval, 1, { message: 'Interval must be at least 1 minute' });
-            max(f.soundcloud.syncInterval, 1440, { message: 'Interval cannot exceed 24 hours' });
+                min(f.soundcloud.syncInterval, 1, {message: 'Interval must be at least 1 minute'});
+                max(f.soundcloud.syncInterval, 1440, {message: 'Interval cannot exceed 24 hours'});
 
-            required(f.downloads.outputPath, { message: 'Output path is required' });
-            min(f.downloads.maxConcurrent, 1, { message: 'Must have at least 1 concurrent download' });
-            max(f.downloads.maxConcurrent, 10, { message: 'Maximum 10 concurrent downloads allowed' });
-            required(f.downloads.namingTemplate, { message: 'Naming template is required' });
+                required(f.downloads.outputPath, {message: 'Output path is required'});
+                min(f.downloads.maxConcurrent, 1, {message: 'Must have at least 1 concurrent download'});
+                max(f.downloads.maxConcurrent, 100, {message: 'Maximum 10 concurrent downloads allowed'});
+                required(f.downloads.namingTemplate, {message: 'Naming template is required'});
 
-            min(f.system.limitPerPage, 1, { message: 'Limit must be at least 1' });
-            max(f.system.limitPerPage, 500, { message: 'Limit cannot exceed 500' });
-            min(f.system.maxRetries, 0, { message: 'Max retries cannot be negative' });
-            max(f.system.maxRetries, 20, { message: 'Max retries cannot exceed 20' });
-        },
+                min(f.system.limitPerPage, 1, {message: 'Limit must be at least 1'});
+                max(f.system.limitPerPage, 500, {message: 'Limit cannot exceed 500'});
+                min(f.system.maxRetries, 0, {message: 'Max retries cannot be negative'});
+                max(f.system.maxRetries, 20, {message: 'Max retries cannot exceed 20'});
+            },
             {
                 submission: {
                     action: async () => {
-                        const val = this.settingsForm().value();
+                        const form = this.settingsForm().value();
                         const payload: UserSettingsDto = {
-                            soundcloud: val.soundcloud,
-                            downloads: val.downloads,
-                            adb: val.adb,
+                            soundcloud: form.soundcloud,
+                            downloads: form.downloads,
+                            adb: form.adb,
                             network: {
-                                useProxy: val.network.useProxy,
-                                proxyUrl: val.network.proxyUrl,
-                                fallbackProxies: val.network.fallbackProxies
+                                useProxy: form.network.useProxy,
+                                proxyUrl: form.network.proxyUrl,
+                                fallbackProxies: form.network.fallbackProxies
                             },
-                            limitPerPage: val.system.limitPerPage,
-                            maxRetries: val.system.maxRetries
+                            limitPerPage: form.system.limitPerPage,
+                            maxRetries: form.system.maxRetries
                         };
 
-                        this._api.updateSettings(payload).subscribe()
+                        try {
+                            await firstValueFrom(this._api.updateSettings(payload));
+
+                            this.settingsForm().reset();
+                        } catch (error) {
+                            console.error('Ошибка при сохранении:', error);
+                        }
                     }
                 },
             });
@@ -105,11 +117,11 @@ export class SettingsView implements OnInit {
                         soundcloud: res.soundcloud,
                         downloads: res.downloads,
                         network: {
-                            useProxy: res.network?.useProxy ?? false,
-                            proxyUrl: res.network?.proxyUrl ?? '',
-                            fallbackProxies: res.network?.fallbackProxies ?? []
+                            useProxy: res.network?.useProxy,
+                            proxyUrl: res.network?.proxyUrl,
+                            fallbackProxies: res.network?.fallbackProxies
                         },
-                        adb: res.adb ?? { enabled: true, autoSync: true, devices: [] },
+                        adb: res.adb ?? {enabled: true, autoSync: true, devices: []},
                         system: {
                             limitPerPage: res.limitPerPage,
                             maxRetries: res.maxRetries
@@ -119,20 +131,35 @@ export class SettingsView implements OnInit {
             });
     }
 
-    protected testSoundcloudUrl() {
+    protected testSoundcloud() {
         this.isTesting.set(true);
 
-        this._api.testSoundCloudUrl(this.settingsForm.soundcloud.profileUrl().value())
+        this._testing.testSoundCloud(this.settingsForm.soundcloud.profileUrl().value())
             .pipe(finalize(() => this.isTesting.set(false)))
             .subscribe();
     }
 
     protected testProxy() {
         this.isNetworkTesting.set(true);
+        const proxy = this.settingsForm.network.proxyUrl().value();
 
-        this._api.testProxy(this.settingsForm.network.proxyUrl().value())
+        this._testing.testProxy([proxy])
             .pipe(finalize(() => this.isNetworkTesting.set(false)))
-            .subscribe();
+            .subscribe({
+                next: (res) => {
+                    const result = res.results[0];
+                    if (result && result.valid) {
+                        this._snack.open('Proxy connection successful', 'OK');
+                    } else {
+                        const err = result?.error || 'Proxy is not able to reach SoundCloud API';
+                        this._snack.open(err, 'Close');
+                    }
+                },
+                error: (err) => {
+                    this._snack.open(parseErrorMessage(err, 'Proxy verification failed'), 'Close');
+                }
+            });
     }
 
+    protected readonly form = form;
 }

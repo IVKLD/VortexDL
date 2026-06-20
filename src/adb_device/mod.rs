@@ -6,7 +6,7 @@ pub mod ui;
 use std::{sync::Arc, time::Duration};
 
 use anyhow::Result;
-pub use commands::list_connected_devices;
+pub use commands::{list_devices, get_device_storages, StorageInfo};
 pub use sync::sync_device;
 use tokio::sync::RwLock;
 
@@ -29,7 +29,7 @@ async fn poll_devices(storage: Arc<RwLock<MusicStorage>>, settings: SettingsMana
         return Ok(());
     }
 
-    let current = list_connected_devices().await?;
+    let current = list_devices().await?;
     let mut previous = state::lock_connected();
 
     for id in current.difference(&previous) {
@@ -52,7 +52,7 @@ async fn poll_devices(storage: Arc<RwLock<MusicStorage>>, settings: SettingsMana
     Ok(())
 }
 
-pub async fn sync_all_connected(storage: Arc<RwLock<MusicStorage>>, settings: SettingsManager) {
+pub async fn sync_connected(storage: Arc<RwLock<MusicStorage>>, settings: SettingsManager) {
     let s = settings.read().await;
     if !s.adb.enabled || !s.adb.auto_sync {
         return;

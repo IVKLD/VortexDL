@@ -5,7 +5,9 @@ use tokio::process::Command;
 
 async fn adb(device: &str, args: &[&str]) -> Result<String> {
     let output = Command::new("adb")
-        .args([&["-s", device], args].concat())
+        .arg("-s")
+        .arg(device)
+        .args(args)
         .output()
         .await
         .with_context(|| format!("adb {} spawn failed", args.first().unwrap_or(&"")))?;
@@ -21,7 +23,7 @@ fn shell_escape(s: &str) -> String {
     format!("'{}'", s.replace('\'', "'\\''"))
 }
 
-pub async fn list_connected_devices() -> Result<HashSet<String>> {
+pub async fn list_devices() -> Result<HashSet<String>> {
     let output = Command::new("adb")
         .arg("devices")
         .output()
@@ -46,12 +48,13 @@ pub async fn list_connected_devices() -> Result<HashSet<String>> {
         .collect())
 }
 
-pub async fn ensure_remote_dir(device: &str, dir: &str) -> Result<()> {
-    adb(device, &["shell", "mkdir", "-p", &shell_escape(dir)]).await?;
-    Ok(())
+pub async fn ensure_dir(device: &str, dir: &str) -> Result<()> {
+    adb(device, &["shell", "mkdir", "-p", &shell_escape(dir)])
+        .await
+        .map(|_| ())
 }
 
-pub async fn list_remote_files(device: &str, dir: &str) -> Result<HashSet<String>> {
+pub async fn list_files(device: &str, dir: &str) -> Result<HashSet<String>> {
     let escaped = shell_escape(dir);
     let result = adb(device, &["shell", "find", &escaped, "-type", "f"]).await;
 
@@ -60,70 +63,86 @@ pub async fn list_remote_files(device: &str, dir: &str) -> Result<HashSet<String
         Err(_) => return Ok(HashSet::new()),
     };
 
-    let prefix = dir.strip_suffix('/').unwrap_or(dir);
+    let prefix = format!("{}/", dir.trim_end_matches('/'));
 
     Ok(stdout
         .lines()
-        .filter_map(|line| {
-            let line = line.trim();
-            line.strip_prefix(prefix)?
-                .strip_prefix('/')
-                .map(|s| s.to_string())
-        })
+        .filter_map(|line| line.trim().strip_prefix(&prefix).map(String::from))
         .collect())
 }
 
 pub async fn push(device: &str, local: &str, remote: &str) -> Result<()> {
-    adb(device, &["push", local, remote]).await?;
-    Ok(())
+    adb(device, &["push", local, remote]).await.map(|_| ())
 }
 
 pub async fn rm(device: &str, path: &str) -> Result<()> {
-    adb(device, &["shell", "rm", "-f", &shell_escape(path)]).await?;
-    Ok(())
+    adb(device, &["shell", "rm", "-f", &shell_escape(path)])
+        .await
+        .map(|_| ())
 }
 
 pub async fn rmdir(device: &str, path: &str) -> Result<()> {
-    adb(device, &["shell", "rmdir", &shell_escape(path)]).await?;
-    Ok(())
+    adb(device, &["shell", "rmdir", &shell_escape(path)])
+        .await
+        .map(|_| ())
 }
 
-pub async fn media_scan(device: &str, path: &str) -> Result<()> {
-    let escaped = shell_escape(path);
-    let _ = adb(device, &["shell", "cmd", "media", "scan-file", &escaped]).await;
+use serde::Serialize;
 
-    let url = shell_escape(&format!("file://{path}"));
-    let _ = adb(
-        device,
-        &[
-            "shell",
-            "am",
-            "broadcast",
-            "-a",
-            "android.intent.action.MEDIA_SCANNER_SCAN_FILE",
-            "-d",
-            &url,
-        ],
-    )
-    .await;
-
-    Ok(())
+#[derive(Serialize, Debug, Clone)]
+#[serde(rename_all = "camelCase")]
+pub enum StorageType {
+    Internal,
+    SdCard,
 }
 
-pub async fn dir_scan(device: &str, dir: &str) -> Result<()> {
-    let url = shell_escape(&format!("file://{dir}"));
-    let _ = adb(
-        device,
-        &[
-            "shell",
-            "am",
-            "broadcast",
-            "-a",
-            "android.intent.action.MEDIA_SCANNER_SCAN_DIR",
-            "-d",
-            &url,
-        ],
-    )
-    .await;
-    Ok(())
+#[derive(Serialize, Debug, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct StorageInfo {
+    pub name: String,
+    pub path: String,
+    pub storage_type: StorageType,
 }
+
+pub async fn get_device_storages(device: &str) -> Result<Vec<StorageInfo>> {
+    let mut storages = Vec::new();
+
+    match adb(device, &["shell", "ls", "/storage"]).await {
+        Ok(output) => {
+            for line in output.lines() {
+                let name = line.trim();
+                if name.is_empty() || name == "self" {
+                    continue;
+                }
+                if name == "emulated" {
+                    storages.push(StorageInfo {
+                        name: "Internal Storage".to_string(),
+                        path: "/storage/emulated/0/Music".to_string(),
+                        storage_type: StorageType::Internal,
+                    });
+                } else {
+                    storages.push(StorageInfo {
+                        name: format!("SD Card ({})", name),
+                        path: format!("/storage/{}/Music", name),
+                        storage_type: StorageType::SdCard,
+                    });
+                }
+            }
+        }
+        Err(e) => {
+            tracing::warn!("Failed to list /storage via ADB: {e}");
+        }
+    }
+
+    if !storages.iter().any(|s| matches!(s.storage_type, StorageType::Internal)) {
+        storages.insert(0, StorageInfo {
+            name: "Internal Storage (Legacy)".to_string(),
+            path: "/sdcard/Music".to_string(),
+            storage_type: StorageType::Internal,
+        });
+    }
+
+    Ok(storages)
+}
+
+

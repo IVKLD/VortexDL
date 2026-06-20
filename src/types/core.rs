@@ -1,5 +1,4 @@
-use std::sync::Arc;
-use std::fmt;
+use std::{fmt, sync::Arc};
 
 use clap::ValueEnum;
 use serde::{Deserialize, Serialize};
@@ -62,7 +61,7 @@ impl Context {
 }
 
 #[derive(Clone, Debug)]
-pub struct TrackDownload {
+pub struct DiscoveredTrack {
     pub id: i64,
     pub title: String,
     pub artist: String,
@@ -70,24 +69,15 @@ pub struct TrackDownload {
     pub position: Option<u32>,
 }
 
-impl TrackDownload {
-    pub fn filename(&self) -> String {
-        crate::utils::filename::clean_filename(&format!("{} - {}", self.artist, self.title))
-    }
-
-    pub fn path(&self, output_dir: impl AsRef<std::path::Path>) -> std::path::PathBuf {
-        output_dir.as_ref().join(format!("{}.mp3", self.filename()))
-    }
-
-    pub fn new<T: AsUsername>(
+impl DiscoveredTrack {
+    pub fn new(
         id: i64,
         title: Option<&str>,
-        user: Option<&T>,
+        artist: Option<&soundcloud_rs::UserSummary>,
         artwork_url: Option<String>,
-        position: Option<u32>,
     ) -> Self {
-        let artist = user
-            .and_then(|u| u.username())
+        let artist = artist
+            .and_then(|u| u.username.as_deref())
             .unwrap_or("Unknown")
             .to_string();
         let title = clean_title(title.unwrap_or("Unknown"));
@@ -96,8 +86,23 @@ impl TrackDownload {
             title,
             artist,
             artwork_url,
-            position,
+            position: None,
         }
+    }
+
+    pub fn from_track(track: soundcloud_rs::Track) -> Option<Self> {
+        let id = track.id?;
+        Some(Self::new(
+            id,
+            track.title.as_deref(),
+            track.user.as_ref(),
+            track.artwork_url,
+        ))
+    }
+
+    pub fn with_position(mut self, position: Option<u32>) -> Self {
+        self.position = position;
+        self
     }
 }
 
@@ -122,40 +127,11 @@ pub struct TrackLikesResponse {
 
 #[derive(Deserialize, Debug)]
 pub struct LikeItem {
-    pub track: Option<TrackInfo>,
-}
-
-#[derive(Deserialize, Debug)]
-pub struct TrackInfo {
-    pub id: i64,
-    pub title: String,
-    pub artwork_url: Option<String>,
-    pub user: Option<UserInfo>,
-}
-
-#[derive(Deserialize, Debug)]
-pub struct UserInfo {
-    pub username: String,
+    pub track: Option<soundcloud_rs::Track>,
 }
 
 #[derive(Serialize)]
 pub struct TrackLikesQuery {
     pub limit: u32,
     pub offset: Option<String>,
-}
-
-pub trait AsUsername {
-    fn username(&self) -> Option<&str>;
-}
-
-impl AsUsername for UserInfo {
-    fn username(&self) -> Option<&str> {
-        Some(&self.username)
-    }
-}
-
-impl AsUsername for soundcloud_rs::UserSummary {
-    fn username(&self) -> Option<&str> {
-        self.username.as_deref()
-    }
 }

@@ -4,7 +4,7 @@
     </ng-template>
 
     <div class="settings-content">
-        <app-soundcloud-section (test)="testSoundcloudUrl()" [form]="settingsForm.soundcloud"
+        <app-soundcloud-section (test)="testSoundcloud()" [form]="settingsForm.soundcloud"
             [isTesting]="isTesting()" />
 
         <app-downloads-section [downloadsForm]="settingsForm.downloads" [systemForm]="settingsForm.system" />

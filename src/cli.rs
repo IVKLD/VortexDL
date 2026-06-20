@@ -1,11 +1,11 @@
 use anyhow::Result;
-use clap::{CommandFactory, Parser};
+use clap::Parser;
 
 use crate::{
+    adb_device,
     api::{self, state::AppState},
     downloader::{self, Context},
     settings::UserSettings,
-    storage::MusicStorage,
     types::SyncMode,
 };
 
@@ -69,33 +69,25 @@ impl Args {
 }
 
 pub async fn execute_app(state: AppState, args: Args) -> Result<()> {
-    match args {
-        Args { serve: true, .. } => api::run_server(state, &args).await,
-        Args {
-            sync_player: true, ..
-        } => run_cli_sync(state).await,
-        Args {
-            url: Some(ref url), ..
-        } => run_cli_download(state, url, &args).await,
-        _ => {
-            Args::command().print_help()?;
-            println!();
-            Ok(())
-        }
+    if args.serve {
+        api::run_server(state, &args).await
+    } else if args.sync_player {
+        run_cli_sync(state).await
+    } else if let Some(ref url) = args.url {
+        run_cli_download(state, url, &args).await
+    } else {
+        Ok(())
     }
 }
 
 async fn run_cli_sync(state: AppState) -> Result<()> {
-    println!("Indexing local music library...");
-    MusicStorage::run_background_indexing(state.storage.clone()).await;
-
     let settings = state.settings.read().await;
     if !settings.adb.enabled {
         println!("ADB is disabled in settings. Please enable it to sync.");
         return Ok(());
     }
 
-    let connected = crate::adb_device::list_connected_devices().await?;
+    let connected = adb_device::list_devices().await?;
     if connected.is_empty() {
         println!("No connected ADB devices found.");
         return Ok(());
@@ -110,8 +102,7 @@ async fn run_cli_sync(state: AppState) -> Result<()> {
             .find(|d| d.enabled && d.device_id == *id)
         {
             println!("Syncing with device: {} -> {}", id, cfg.remote_music_dir);
-            crate::adb_device::sync_device(id, &cfg.remote_music_dir, state.storage.clone())
-                .await?;
+            adb_device::sync_device(id, &cfg.remote_music_dir, state.storage.clone()).await?;
             synced_any = true;
         } else {
             println!(

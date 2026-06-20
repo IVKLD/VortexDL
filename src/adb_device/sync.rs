@@ -16,12 +16,12 @@ pub async fn sync_device(
         None => return Ok(()),
     };
 
-    if let Err(e) = commands::ensure_remote_dir(device, remote_dir).await {
+    if let Err(e) = commands::ensure_dir(device, remote_dir).await {
         ui::remote_access_failed(remote_dir, device, &e);
         return Err(e);
     }
 
-    let remote_files = commands::list_remote_files(device, remote_dir).await?;
+    let remote_files = commands::list_files(device, remote_dir).await?;
 
     let mut local_paths = HashSet::new();
     let mut to_push = Vec::new();
@@ -69,7 +69,6 @@ pub async fn sync_device(
         push_tracks(device, remote_dir, to_push).await?;
     }
 
-    let _ = commands::dir_scan(device, remote_dir).await;
     ui::sync_complete(device);
 
     Ok(())
@@ -92,7 +91,7 @@ async fn push_tracks(
         };
 
         let parent = format!("{remote_dir}/{artist_dir}");
-        if let Err(e) = commands::ensure_remote_dir(device, &parent).await {
+        if let Err(e) = commands::ensure_dir(device, &parent).await {
             ui::pb_err(&pb, format!("mkdir {parent}: {e}"));
             failed += 1;
             pb.inc(1);
@@ -105,9 +104,6 @@ async fn push_tracks(
         match commands::push(device, local, &remote).await {
             Ok(()) => {
                 pushed += 1;
-                if let Err(e) = commands::media_scan(device, &remote).await {
-                    ui::pb_warn(&pb, format!("media scan {rel}: {e}"));
-                }
             }
             Err(e) => {
                 failed += 1;

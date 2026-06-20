@@ -8,7 +8,7 @@ use crate::{
     ui::create_standalone_spinner,
 };
 
-pub fn show_feedback(ctx: &Context, msg: &str) -> ProgressBar {
+pub fn init_progress_spinner(ctx: &Context, msg: &str) -> ProgressBar {
     let pb = create_standalone_spinner(msg);
 
     if let Some(manager) = &ctx.dm {
@@ -21,7 +21,7 @@ pub fn show_feedback(ctx: &Context, msg: &str) -> ProgressBar {
     pb
 }
 
-pub async fn get_likes(
+pub async fn fetch_likes_page(
     client: &soundcloud_rs::Client,
     user_id: i64,
     offset: Option<&str>,

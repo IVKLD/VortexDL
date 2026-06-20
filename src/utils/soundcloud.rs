@@ -31,11 +31,8 @@ pub async fn init_client_with_settings(
         builder = builder.with_client_id(cached_id.clone());
     }
 
-    let proxy = proxy_url
-        .map(|s| s.to_string())
-        .or_else(|| settings.network.get_proxy_url().map(|s| s.to_string()));
-    if let Some(p) = proxy {
-        builder = builder.with_proxy(p);
+    if let Some(proxy) = proxy_url.or_else(|| settings.network.get_proxy_url()) {
+        builder = builder.with_proxy(proxy.to_string());
     }
 
     builder

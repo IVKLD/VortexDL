@@ -10,28 +10,42 @@ use futures::{
 use indicatif::MultiProgress;
 
 use crate::{
-    downloader::{Context, TrackDownload, core::pipeline as pl},
+    downloader::{Context, DiscoveredTrack, core::pipeline as pl},
     ui::{create_spinner, create_total_progress_bar},
+    utils::filename::clean_filename,
 };
 
-pub async fn run_download_batch(ctx: &Context, tracks: Vec<TrackDownload>) {
+pub async fn run_download_batch(ctx: &Context, tracks: Vec<DiscoveredTrack>) {
     let mp = MultiProgress::new();
     let total_tracks = tracks.len();
     let total_pb = create_total_progress_bar(&mp, total_tracks as u64);
 
-    let max_concurrent = ctx.settings.read().await.downloads.max_concurrent as usize;
+    let (max_concurrent, naming_template) = {
+        let s = ctx.settings.read().await;
+        (
+            s.downloads.max_concurrent as usize,
+            s.downloads.naming_template.clone(),
+        )
+    };
     let output_dir = PathBuf::from(&ctx.storage.read().await.base_path);
 
     let results: Vec<_> = stream::iter(tracks)
-        .map(|track| {
+        .map(|mut track| {
+            if let Some(ref url) = track.artwork_url {
+                track.artwork_url = Some(url.replacen("-large", "-t1080x1080", 1));
+            }
+
             let ctx = ctx.clone();
             let mp = mp.clone();
             let total_pb = total_pb.clone();
-            let output_dir = output_dir.clone();
+            let filename = naming_template
+                .replace("{artist}", &track.artist)
+                .replace("{title}", &track.title);
+            let clean_name = clean_filename(&filename);
+            let file_path = output_dir.join(clean_name).with_extension("mp3");
 
             async move {
                 let pb = create_spinner(&mp);
-                let file_path = track.path(&output_dir);
 
                 let task = pl::DownloadTask {
                     id: track.id,

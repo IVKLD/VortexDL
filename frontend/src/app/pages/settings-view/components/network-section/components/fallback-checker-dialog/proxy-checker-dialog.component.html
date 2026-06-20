@@ -1,95 +1,96 @@
 <h2 mat-dialog-title>
     <span>Proxy Checker & Diagnostics</span>
-    <button mat-icon-button mat-dialog-close type="button">
-        <mat-icon>close</mat-icon>
-    </button>
 </h2>
 
-<mat-dialog-content class="mat-typography">
-    <div class="dialog-layout">
-        <div class="dialog-column left-column">
-            <h3 class="column-title">Raw Proxy Input</h3>
-            
-            <mat-form-field class="textarea-field">
-                <mat-label>Raw Proxy List</mat-label>
-                <textarea matInput placeholder="Example:&#10;socks5://84.47.150.125:1080&#10;socks4://192.111.137.35:4145"
-                    rows="10" [value]="pastedText()" (input)="onTextChange($event)"></textarea>
-                <mat-hint>Supports SOCKS4, SOCKS5, and HTTP proxy URLs (e.g. socks5://user:pass@host:port)</mat-hint>
-            </mat-form-field>
+<mat-dialog-content>
+    <div class="dialog-block">
+        <div class="title-block">
+            <h3>Raw Proxy Input</h3>
 
-            <button type="button" mat-flat-button color="primary" class="check-button" (click)="testAll()" [disabled]="isTesting() || parsedProxies().length === 0">
+            <button type="button" mat-flat-button (click)="testAll()"
+                    [disabled]="isTesting() || parsedProxies().length === 0"
+            >
                 @if (isTesting()) {
                     <mat-icon class="rotating">sync</mat-icon>
                 }
-                <span>Check {{ parsedProxies().length || '' }} Proxies</span>
+                <span>Check {{ parsedProxies().length }} Proxies</span>
             </button>
+        </div>
 
-            @if (parsedProxies().length > 0) {
-                <div class="logs-box-wrapper">
-                    <h4 class="logs-title">Diagnostics Log</h4>
-                    <div class="logs-container">
-                        @for (proxy of parsedProxies(); track proxy) {
-                            <div class="log-row">
-                                <span class="log-proxy-name">{{ proxy }}</span>
-                                <span class="status-icon-wrapper">
+        <mat-form-field class="textarea-field" appearance="fill">
+            <textarea matInput placeholder="Example:&#10;socks5://84.47.150.125:1080&#10;socks4://192.111.137.35:4145"
+                      rows="10" [value]="pastedText()" (input)="onTextChange($event)"></textarea>
+            <mat-hint>Supports SOCKS4, SOCKS5, and HTTP proxy URLs (e.g. socks5://user:pass@host:port)</mat-hint>
+        </mat-form-field>
+
+        @if (parsedProxies().length > 0) {
+            <div class="logs-box-wrapper">
+                <h4>Diagnostics Log</h4>
+                <div class="container">
+                    @for (proxy of parsedProxies(); track proxy) {
+                        <div class="log-row">
+                            <span class="log-proxy-name">{{ proxy }}</span>
+                            <span class="status-icon-wrapper">
                                     @if (importStatuses()[proxy]?.loading) {
                                         <mat-icon class="status-icon loading-icon rotating">sync</mat-icon>
                                     } @else if (importStatuses()[proxy]?.valid === true) {
                                         <mat-icon class="status-icon success-icon">check_circle</mat-icon>
                                     } @else if (importStatuses()[proxy]?.valid === false) {
-                                        <mat-icon class="status-icon failed-icon" [matTooltip]="importStatuses()[proxy]?.error || 'Verification failed'">error</mat-icon>
+                                        <mat-icon class="status-icon failed-icon"
+                                                  [matTooltip]="importStatuses()[proxy]?.error || 'Verification failed'">error</mat-icon>
                                     } @else {
                                         <mat-icon class="status-icon idle-icon">help_outline</mat-icon>
                                     }
                                 </span>
-                            </div>
-                        }
-                    </div>
+                        </div>
+                    }
+                </div>
+            </div>
+        }
+    </div>
+
+    <div class="dialog-block">
+        <div class="column-header-row">
+            <h3 class="column-title">Working Proxies</h3>
+            @if (workingProxies().length > 0) {
+                <span class="verified-badge">
+                        {{ workingProxies().length }} Verified
+                    </span>
+            }
+        </div>
+
+        <div class="working-box">
+            @if (workingProxies().length > 0) {
+                <div class="working-list">
+                    @for (proxy of workingProxies(); track proxy) {
+                        <div class="working-item">
+                            <mat-icon class="item-icon">verified</mat-icon>
+                            <span class="working-url">{{ proxy }}</span>
+                        </div>
+                    }
+                </div>
+            } @else {
+                <div class="empty-working">
+                    <mat-icon class="empty-icon">vpn_lock</mat-icon>
+                    <p class="empty-text">No verified working proxies yet. Paste your list and click "Check Proxies" to
+                        begin verification.</p>
                 </div>
             }
         </div>
 
-        <div class="dialog-column right-column">
-            <div class="column-header-row">
-                <h3 class="column-title">Working Proxies</h3>
-                @if (workingProxies().length > 0) {
-                    <span class="verified-badge">
-                        {{ workingProxies().length }} Verified
-                    </span>
-                }
-            </div>
-
-            <div class="working-box">
-                @if (workingProxies().length > 0) {
-                    <div class="working-list">
-                        @for (proxy of workingProxies(); track proxy) {
-                            <div class="working-item">
-                                <mat-icon class="item-icon">verified</mat-icon>
-                                <span class="working-url">{{ proxy }}</span>
-                            </div>
-                        }
-                    </div>
-                } @else {
-                    <div class="empty-working">
-                        <mat-icon class="empty-icon">vpn_lock</mat-icon>
-                        <p class="empty-text">No verified working proxies yet. Paste your list and click "Check Proxies" to begin verification.</p>
-                    </div>
-                }
-            </div>
-
-            @if (workingProxies().length > 0) {
-                <button type="button" mat-stroked-button (click)="copyToClipboard()">
-                    <mat-icon>content_copy</mat-icon>
-                    <span>Copy Working list</span>
-                </button>
-            }
-        </div>
+        @if (workingProxies().length > 0) {
+            <button type="button" mat-stroked-button (click)="copyToClipboard()">
+                <mat-icon>content_copy</mat-icon>
+                <span>Copy Working list</span>
+            </button>
+        }
     </div>
 </mat-dialog-content>
 
 <mat-dialog-actions align="end">
     <button type="button" mat-button mat-dialog-close>Cancel</button>
-    <button type="button" mat-flat-button color="accent" (click)="importWorking()" [disabled]="workingProxies().length === 0">
+    <button type="button" mat-flat-button [mat-dialog-close]="workingProxies()"
+            [disabled]="workingProxies().length === 0">
         <mat-icon>add_task</mat-icon>
         <span>Import {{ workingProxies().length }} Working</span>
     </button>

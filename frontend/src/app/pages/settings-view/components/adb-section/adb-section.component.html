@@ -1,3 +1,5 @@
+@let adbSettings = form();
+
 <h2>
     <mat-icon>phone_android</mat-icon>
     ADB Device Sync
@@ -6,14 +8,14 @@
 <div class="fields">
     <div class="controls">
         <div class="item">
-            <mat-slide-toggle [formField]="form().enabled">
+            <mat-slide-toggle [formField]="adbSettings.enabled">
                 Enable ADB Sync
             </mat-slide-toggle>
             <p>Master switch for all ADB synchronization tasks</p>
         </div>
 
         <div class="item">
-            <mat-slide-toggle [formField]="form().autoSync">
+            <mat-slide-toggle [formField]="adbSettings.autoSync">
                 Auto-sync on download
             </mat-slide-toggle>
             <p>Automatically push new tracks to devices after download finishes</p>
@@ -22,9 +24,9 @@
 
     <mat-divider />
 
-    <div [class.disabled]="!form().enabled().value()" class="sync">
+    <div [class.disabled]="!adbSettings.enabled().value()" class="sync">
         <app-adb-discovery (selectDevice)="useDevice($event)" />
-        <app-adb-device-list (remove)="removeDevice($event)" (toggleDevice)="toggleDevice($event)"
-            [form]="form().devices" />
+        <app-adb-device-list (remove)="removeDevice($event)"
+            [form]="adbSettings.devices" />
     </div>
 </div>

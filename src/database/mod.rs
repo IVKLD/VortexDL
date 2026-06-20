@@ -7,6 +7,7 @@ use std::{
 use anyhow::{Error, anyhow};
 use redb::Database;
 
+pub mod cache;
 pub mod settings;
 pub mod sync;
 
