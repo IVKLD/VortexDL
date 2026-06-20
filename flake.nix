@@ -117,6 +117,7 @@
                 Group = cfg.group;
                 Restart = "always";
                 ExecStartPre = [
+                  "+${pkgs.bash}/bin/bash -c 'if [ -L \"${cfg.dataDir}\" ]; then rm \"${cfg.dataDir}\"; fi'"
                   "+${pkgs.coreutils}/bin/mkdir -p ${cfg.dataDir}"
                   "+${pkgs.coreutils}/bin/chown ${cfg.user}:${cfg.group} ${cfg.dataDir}"
                 ];
