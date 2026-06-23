@@ -1,8 +1,8 @@
 import {HttpClient, HttpParams} from '@angular/common/http';
 import {inject, Injectable} from '@angular/core';
-import {Tracks} from '@shared/models/track.model';
+import {MusicTracks} from '@shared/models/music-track.model';
 
-@Injectable({providedIn: 'root'})
+@Injectable({ providedIn: 'root' })
 export class MusicTracksViewService {
     private readonly _http = inject(HttpClient);
 
@@ -15,11 +15,11 @@ export class MusicTracksViewService {
             params = params.set('limit', limit.toString());
         }
 
-        return this._http.get<Tracks>('/downloads', { params });
+        return this._http.get<MusicTracks>('/downloads', { params });
     }
 
     public indexing() {
-        return this._http.get('/downloads/indexing_tracks');
+        return this._http.post('/library/reindex', {});
     }
 
     public delete(id: number) {

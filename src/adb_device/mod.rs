@@ -5,7 +5,7 @@ pub mod ui;
 
 use std::{sync::Arc, time::Duration};
 
-pub use commands::{AdbError, StorageInfo, get_device_storages, list_devices};
+pub use commands::{AdbError, StorageInfo, StorageType, get_device_storages, list_devices};
 pub use sync::sync_device;
 use tokio::sync::RwLock;
 
@@ -29,7 +29,10 @@ pub fn init(storage: Arc<RwLock<MusicStorage>>, settings: SettingsManager) {
     });
 }
 
-async fn poll_devices(storage: Arc<RwLock<MusicStorage>>, settings: SettingsManager) -> Result<(), AdbError> {
+async fn poll_devices(
+    storage: Arc<RwLock<MusicStorage>>,
+    settings: SettingsManager,
+) -> Result<(), AdbError> {
     let settings_read = settings.read().await;
     if !settings_read.adb.enabled {
         return Ok(());

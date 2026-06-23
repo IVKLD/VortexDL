@@ -1,8 +1,9 @@
-import {inject, Injectable, NgZone, signal} from '@angular/core';
-import {HttpClient} from '@angular/common/http';
-import {MusicTracksViewService} from '../pages/music-tracks-view/music-tracks-view.service';
-import {MusicTracksViewState} from '../pages/music-tracks-view/music-tracks-view.state';
-import {AudioFormat, Track} from '@shared/models/track.model';
+import { inject, Injectable, NgZone, signal } from '@angular/core';
+import { HttpClient } from '@angular/common/http';
+import { MusicTracksViewService } from '../pages/music-tracks-view/music-tracks-view.service';
+import { MusicTracksViewState } from '../pages/music-tracks-view/music-tracks-view.state';
+import { PlayerService } from '@app/services/player.service';
+import { AudioFormat, MusicTrack } from '@shared/models/music-track.model';
 
 export enum DownloadStatus {
     Queued = 'queued',
@@ -11,7 +12,7 @@ export enum DownloadStatus {
     Failed = 'failed',
 }
 
-export interface DownloadItem extends Track {
+export interface DownloadItem extends MusicTrack {
     error?: string;
     status: DownloadStatus;
     progress?: number;
@@ -37,8 +38,8 @@ export class DownloadTrackingService {
     public readonly activeDownloads = signal<DownloadItem[]>([]);
     public readonly errors = signal<string[]>([]);
     private readonly _http = inject(HttpClient);
-    private readonly _musicApi = inject(MusicTracksViewService);
     private readonly _musicState = inject(MusicTracksViewState);
+    private readonly _player = inject(PlayerService);
     private readonly _zone = inject(NgZone);
 
     private eventSource?: EventSource;
@@ -116,6 +117,11 @@ export class DownloadTrackingService {
             case ServerEventType.TrackUpdate:
                 this.handleTrackUpdate(event.item);
                 break;
+            case ServerEventType.SyncFinished:
+                this._musicState.refresh().subscribe({
+                    next: () => this.syncPlayerQueue()
+                });
+                break;
             case ServerEventType.Message:
                 if (event.level === 'error') this.addError(event.message);
                 break;
@@ -147,6 +153,15 @@ export class DownloadTrackingService {
 
     private addError(message: string): void {
         this.errors.update(prev => prev.includes(message) ? prev : [message, ...prev].slice(0, 5));
+    }
+
+    private syncPlayerQueue(): void {
+        const validIds = new Set(this._musicState.sortedTracks().map(t => t.id));
+        for (const track of this._player.queue()) {
+            if (!validIds.has(track.id)) {
+                this._player.removeFromQueue(track.id);
+            }
+        }
     }
 
     private updateActiveDownloads(item: DownloadItem): void {

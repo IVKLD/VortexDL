@@ -1,8 +1,8 @@
-import {ChangeDetectionStrategy, Component, inject, input, output, signal} from '@angular/core';
+import {Component, inject, input, output, signal} from '@angular/core';
 import {MatIcon} from '@angular/material/icon';
 import {MatIconButton} from '@angular/material/button';
 import {MatSlideToggle} from '@angular/material/slide-toggle';
-import {MatFormField, MatInput} from '@angular/material/input';
+import {MatFormField} from '@angular/material/form-field';
 import {MatSelect, MatOption} from '@angular/material/select';
 import {FieldTree, FormField} from '@angular/forms/signals';
 import {AdbDeviceSettings, StorageInfo, StorageType} from '@app/pages/settings-view/models/settings-form.model';
@@ -10,10 +10,9 @@ import {SettingsService} from '@app/pages/settings-view/settings.service';
 
 @Component({
     selector: 'app-adb-device-list',
-    imports: [MatIcon, MatIconButton, MatSlideToggle, MatFormField, MatInput, FormField, MatSelect, MatOption],
+    imports: [MatIcon, MatIconButton, MatSlideToggle, MatFormField, FormField, MatSelect, MatOption],
     templateUrl: './adb-device-list.component.html',
     styleUrl: './adb-device-list.component.scss',
-    changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class AdbDeviceListComponent {
     private readonly _settingsService = inject(SettingsService);

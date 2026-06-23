@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, inject, output, signal } from '@angular/core';
+import {Component, inject, output, signal} from '@angular/core';
 import { MatIcon } from '@angular/material/icon';
 import { MatIconButton } from '@angular/material/button';
 import { SettingsService } from '@app/pages/settings-view/settings.service';
@@ -9,8 +9,7 @@ import { finalize } from 'rxjs';
     imports: [MatIcon, MatIconButton],
     templateUrl: './adb-discovery.component.html',
     styleUrl: './adb-discovery.component.scss',
-    changeDetection: ChangeDetectionStrategy.OnPush,
-})
+    })
 export class AdbDiscoveryComponent {
     private readonly _api = inject(SettingsService);
 

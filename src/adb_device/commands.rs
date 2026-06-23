@@ -1,6 +1,7 @@
 use std::{collections::HashSet, io::ErrorKind};
 
 use anyhow::{Context, Result};
+use serde::Serialize;
 use tokio::process::Command;
 
 #[derive(Debug)]
@@ -20,7 +21,6 @@ impl std::fmt::Display for AdbError {
 
 impl std::error::Error for AdbError {}
 
-
 async fn adb(device: &str, args: &[&str]) -> Result<String> {
     let output = Command::new("adb")
         .arg("-s")
@@ -36,8 +36,6 @@ async fn adb(device: &str, args: &[&str]) -> Result<String> {
 
     Ok(String::from_utf8_lossy(&output.stdout).into_owned())
 }
-
-
 
 pub async fn list_devices() -> Result<HashSet<String>, AdbError> {
     let output = Command::new("adb")
@@ -70,54 +68,66 @@ pub async fn list_devices() -> Result<HashSet<String>, AdbError> {
         .collect())
 }
 
+fn shell_escape(s: &str) -> String {
+    let mut escaped = String::with_capacity(s.len() + 2);
+    escaped.push('\'');
+    for c in s.chars() {
+        if c == '\'' {
+            escaped.push_str("'\\''");
+        } else {
+            escaped.push(c);
+        }
+    }
+    escaped.push('\'');
+    escaped
+}
+
 pub async fn ensure_dir(device: &str, dir: &str) -> Result<()> {
-    adb(device, &["shell", "mkdir", "-p", dir])
-        .await
-        .map(|_| ())
+    adb(device, &["shell", "mkdir", "-p", &shell_escape(dir)]).await?;
+    Ok(())
 }
 
 pub async fn list_files(device: &str, dir: &str) -> Result<HashSet<String>> {
-    let result = adb(device, &["shell", "find", dir, "-type", "f"]).await;
-
-    let stdout = match result {
-        Ok(s) => s,
-        Err(_) => return Ok(HashSet::new()),
-    };
-
-    let prefix = format!("{}/", dir.trim_end_matches('/'));
-
-    Ok(stdout
-        .lines()
-        .filter_map(|line| line.trim().strip_prefix(&prefix).map(String::from))
-        .collect())
+    match adb(device, &["shell", "find", &shell_escape(dir), "-type", "f"]).await {
+        Ok(stdout) => {
+            let prefix = format!("{}/", dir.trim_end_matches('/'));
+            Ok(stdout
+                .lines()
+                .filter_map(|line| line.trim().strip_prefix(&prefix).map(String::from))
+                .collect())
+        }
+        Err(e) => {
+            tracing::warn!(device, dir, error = %e, "Failed to list remote files via ADB");
+            Ok(HashSet::new())
+        }
+    }
 }
 
 pub async fn push(device: &str, local: &str, remote: &str) -> Result<()> {
-    adb(device, &["push", local, remote]).await.map(|_| ())
+    adb(device, &["push", local, remote]).await?;
+    Ok(())
 }
 
-pub async fn rm(device: &str, path: &str) -> Result<()> {
-    adb(device, &["shell", "rm", "-f", path])
-        .await
-        .map(|_| ())
+pub async fn delete_file(device: &str, path: &str) -> Result<()> {
+    adb(device, &["shell", "rm", "-f", &shell_escape(path)]).await?;
+    Ok(())
 }
 
-pub async fn rmdir(device: &str, path: &str) -> Result<()> {
-    adb(device, &["shell", "rmdir", path])
-        .await
-        .map(|_| ())
+pub async fn delete_dir(device: &str, path: &str) -> Result<()> {
+    adb(device, &["shell", "rmdir", &shell_escape(path)]).await?;
+    Ok(())
 }
 
-use serde::Serialize;
+use utoipa::ToSchema;
 
-#[derive(Serialize, Debug, Clone)]
+#[derive(Serialize, Debug, Clone, ToSchema)]
 #[serde(rename_all = "camelCase")]
 pub enum StorageType {
     Internal,
     SdCard,
 }
 
-#[derive(Serialize, Debug, Clone)]
+#[derive(Serialize, Debug, Clone, ToSchema)]
 #[serde(rename_all = "camelCase")]
 pub struct StorageInfo {
     pub name: String,

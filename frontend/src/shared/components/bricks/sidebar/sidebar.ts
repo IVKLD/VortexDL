@@ -1,4 +1,4 @@
-import {ChangeDetectionStrategy, Component} from '@angular/core';
+import {Component, inject} from '@angular/core';
 import {MatButton} from '@angular/material/button';
 import {MatSidenav, MatSidenavContainer, MatSidenavContent} from '@angular/material/sidenav';
 import {RouterLink, RouterLinkActive} from '@angular/router';
@@ -7,6 +7,11 @@ import {ActiveDownloadsComponent} from '../../active-downloads/active-downloads'
 import {MatIcon} from '@angular/material/icon';
 import {Header} from "@shared/components/bricks/header/header";
 import {PlayerComponent} from '@shared/components/player/player';
+import {DownloadTrackingService} from '@app/services/download-tracking.service';
+import {MatDialog} from '@angular/material/dialog';
+import {ActiveDownloadErrorsComponent} from '../../active-downloads/components/active-download-errors/active-download-errors.component';
+import {ErrorsDialogComponent} from '../../active-downloads/components/active-download-errors/errors-dialog/errors-dialog.component';
+import {PlayerService} from '@app/services/player.service';
 
 interface SidebarNavItem {
     path: string;
@@ -48,11 +53,28 @@ const SIDEBAR_NAV_ITEMS: SidebarNavItem[] = [
         MatSidenavContent,
         Header,
         PlayerComponent,
+        ActiveDownloadErrorsComponent,
     ],
     templateUrl: './sidebar.html',
     styleUrl: './sidebar.scss',
-    changeDetection: ChangeDetectionStrategy.OnPush,
-})
+    })
 export class Sidebar {
     protected readonly navItems = SIDEBAR_NAV_ITEMS;
+    protected readonly tracking = inject(DownloadTrackingService);
+    protected readonly player = inject(PlayerService);
+    private readonly dialog = inject(MatDialog);
+
+    protected openErrorsDialog() {
+        const dialogRef = this.dialog.open(ErrorsDialogComponent, {
+            data: this.tracking.errors(),
+            width: '600px',
+            maxWidth: '90vw'
+        });
+
+        dialogRef.afterClosed().subscribe(result => {
+            if (result === 'clear') {
+                this.tracking.clearError();
+            }
+        });
+    }
 }

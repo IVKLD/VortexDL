@@ -123,11 +123,11 @@ async fn delete_tracks(device: &str, remote_dir: &str, paths: &[String]) {
     for rel in paths {
         let remote = format!("{remote_dir}/{rel}");
 
-        match commands::rm(device, &remote).await {
+        match commands::delete_file(device, &remote).await {
             Ok(()) => {
                 ui::deleted(rel);
                 if let Some((parent, _)) = rel.split_once('/') {
-                    let _ = commands::rmdir(device, &format!("{remote_dir}/{parent}")).await;
+                    let _ = commands::delete_dir(device, &format!("{remote_dir}/{parent}")).await;
                 }
             }
             Err(e) => ui::delete_failed(rel, &e),

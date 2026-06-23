@@ -2,10 +2,11 @@ use std::sync::Arc;
 
 use serde::{Deserialize, Serialize};
 use tokio::sync::RwLock;
+use utoipa::ToSchema;
 
 use crate::{database::update_settings, types::SyncMode};
 
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, ToSchema)]
 #[serde(rename_all = "camelCase")]
 pub struct SoundcloudSettings {
     pub profile_url: String,
@@ -14,7 +15,7 @@ pub struct SoundcloudSettings {
     pub cached_client_id: Option<String>,
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, ToSchema)]
 #[serde(rename_all = "camelCase")]
 pub struct DownloadSettings {
     pub output_path: String,
@@ -23,7 +24,7 @@ pub struct DownloadSettings {
     pub sync_mode: SyncMode,
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, ToSchema)]
 #[serde(rename_all = "camelCase")]
 pub struct AdbDeviceSettings {
     pub device_id: String,
@@ -31,7 +32,7 @@ pub struct AdbDeviceSettings {
     pub enabled: bool,
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone, Default)]
+#[derive(Serialize, Deserialize, Debug, Clone, Default, ToSchema)]
 #[serde(rename_all = "camelCase")]
 pub struct AdbSettings {
     pub enabled: bool,
@@ -39,7 +40,7 @@ pub struct AdbSettings {
     pub devices: Vec<AdbDeviceSettings>,
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone, Default)]
+#[derive(Serialize, Deserialize, Debug, Clone, Default, ToSchema)]
 #[serde(rename_all = "camelCase")]
 pub struct NetworkSettings {
     pub use_proxy: bool,
@@ -69,7 +70,7 @@ impl NetworkSettings {
     }
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, ToSchema)]
 #[serde(rename_all = "camelCase")]
 pub struct UserSettings {
     pub soundcloud: SoundcloudSettings,

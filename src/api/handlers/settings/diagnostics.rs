@@ -1,5 +1,7 @@
 use axum::{Json, extract::State, http::StatusCode, response::IntoResponse};
+use serde::{Deserialize, Serialize};
 use soundcloud_rs::ClientBuilder;
+use utoipa::ToSchema;
 
 use crate::{
     api::{
@@ -9,12 +11,20 @@ use crate::{
     utils::soundcloud::resolve_url,
 };
 
-#[derive(Deserialize)]
+#[derive(Deserialize, ToSchema)]
 #[serde(rename_all = "camelCase")]
 pub struct TestSoundCloudRequest {
     pub url: String,
 }
 
+#[utoipa::path(
+    method(post),
+    path = "/api/settings/test/soundcloud",
+    request_body = TestSoundCloudRequest,
+    responses(
+        (status = 200, description = "SoundCloud URL is valid and accessible", body = String)
+    )
+)]
 pub async fn test_soundcloud(
     State(state): State<AppState>,
     Json(payload): Json<TestSoundCloudRequest>,
@@ -33,15 +43,13 @@ pub async fn test_soundcloud(
         })
 }
 
-use serde::{Deserialize, Serialize};
-
-#[derive(Deserialize)]
+#[derive(Deserialize, ToSchema)]
 #[serde(rename_all = "camelCase")]
 pub struct TestProxiesRequest {
     pub proxy_urls: Vec<String>,
 }
 
-#[derive(Serialize)]
+#[derive(Serialize, ToSchema)]
 #[serde(rename_all = "camelCase")]
 pub struct ProxyTestResult {
     pub url: String,
@@ -49,12 +57,20 @@ pub struct ProxyTestResult {
     pub error: Option<String>,
 }
 
-#[derive(Serialize)]
+#[derive(Serialize, ToSchema)]
 #[serde(rename_all = "camelCase")]
 pub struct TestProxiesResponse {
     pub results: Vec<ProxyTestResult>,
 }
 
+#[utoipa::path(
+    method(post),
+    path = "/api/settings/test/proxy",
+    request_body = TestProxiesRequest,
+    responses(
+        (status = 200, description = "Proxy test results", body = TestProxiesResponse)
+    )
+)]
 pub async fn test_proxy(
     State(_state): State<AppState>,
     Json(payload): Json<TestProxiesRequest>,

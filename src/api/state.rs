@@ -30,7 +30,7 @@ impl AppState {
 
         Self {
             client,
-            http: builder.build().unwrap_or_default(),
+            http: builder.build().expect("Failed to build HTTP client — check proxy configuration"),
             storage,
             download_manager: Arc::new(DownloadManager::default()),
             settings: SettingsManager::new(settings),

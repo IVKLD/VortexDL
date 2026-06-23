@@ -1,27 +1,19 @@
 @let items = sortedActiveDownloads();
-@let errors = tracking.errors();
 
 <div class="downloads-container">
     @if (items.length > 0) {
-        <div class="active-downloads">
-            <header>
-                <span>Active Downloads</span>
-                @if (items.length > 0) {
-                    <mark>{{ items.length }}</mark>
-                }
-            </header>
+    <div class="active-downloads">
+        <header>
+            <span>Active Downloads</span>
+            @if (items.length > 0) {
+            <mark>{{ items.length }}</mark>
+            }
+        </header>
 
-            <rx-virtual-scroll-viewport [itemSize]="52">
-                <app-active-download-item
-                        (remove)="tracking.removeFromQueue($event)"
-                        *rxVirtualFor="let item of items; trackBy: 'id'"
-                        [item]="item"
-                />
-            </rx-virtual-scroll-viewport>
-        </div>
-    }
-
-    @if (errors.length > 0) {
-        <app-active-download-errors (clear)="clearError()" [errors]="errors"/>
+        <rx-virtual-scroll-viewport [itemSize]="52">
+            <app-active-download-item *rxVirtualFor="let item of items; trackBy: 'id'" (remove)="remove.emit($event)"
+                [item]="item" />
+        </rx-virtual-scroll-viewport>
+    </div>
     }
 </div>

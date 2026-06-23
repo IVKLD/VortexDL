@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, computed, inject, input, signal } from '@angular/core';
+import {Component, computed, inject, input, signal} from '@angular/core';
 import { NgTemplateOutlet } from '@angular/common';
 import { MatIcon } from '@angular/material/icon';
 import { MatButton } from '@angular/material/button';
@@ -24,8 +24,7 @@ import { HeaderService } from '../../header.service';
     ],
     templateUrl: './header-right.component.html',
     styleUrl: './header-right.component.scss',
-    changeDetection: ChangeDetectionStrategy.OnPush
-})
+    })
 export class HeaderRight {
     public readonly config = input<HeaderConfig>();
     protected readonly headerService = inject(HeaderService);

@@ -1,37 +1,56 @@
 @let data = track();
 
-<div class="artwork">
-    @if (data.artworkUrl) {
-        <img [alt]="data.title" [ngSrc]="data.artworkUrl" height="42" width="42"/>
-    } @else {
+<div class="card-content-wrapper" [cdkContextMenuTriggerFor]="cardMenu"
+    [cdkContextMenuTriggerData]="{ $implicit: data }">
+    <div class="artwork">
+        @if (data.artworkUrl) {
+        <img [alt]="data.title" [ngSrc]="data.artworkUrl" height="42" width="42" />
+        } @else {
         <mat-icon>music_note</mat-icon>
-    }
+        }
 
-    <button (click)="$event.stopPropagation(); playTrack.emit(data)" mat-icon-button>
-        <mat-icon>{{ isPlaying() ? 'pause' : 'play_arrow' }}</mat-icon>
-    </button>
-</div>
+        <button (click)="$event.stopPropagation(); playTrack.emit(data)" mat-icon-button>
+            <mat-icon>{{ isPlaying() ? 'pause' : 'play_arrow' }}</mat-icon>
+        </button>
+    </div>
 
-<div class="info">
-    <section>
-        <h3>{{ data.title }}</h3>
-        <span>{{ data.artist }}</span>
-    </section>
+    <div class="info">
+        <section>
+            <h3>{{ data.title }}</h3>
+            <span>{{ data.artist }}</span>
+        </section>
 
-    <aside>
-        <span>{{ data.size | fileSize }}</span>
-        <strong [attr.data-format]="data.format">{{ data.format }}</strong>
-    </aside>
+        <aside>
+            <span>{{ data.size | fileSize }}</span>
+            <strong [attr.data-format]="data.format">{{ data.format }}</strong>
+        </aside>
 
-    <div class="actions-wrapper">
-        <menu (click)="$event.stopPropagation()" animate.enter="slide-in"
-              animate.leave="slide-out" role="presentation"
-        >
-            @if (this._deleteTrackSubj.observed) {
-                <button (click)="onDeleteClick()" mat-icon-button>
-                    <mat-icon>delete</mat-icon>
+        <div class="actions-wrapper">
+            <menu (click)="$event.stopPropagation()" role="presentation">
+                <button [cdkMenuTriggerFor]="isMenuOpen() ? null : cardMenu" [cdkMenuTriggerData]="{ $implicit: data }"
+                    mat-icon-button>
+                    <mat-icon>more_vert</mat-icon>
                 </button>
-            }
-        </menu>
+            </menu>
+        </div>
     </div>
 </div>
+
+<ng-template #cardMenu let-trackData>
+    <div cdkMenu class="vortex-context-menu">
+        <button cdkMenuItem class="vortex-menu-item" (click)="playTrack.emit(trackData)">
+            <mat-icon>{{ isPlaying() ? 'pause' : 'play_arrow' }}</mat-icon>
+            <span>{{ isPlaying() ? 'Pause' : 'Play' }}</span>
+        </button>
+        <button cdkMenuItem class="vortex-menu-item" (click)="toggleSelect.emit()">
+            <mat-icon>{{ isSelected() ? 'check_box' : 'check_box_outline_blank' }}</mat-icon>
+            <span>{{ isSelected() ? 'Deselect' : 'Select' }}</span>
+        </button>
+        @if (this._deleteTrackSubj.observed) {
+        <button cdkMenuItem class="vortex-menu-item delete-menu-item" (click)="onDeleteClick()">
+            <mat-icon>delete</mat-icon>
+            <span>Delete</span>
+        </button>
+        }
+    </div>
+</ng-template>

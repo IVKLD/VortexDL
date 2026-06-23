@@ -10,8 +10,9 @@ use anyhow::Result;
 use tokio::{sync::RwLock, task::spawn_blocking};
 
 use crate::{
+    constants::ARCHIVE_DIR,
     database::{
-        cache::{CachedTrack, get_cached_tracks, save_cached_tracks},
+        cache::{CachedMusicTrack, get_cached_music_tracks, save_cached_music_tracks},
         get_previous_ids, save_sync_ids,
     },
     types::SyncMode,
@@ -19,7 +20,7 @@ use crate::{
 };
 
 #[derive(Default, Clone)]
-pub struct LocalTrack {
+pub struct LocalMusicTrack {
     pub path: PathBuf,
     pub artist: String,
     pub title: String,
@@ -30,12 +31,12 @@ pub struct LocalTrack {
     pub size: u64,
 }
 
-impl LocalTrack {
+impl LocalMusicTrack {
     pub fn is_archived(&self) -> bool {
-        self.path.iter().any(|c| c == "Archive")
+        self.path.iter().any(|c| c == ARCHIVE_DIR)
     }
 
-    pub fn from_cached(path: PathBuf, cached: &CachedTrack) -> Self {
+    pub fn from_cached(path: PathBuf, cached: &CachedMusicTrack) -> Self {
         Self {
             path,
             artist: cached.artist.clone(),
@@ -52,8 +53,8 @@ impl LocalTrack {
 fn process_file(
     path: PathBuf,
     metadata: &fs::Metadata,
-    cached_map: &HashMap<String, CachedTrack>,
-) -> Option<(i64, LocalTrack, String, CachedTrack)> {
+    cached_map: &HashMap<String, CachedMusicTrack>,
+) -> Option<(i64, LocalMusicTrack, String, CachedMusicTrack)> {
     let size = metadata.len();
     let get_secs = |t: std::time::SystemTime| {
         t.duration_since(UNIX_EPOCH)
@@ -63,19 +64,25 @@ fn process_file(
     };
 
     let mtime = metadata.modified().ok().map(get_secs).unwrap_or_default();
-    let created_at = metadata.created().ok().map(get_secs).unwrap_or_default();
-    let path_str = path.to_string_lossy().to_string();
+    let mut created_at = metadata.created().ok().map(get_secs).unwrap_or_default();
+    if created_at == 0 {
+        created_at = mtime;
+    }
+    let path_str = path.to_string_lossy();
 
     if let Some(cached) = cached_map
-        .get(&path_str)
+        .get(path_str.as_ref())
         .filter(|c| c.size == size && c.mtime == mtime)
     {
-        let data = LocalTrack::from_cached(path, cached);
-        return Some((cached.id, data, path_str, cached.clone()));
+        let path_string = path_str.into_owned();
+        let data = LocalMusicTrack::from_cached(path, cached);
+        return Some((cached.id, data, path_string, cached.clone()));
     }
 
+    let path_string = path_str.into_owned();
+
     let meta = extract_track_metadata(&path)?;
-    let cached = CachedTrack {
+    let cached = CachedMusicTrack {
         id: meta.id,
         artist: meta.artist,
         title: meta.title,
@@ -86,14 +93,14 @@ fn process_file(
         size,
         mtime,
     };
-    let data = LocalTrack::from_cached(path, &cached);
-    Some((cached.id, data, path_str, cached))
+    let data = LocalMusicTrack::from_cached(path, &cached);
+    Some((cached.id, data, path_string, cached))
 }
 
 #[derive(Default)]
 pub struct MusicStorage {
     pub base_path: String,
-    pub tracks: HashMap<i64, LocalTrack>,
+    pub tracks: HashMap<i64, LocalMusicTrack>,
 }
 
 impl MusicStorage {
@@ -103,10 +110,10 @@ impl MusicStorage {
             tracks: HashMap::new(),
         }
     }
-    pub fn update_track(&mut self, id: i64, data: LocalTrack) {
+    pub fn update_track(&mut self, id: i64, data: LocalMusicTrack) {
         self.tracks.insert(id, data);
     }
-    pub async fn remove_track(&mut self, id: i64) -> Result<Option<LocalTrack>, io::Error> {
+    pub async fn remove_track(&mut self, id: i64) -> Result<Option<LocalMusicTrack>, io::Error> {
         let Some(data) = self.tracks.remove(&id) else {
             return Ok(None);
         };
@@ -124,7 +131,7 @@ impl MusicStorage {
         let result = spawn_blocking(move || {
             let mut tracks = HashMap::new();
             let mut stack = vec![root];
-            let cached = get_cached_tracks().unwrap_or_default();
+            let cached = get_cached_music_tracks().unwrap_or_default();
             let mut new_cached = HashMap::new();
 
             while let Some(dir) = stack.pop() {
@@ -152,7 +159,7 @@ impl MusicStorage {
                 }
             }
 
-            if let Err(e) = save_cached_tracks(&new_cached) {
+            if let Err(e) = save_cached_music_tracks(&new_cached) {
                 tracing::error!("Failed to save track cache: {e}");
             }
 
@@ -169,7 +176,7 @@ impl MusicStorage {
             }
             let count = tracks.len();
             s.tracks = tracks;
-            tracing::info!("Indexing complete. Found {} tracks.", count);
+            tracing::debug!("Indexing complete. Found {} tracks.", count);
         }
     }
 
@@ -190,7 +197,7 @@ impl MusicStorage {
             return Ok(());
         }
 
-        let archive_path = Path::new(&self.base_path).join("Archive");
+        let archive_path = Path::new(&self.base_path).join(ARCHIVE_DIR);
         if matches!(mode, SyncMode::Archive) {
             tokio::fs::create_dir_all(&archive_path).await?;
         }

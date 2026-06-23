@@ -3,6 +3,7 @@ use std::{fmt, sync::Arc};
 use clap::ValueEnum;
 use serde::{Deserialize, Serialize};
 use tokio::sync::RwLock;
+use utoipa::ToSchema;
 
 use crate::{
     api::{download_manager::DownloadManager, state::AppState},
@@ -13,7 +14,7 @@ use crate::{
 
 // --- Sync Mode ---
 
-#[derive(ValueEnum, Clone, Copy, Debug, Serialize, Deserialize, PartialEq, Eq)]
+#[derive(ValueEnum, Clone, Copy, Debug, Serialize, Deserialize, PartialEq, Eq, ToSchema)]
 #[serde(rename_all = "lowercase")]
 #[value(rename_all = "lowercase")]
 pub enum SyncMode {
@@ -61,7 +62,7 @@ impl Context {
 }
 
 #[derive(Clone, Debug)]
-pub struct DiscoveredTrack {
+pub struct DiscoveredMusicTrack {
     pub id: i64,
     pub title: String,
     pub artist: String,
@@ -69,7 +70,7 @@ pub struct DiscoveredTrack {
     pub position: Option<u32>,
 }
 
-impl DiscoveredTrack {
+impl DiscoveredMusicTrack {
     pub fn new(
         id: i64,
         title: Option<&str>,
@@ -120,7 +121,7 @@ pub struct ResolveResponse {
 }
 
 #[derive(Deserialize, Debug)]
-pub struct TrackLikesResponse {
+pub struct MusicTrackLikesResponse {
     pub collection: Vec<LikeItem>,
     pub next_href: Option<String>,
 }
@@ -131,7 +132,7 @@ pub struct LikeItem {
 }
 
 #[derive(Serialize)]
-pub struct TrackLikesQuery {
+pub struct MusicTrackLikesQuery {
     pub limit: u32,
     pub offset: Option<String>,
 }

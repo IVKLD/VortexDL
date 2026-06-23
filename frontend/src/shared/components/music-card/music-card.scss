@@ -14,7 +14,6 @@
     border-color: rgba(255, 255, 255, 0.12);
 
     .actions-wrapper {
-      grid-template-columns: 1fr;
       opacity: 1;
     }
   }
@@ -37,14 +36,32 @@
       color: var(--mat-sys-primary);
     }
   }
+
+  &.selected {
+    background: rgba(255, 255, 255, 0.08);
+    border-color: rgba(255, 255, 255, 0.2);
+  }
+}
+
+.card-content-wrapper {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  height: 100%;
 }
 
 .actions-wrapper {
-  display: grid;
-  grid-template-columns: 0fr;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  width: 40px;
+  flex-shrink: 0;
   opacity: 0;
-  margin-left: 0;
-  transition: all 0.3s ease-in-out;
+  transition: opacity 0.2s ease-in-out;
+
+  &:has(button[aria-expanded="true"]) {
+    opacity: 1;
+  }
 }
 
 .artwork {

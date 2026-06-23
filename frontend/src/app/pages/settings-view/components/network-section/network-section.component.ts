@@ -1,4 +1,4 @@
-import {ChangeDetectionStrategy, Component, input, output} from '@angular/core';
+import {Component, input, output} from '@angular/core';
 import { MatIcon } from '@angular/material/icon';
 import { FieldTree, FormField } from '@angular/forms/signals';
 import { MatInput } from "@angular/material/input";
@@ -16,8 +16,7 @@ import { NetworkSettings } from '@app/pages/settings-view/models/settings-form.m
     ],
     templateUrl: './network-section.component.html',
     styleUrl: './network-section.component.scss',
-    changeDetection: ChangeDetectionStrategy.OnPush,
-})
+    })
 export class NetworkSettingsComponent {
     public readonly form = input.required<FieldTree<NetworkSettings>>();
     public readonly isTesting = input<boolean>(false);

@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, inject, input } from '@angular/core';
+import {Component, inject, input} from '@angular/core';
 import { MusicTracksViewState } from '@app/pages/music-tracks-view/music-tracks-view.state';
 import { HeaderConfig, HeaderFeature } from '../../header.types';
 
@@ -7,8 +7,7 @@ import { HeaderConfig, HeaderFeature } from '../../header.types';
     imports: [],
     templateUrl: './header-left.component.html',
     styleUrl: './header-left.component.scss',
-    changeDetection: ChangeDetectionStrategy.OnPush
-})
+    })
 export class HeaderLeft {
     public readonly config = input<HeaderConfig>();
     protected readonly musicState = inject(MusicTracksViewState);

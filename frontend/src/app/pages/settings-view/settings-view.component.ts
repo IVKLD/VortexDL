@@ -1,4 +1,4 @@
-import {ChangeDetectionStrategy, Component, inject, OnInit, signal, computed} from '@angular/core';
+import {Component, inject, OnInit, signal, computed} from '@angular/core';
 import {form, FormRoot, max, min, required} from '@angular/forms/signals';
 import {SettingsService, SettingsTestingService} from './settings.service';
 import {MatSnackBar} from '@angular/material/snack-bar';
@@ -24,8 +24,7 @@ import {SettingsSaveButtonComponent} from './components/settings-save-button.com
     ],
     templateUrl: './settings-view.component.html',
     styleUrl: './settings-view.component.scss',
-    changeDetection: ChangeDetectionStrategy.OnPush,
-})
+    })
 export class SettingsView implements OnInit {
     protected readonly isTesting = signal(false);
     protected readonly isNetworkTesting = signal(false);

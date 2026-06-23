@@ -3,10 +3,14 @@
         @if (tracks().length > 0) {
             <rx-virtual-scroll-viewport [itemSize]="82">
                 <app-music-card
-                        (deleteTrack)="deleteMusic(track)" (playTrack)="playTrack(track)" (clickTrack)="openDetail(track)"
+                        (deleteTrack)="deleteTrack(track)"
+                        (playTrack)="playTrack(track)"
+                        (clickTrack)="handleCardClick(track)"
+                        (toggleSelect)="state.toggleSelect(track)"
                         *rxVirtualFor="let track of tracks(); trackBy: 'id'"
-                        [isActive]="player.currentTrack()?.id === track.id"
-                        [isPlaying]="player.isPlaying() && player.currentTrack()?.id === track.id"
+                        [isActive]="activeTrackId() === track.id"
+                        [isPlaying]="player.isPlaying() && activeTrackId() === track.id"
+                        [isSelected]="state.selectedIds().has(track.id)"
                         [track]="track"
                 />
             </rx-virtual-scroll-viewport>
@@ -24,3 +28,11 @@
         </div>
     }
 </div>
+
+@if (state.hasSelection()) {
+    <app-selection-bar
+        [count]="state.selectedIds().size"
+        (deleteSelected)="deleteSelected()"
+        (clearSelection)="state.clearSelection()"
+    />
+}

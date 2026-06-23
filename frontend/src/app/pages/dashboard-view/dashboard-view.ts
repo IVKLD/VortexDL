@@ -1,4 +1,4 @@
-import {ChangeDetectionStrategy, Component, computed, inject} from '@angular/core';
+import {Component, computed, inject} from '@angular/core';
 import {DashboardStat, FormatItem} from './dashboard-view.model';
 import {MusicTracksViewState} from '@app/pages/music-tracks-view/music-tracks-view.state';
 import {DownloadTrackingService} from '@app/services/download-tracking.service';
@@ -7,7 +7,7 @@ import {FormatBreakdownComponent} from './components/format-breakdown/format-bre
 import {RecentTracksComponent} from './components/recent-tracks/recent-tracks.component';
 import {StatCardComponent} from './components/stat-card/stat-card.component';
 import {FileSizePipe} from '@shared/pipes/file-size.pipe';
-import {AudioFormat, Track} from '@shared/models/track.model';
+import {AudioFormat, MusicTrack} from '@shared/models/music-track.model';
 import {PlayerService} from '@app/services/player.service';
 
 const FORMATS_CONFIG: { format: AudioFormat, color: string }[] = [
@@ -28,8 +28,7 @@ const FORMATS_CONFIG: { format: AudioFormat, color: string }[] = [
     ],
     templateUrl: './dashboard-view.html',
     styleUrl: './dashboard-view.scss',
-    changeDetection: ChangeDetectionStrategy.OnPush,
-})
+    })
 export class DashboardView {
     public readonly tracking = inject(DownloadTrackingService);
     protected readonly player = inject(PlayerService);
@@ -56,7 +55,7 @@ export class DashboardView {
             iconClass: 'active-icon'
         }
     ]);
-    public readonly recentTracks = computed<Track[]>(() =>
+    public readonly recentTracks = computed<MusicTrack[]>(() =>
         [...this._state.sortedTracks()]
             .sort((a, b) => b.createdAt - a.createdAt)
             .slice(0, 5)

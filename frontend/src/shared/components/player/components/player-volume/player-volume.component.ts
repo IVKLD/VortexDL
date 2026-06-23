@@ -1,4 +1,4 @@
-import {ChangeDetectionStrategy, Component, computed, inject} from '@angular/core';
+import {Component, computed, inject} from '@angular/core';
 import {MatIconButton} from '@angular/material/button';
 import {MatIcon} from '@angular/material/icon';
 import {MatSlider, MatSliderThumb} from '@angular/material/slider';
@@ -14,8 +14,7 @@ import {PlayerService} from '@app/services/player.service';
     ],
     templateUrl: './player-volume.component.html',
     styleUrl: './player-volume.component.scss',
-    changeDetection: ChangeDetectionStrategy.OnPush
-})
+    })
 export class PlayerVolumeComponent {
     protected readonly player = inject(PlayerService);
 

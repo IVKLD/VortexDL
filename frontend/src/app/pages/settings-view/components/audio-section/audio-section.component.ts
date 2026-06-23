@@ -1,4 +1,4 @@
-import {ChangeDetectionStrategy, Component, input} from '@angular/core';
+import {Component, input} from '@angular/core';
 import {MatIcon} from '@angular/material/icon';
 import {FieldTree, FormField} from '@angular/forms/signals';
 import {MatFormField, MatLabel} from "@angular/material/input";
@@ -15,8 +15,7 @@ export type AudioSettings = {
     imports: [MatIcon, FormField, MatLabel, MatFormField, MatSlideToggle, MatSelect, MatOption],
     templateUrl: './audio-section.component.html',
     styleUrl: './audio-section.component.scss',
-    changeDetection: ChangeDetectionStrategy.OnPush,
-})
+    })
 export class AudioSettingsComponent {
     public readonly form = input.required<FieldTree<AudioSettings>>();
 }

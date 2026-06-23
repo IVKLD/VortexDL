@@ -1,4 +1,4 @@
-import {ChangeDetectionStrategy, Component, inject, signal, computed} from '@angular/core';
+import {Component, inject, signal, computed} from '@angular/core';
 import {HttpErrorResponse} from '@angular/common/http';
 import {CommonModule} from '@angular/common';
 import {MatIcon} from '@angular/material/icon';
@@ -24,8 +24,7 @@ import {parseErrorMessage} from '@shared/error-utils';
     ],
     templateUrl: './proxy-checker-dialog.component.html',
     styleUrl: './proxy-checker-dialog.component.scss',
-    changeDetection: ChangeDetectionStrategy.OnPush,
-})
+    })
 export class ProxyCheckerDialogComponent {
     private readonly _testing = inject(SettingsTestingService);
 

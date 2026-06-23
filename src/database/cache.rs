@@ -9,7 +9,7 @@ use crate::database::get_db;
 const CACHE_TABLE: TableDefinition<&str, &str> = TableDefinition::new("track_cache");
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
-pub struct CachedTrack {
+pub struct CachedMusicTrack {
     pub id: i64,
     pub artist: String,
     pub title: String,
@@ -21,7 +21,7 @@ pub struct CachedTrack {
     pub mtime: u64,
 }
 
-pub fn get_cached_tracks() -> Result<HashMap<String, CachedTrack>> {
+pub fn get_cached_music_tracks() -> Result<HashMap<String, CachedMusicTrack>> {
     let db = get_db();
     let read_txn = db.begin_read()?;
 
@@ -32,7 +32,7 @@ pub fn get_cached_tracks() -> Result<HashMap<String, CachedTrack>> {
     };
 
     for (key, value) in table.iter()?.flatten() {
-        if let Ok(cached) = serde_json::from_str::<CachedTrack>(value.value()) {
+        if let Ok(cached) = serde_json::from_str::<CachedMusicTrack>(value.value()) {
             map.insert(key.value().to_string(), cached);
         }
     }
@@ -40,7 +40,7 @@ pub fn get_cached_tracks() -> Result<HashMap<String, CachedTrack>> {
     Ok(map)
 }
 
-pub fn save_cached_tracks(tracks: &HashMap<String, CachedTrack>) -> Result<()> {
+pub fn save_cached_music_tracks(tracks: &HashMap<String, CachedMusicTrack>) -> Result<()> {
     let db = get_db();
     let write_txn = db.begin_write()?;
     {

@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, inject, input, signal } from '@angular/core';
+import {Component, inject, input, signal} from '@angular/core';
 import { MatFormField, MatPrefix } from '@angular/material/form-field';
 import { MatInput } from '@angular/material/input';
 import { MatIcon } from '@angular/material/icon';
@@ -13,8 +13,7 @@ import { HeaderConfig, HeaderFeature } from '../../header.types';
     imports: [MatFormField, MatInput, MatPrefix, MatIcon, FormField],
     templateUrl: './header-center.component.html',
     styleUrl: './header-center.component.scss',
-    changeDetection: ChangeDetectionStrategy.OnPush
-})
+    })
 export class HeaderCenter {
     public readonly config = input<HeaderConfig>();
     private readonly _musicState = inject(MusicTracksViewState);

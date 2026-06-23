@@ -8,23 +8,34 @@ use axum::{
 };
 use serde::Deserialize;
 use tokio_util::io::ReaderStream;
+use utoipa::IntoParams;
 
 use crate::{
     api::{
         errors::{ApiError, ErrorCode},
         state::AppState,
-        types::TrackRecord,
+        types::MusicTrackRecord,
     },
     storage::MusicStorage,
 };
 
-#[derive(Deserialize)]
+#[derive(Deserialize, IntoParams)]
 pub struct TracksQuery {
     pub sort: Option<String>,
     pub order: Option<String>,
     pub limit: Option<usize>,
 }
 
+#[utoipa::path(
+    method(get),
+    path = "/api/downloads",
+    params(
+        TracksQuery
+    ),
+    responses(
+        (status = 200, description = "Get list of local track records", body = Vec<MusicTrackRecord>)
+    )
+)]
 pub async fn get_tracks(
     State(state): State<AppState>,
     Query(query): Query<TracksQuery>,
@@ -34,7 +45,7 @@ pub async fn get_tracks(
     let mut tracks = storage
         .tracks
         .iter()
-        .map(|(id, data)| TrackRecord::from_local_track(*id, data))
+        .map(|(id, data)| MusicTrackRecord::from_local_track(*id, data))
         .collect::<Vec<_>>();
 
     let sort = query.sort.as_deref().unwrap_or("position");
@@ -47,6 +58,8 @@ pub async fn get_tracks(
             _ => a.position.cmp(&b.position),
         };
 
+        let cmp = cmp.then_with(|| a.id.cmp(&b.id));
+
         if order == "desc" { cmp.reverse() } else { cmp }
     });
 
@@ -57,11 +70,28 @@ pub async fn get_tracks(
     Ok(Json(tracks))
 }
 
-pub async fn indexing_tracks(State(state): State<AppState>) -> Result<impl IntoResponse, ApiError> {
+#[utoipa::path(
+    method(post),
+    path = "/api/library/reindex",
+    responses(
+        (status = 200, description = "Reindexing triggered successfully")
+    )
+)]
+pub async fn reindex_library(State(state): State<AppState>) -> Result<impl IntoResponse, ApiError> {
     MusicStorage::index_library(state.storage.clone()).await;
     Ok(StatusCode::OK)
 }
 
+#[utoipa::path(
+    method(delete),
+    path = "/api/downloads/{id}",
+    params(
+        ("id" = i64, Path, description = "Track ID to remove")
+    ),
+    responses(
+        (status = 200, description = "Track deleted successfully")
+    )
+)]
 pub async fn remove_track(
     State(state): State<AppState>,
     Path(id): Path<i64>,
@@ -80,6 +110,40 @@ pub async fn remove_track(
         })?;
 
     Ok(())
+}
+
+#[derive(Deserialize, utoipa::ToSchema)]
+pub struct DeleteTracksPayload {
+    pub ids: Vec<i64>,
+}
+
+#[utoipa::path(
+    method(delete),
+    path = "/api/downloads",
+    request_body = DeleteTracksPayload,
+    responses(
+        (status = 200, description = "Tracks deleted successfully")
+    )
+)]
+pub async fn remove_tracks(
+    State(state): State<AppState>,
+    Json(payload): Json<DeleteTracksPayload>,
+) -> Result<impl IntoResponse, ApiError> {
+    let mut storage = state.storage.write().await;
+    let mut errors = Vec::new();
+
+    for id in payload.ids {
+        if let Err(e) = storage.remove_track(id).await {
+            errors.push(format!("Failed to delete track {id}: {e}"));
+        }
+    }
+
+    if !errors.is_empty() {
+        return Err(ApiError::internal(format!("Errors during deletion: {}", errors.join("; ")))
+            .with_code(ErrorCode::IoError));
+    }
+
+    Ok(StatusCode::OK)
 }
 
 use axum::http::HeaderMap;
@@ -109,6 +173,17 @@ fn parse_range(range_header: &str, file_size: u64) -> Option<(u64, u64)> {
     }
 }
 
+#[utoipa::path(
+    method(get),
+    path = "/api/downloads/{id}/stream",
+    params(
+        ("id" = i64, Path, description = "Track ID to stream")
+    ),
+    responses(
+        (status = 200, description = "Audio stream of track file"),
+        (status = 206, description = "Partial content of track file")
+    )
+)]
 pub async fn stream_track(
     State(state): State<AppState>,
     headers: HeaderMap,

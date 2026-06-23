@@ -1,4 +1,4 @@
-import {ChangeDetectionStrategy, Component, input} from '@angular/core';
+import {Component, input} from '@angular/core';
 import {MatIcon} from '@angular/material/icon';
 import {ActivityDay} from '../../dashboard-view.model';
 
@@ -7,8 +7,7 @@ import {ActivityDay} from '../../dashboard-view.model';
     imports: [MatIcon],
     templateUrl: './activity-chart.component.html',
     styleUrl: './activity-chart.component.scss',
-    changeDetection: ChangeDetectionStrategy.OnPush,
-})
+    })
 export class ActivityChartComponent {
     public readonly data = input.required<ActivityDay[]>();
 }

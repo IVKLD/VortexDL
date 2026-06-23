@@ -1,0 +1,13 @@
+<span>{{ count() }} selected</span>
+
+<div class="actions">
+    <button (click)="deleteSelected.emit()" class="delete-btn" mat-flat-button>
+        <mat-icon>delete</mat-icon>
+        <span>Delete</span>
+    </button>
+    
+    <button (click)="clearSelection.emit()" class="cancel-btn" mat-button>
+        <mat-icon>close</mat-icon>
+        <span>Cancel</span>
+    </button>
+</div>

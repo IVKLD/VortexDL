@@ -1,4 +1,4 @@
-import {ChangeDetectionStrategy, Component, input, output} from '@angular/core';
+import {Component, input, output} from '@angular/core';
 import {DownloadItem, DownloadStatus} from '@app/services/download-tracking.service';
 import {MatIcon} from '@angular/material/icon';
 import {MatProgressBar} from '@angular/material/progress-bar';
@@ -10,8 +10,7 @@ import {MatIconButton} from "@angular/material/button";
     imports: [MatIcon, MatProgressBar, NgOptimizedImage, MatIconButton],
     templateUrl: './active-download-item.component.html',
     styleUrl: './active-download-item.component.scss',
-    changeDetection: ChangeDetectionStrategy.OnPush,
-})
+    })
 export class ActiveDownloadItemComponent {
     public readonly item = input.required<DownloadItem>();
     public readonly remove = output<number>();

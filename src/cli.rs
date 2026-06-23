@@ -90,7 +90,9 @@ async fn run_cli_sync(state: AppState) -> Result<()> {
     let connected = match adb_device::list_devices().await {
         Ok(devices) => devices,
         Err(adb_device::AdbError::NotAvailable) => {
-            println!("adb binary not found in PATH. Please install adb and ensure it is accessible.");
+            println!(
+                "adb binary not found in PATH. Please install adb and ensure it is accessible."
+            );
             return Ok(());
         }
         Err(e) => return Err(anyhow::anyhow!(e)),
@@ -136,6 +138,6 @@ async fn run_cli_download(state: AppState, url: &str, args: &Args) -> Result<()>
     }
     ctx.settings.update_in_memory(current_settings).await;
 
-    downloader::download(&ctx, url).await?;
+    downloader::run_download_pipeline(&ctx, url).await?;
     Ok(())
 }

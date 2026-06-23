@@ -1,4 +1,4 @@
-import {ChangeDetectionStrategy, Component, inject} from '@angular/core';
+import {Component, inject} from '@angular/core';
 import {ActivatedRoute, NavigationEnd, Router} from '@angular/router';
 import {HeaderConfig} from './header.types';
 import {filter, map} from 'rxjs';
@@ -13,8 +13,7 @@ import {HeaderRight} from './components/header-right/header-right.component';
     imports: [HeaderLeft, HeaderCenter, HeaderRight],
     templateUrl: './header.html',
     styleUrl: './header.scss',
-    changeDetection: ChangeDetectionStrategy.OnPush,
-})
+    })
 export class Header {
     private readonly _router = inject(Router);
     private readonly _route = inject(ActivatedRoute);

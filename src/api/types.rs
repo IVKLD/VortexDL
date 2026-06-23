@@ -1,14 +1,15 @@
 use serde::{Deserialize, Serialize};
+use utoipa::ToSchema;
 
-use crate::storage::LocalTrack;
+use crate::storage::LocalMusicTrack;
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, ToSchema)]
 #[serde(rename_all = "camelCase")]
 pub struct DownloadRequest {
     pub url: String,
 }
 
-#[derive(Debug, Serialize, Deserialize, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Serialize, Deserialize, Clone, Copy, PartialEq, Eq, ToSchema)]
 #[serde(rename_all = "lowercase")]
 pub enum ApiStatus {
     Ok,
@@ -16,14 +17,14 @@ pub enum ApiStatus {
     Error,
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, ToSchema)]
 #[serde(rename_all = "camelCase")]
 pub struct DownloadStartResponse {
     pub status: ApiStatus,
     pub message: String,
 }
 
-#[derive(Debug, Serialize, Deserialize, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Serialize, Deserialize, Clone, Copy, PartialEq, Eq, ToSchema)]
 #[serde(rename_all = "lowercase")]
 pub enum AudioFormat {
     Mp3,
@@ -47,9 +48,9 @@ impl AudioFormat {
     }
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, ToSchema)]
 #[serde(rename_all = "camelCase")]
-pub struct TrackRecord {
+pub struct MusicTrackRecord {
     pub id: i64,
     pub artist: String,
     pub title: String,
@@ -62,8 +63,8 @@ pub struct TrackRecord {
     pub archived: bool,
 }
 
-impl TrackRecord {
-    pub fn from_local_track(id: i64, data: &LocalTrack) -> Self {
+impl MusicTrackRecord {
+    pub fn from_local_track(id: i64, data: &LocalMusicTrack) -> Self {
         Self {
             id,
             artist: data.artist.clone(),
@@ -79,7 +80,7 @@ impl TrackRecord {
     }
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, ToSchema)]
 #[serde(rename_all = "camelCase")]
 pub struct HealthResponse {
     pub status: ApiStatus,

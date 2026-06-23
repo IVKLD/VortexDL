@@ -1,4 +1,4 @@
-import {AudioFormat} from '@shared/models/track.model';
+import {AudioFormat} from '@shared/models/music-track.model';
 
 export interface DashboardStat {
     icon: string;

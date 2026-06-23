@@ -3,10 +3,12 @@ use soundcloud_rs::{Identifier, StreamType};
 use tokio::task::JoinHandle;
 
 use crate::{
-    downloader::Context,
+    downloader::{Context, DiscoveredMusicTrack, discovery::{
+        discover_liked_tracks, discover_playlist_tracks, discover_single_track, init_progress_spinner,
+    }},
     utils::{
         proxy::race_proxies,
-        soundcloud::{fetch_artwork, init_client_with_settings},
+        soundcloud::{fetch_artwork, init_client_with_settings, resolve_url},
     },
 };
 
@@ -28,6 +30,53 @@ impl StreamSource {
             Self::Progressive { url, .. } | Self::Hls { url, .. } => url,
         }
     }
+}
+
+pub async fn resolve_tracks_from_url(
+    ctx: &Context,
+    url: &str,
+) -> Result<Vec<DiscoveredMusicTrack>> {
+    match discover_tracks_from_url(ctx, url, &ctx.client).await {
+        Ok(tracks) => Ok(tracks),
+        Err(e) => {
+            let settings = ctx.settings.read().await.clone();
+            tracing::debug!("Direct discovery failed: {e}. Trying fallback proxies...");
+
+            let ctx = ctx.clone();
+            let url = url.to_string();
+
+            race_proxies(&settings, |s, proxy| {
+                let ctx = ctx.clone();
+                let url = url.clone();
+                async move {
+                    let proxied_client = init_client_with_settings(&s, Some(&proxy)).await?;
+                    discover_tracks_from_url(&ctx, &url, &proxied_client).await
+                }
+            })
+            .await
+            .map_err(|proxy_err| anyhow::anyhow!("Discovery failed: {e} (proxies: {proxy_err})"))
+        }
+    }
+}
+
+async fn discover_tracks_from_url(
+    ctx: &Context,
+    url: &str,
+    client: &soundcloud_rs::Client,
+) -> Result<Vec<DiscoveredMusicTrack>> {
+    let pb = init_progress_spinner(ctx, "Resolving URL...");
+    let resolve_res = resolve_url(client, url).await;
+    pb.finish_and_clear();
+    let resolve_res = resolve_res?;
+
+    let all_tracks = match resolve_res.kind.as_str() {
+        "user" | "likes" => discover_liked_tracks(ctx, client, resolve_res.id).await?,
+        "playlist" => discover_playlist_tracks(ctx, client, resolve_res.id).await?,
+        "track" => vec![discover_single_track(client, resolve_res.id).await?],
+        _ => return Err(anyhow::anyhow!("Unsupported resource kind: {}", resolve_res.kind)),
+    };
+
+    Ok(all_tracks)
 }
 
 pub async fn resolve_stream_source(ctx: &Context, id: i64) -> Result<StreamSource> {

@@ -1,12 +1,11 @@
-import {ChangeDetectionStrategy, Component, computed, inject} from '@angular/core';
+import {Component, computed, input, output} from '@angular/core';
 import {
     FixedSizeVirtualScrollStrategy,
     RxVirtualFor,
     RxVirtualScrollViewportComponent,
 } from '@rx-angular/template/virtual-scrolling';
-import {DownloadStatus, DownloadTrackingService} from '@app/services/download-tracking.service';
+import {DownloadItem, DownloadStatus} from '@app/services/download-tracking.service';
 import {ActiveDownloadItemComponent} from './components/active-download-item/active-download-item.component';
-import {ActiveDownloadErrorsComponent} from './components/active-download-errors/active-download-errors.component';
 
 @Component({
     selector: 'app-active-downloads',
@@ -17,23 +16,18 @@ import {ActiveDownloadErrorsComponent} from './components/active-download-errors
         FixedSizeVirtualScrollStrategy,
         RxVirtualScrollViewportComponent,
         ActiveDownloadItemComponent,
-        ActiveDownloadErrorsComponent,
     ],
-    changeDetection: ChangeDetectionStrategy.OnPush,
-})
+    })
 export class ActiveDownloadsComponent {
-    protected readonly tracking = inject(DownloadTrackingService);
+    public readonly items = input.required<DownloadItem[]>();
+    public readonly remove = output<number>();
 
     protected readonly sortedActiveDownloads = computed(() => {
-        return [...this.tracking.activeDownloads()]
+        return [...this.items()]
             .sort((a, b) => {
                 if (a.status === DownloadStatus.Downloading && b.status !== DownloadStatus.Downloading) return -1;
                 if (a.status !== DownloadStatus.Downloading && b.status === DownloadStatus.Downloading) return 1;
                 return 0;
             });
     });
-
-    protected clearError() {
-        this.tracking.clearError();
-    }
 }

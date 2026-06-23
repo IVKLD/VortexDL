@@ -1,148 +1,177 @@
+pub(crate) mod discovery;
+mod pipeline;
+
 use std::collections::HashSet;
-
-use anyhow::{Result, anyhow};
+use std::path::PathBuf;
+use anyhow::Result;
 use colored::Colorize;
+use futures::{
+    future::join_all,
+    stream::{self, StreamExt},
+};
+use indicatif::MultiProgress;
+use tokio::task::JoinHandle;
 
+pub use crate::types::core::Context;
+use crate::types::core::DiscoveredMusicTrack;
 use crate::{
-    adb_device,
-    api::download_manager,
-    storage::MusicStorage,
-    utils::{
-        metadata::update_track_position,
-        proxy::race_proxies,
-        soundcloud::{init_client_with_settings, resolve_url, update_cached_client_id},
-    },
+    api::download_manager::NewTask,
+    ui::{create_spinner, create_total_progress_bar},
+    utils::filename::clean_filename,
 };
 
-pub mod core;
-pub mod discovery;
-
-use discovery::{
-    discover_liked_tracks, discover_playlist_tracks, discover_single_track, init_progress_spinner,
-};
-
-pub use crate::types::core::{Context, DiscoveredTrack};
-
-async fn discover_tracks_from_url(
-    ctx: &Context,
-    url: &str,
-    client: &soundcloud_rs::Client,
-) -> Result<Vec<DiscoveredTrack>> {
-    let pb = init_progress_spinner(ctx, "Resolving URL...");
-    let resolve_res = resolve_url(client, url).await;
-    pb.finish_and_clear();
-    let resolve_res = resolve_res?;
-
-    let all_tracks = match resolve_res.kind.as_str() {
-        "user" | "likes" => discover_liked_tracks(ctx, client, resolve_res.id).await?,
-        "playlist" => discover_playlist_tracks(ctx, client, resolve_res.id).await?,
-        "track" => vec![discover_single_track(client, resolve_res.id).await?],
-        _ => return Err(anyhow!("Unsupported resource kind: {}", resolve_res.kind)),
-    };
-
-    Ok(all_tracks)
+#[derive(Clone)]
+pub(crate) struct DownloadTask {
+    pub id: i64,
+    pub title: String,
+    pub artist: String,
+    pub artwork_url: Option<String>,
+    pub position: Option<u32>,
+    pub pb: indicatif::ProgressBar,
+    pub file_path: PathBuf,
 }
 
-pub async fn download(ctx: &Context, url: &str) -> Result<()> {
-    let all_tracks = match discover_tracks_from_url(ctx, url, &ctx.client).await {
-        Ok(tracks) => tracks,
-        Err(e) => {
-            let settings = ctx.settings.read().await.clone();
-            tracing::debug!("Direct discovery failed: {e}. Trying fallback proxies...");
+impl DownloadTask {
+    pub fn display_name(&self) -> &str {
+        self.file_path
+            .file_stem()
+            .and_then(|s| s.to_str())
+            .unwrap_or(&self.title)
+    }
+}
 
-            let ctx = ctx.clone();
-            let url = url.to_string();
-
-            race_proxies(&settings, |s, proxy| {
-                let ctx = ctx.clone();
-                let url = url.clone();
-                async move {
-                    let proxied_client = init_client_with_settings(&s, Some(&proxy)).await?;
-                    discover_tracks_from_url(&ctx, &url, &proxied_client).await
-                }
-            })
-            .await
-            .map_err(|proxy_err| anyhow!("Discovery failed: {e} (proxies: {proxy_err})"))?
-        }
-    };
+/// Resolves SoundCloud URLs, checks database to avoid re-downloading, orchestrates parallel execution, and runs post-sync tasks.
+pub async fn run_download_pipeline(ctx: &Context, url: &str) -> Result<()> {
+    let all_tracks = pipeline::resolve::resolve_tracks_from_url(ctx, url).await?;
 
     let remote_ids: HashSet<i64> = all_tracks.iter().map(|track| track.id).collect();
-    let to_download: Vec<DiscoveredTrack> = {
-        let mut storage_write = ctx.storage.write().await;
-        all_tracks
-            .into_iter()
-            .filter_map(|track| exclude_existing_track(&mut storage_write, track))
-            .collect()
-    };
-
-    let skipped = remote_ids.len() - to_download.len();
-
-    if skipped > 0 {
-        println!("{} Skipped {} tracks.", "[INFO]".blue().bold(), skipped);
-    }
-
-    if let Some(ref m) = ctx.dm {
-        for track in &to_download {
-            m.add_task(download_manager::AddTaskArgs {
-                id: track.id,
-                title: track.title.clone(),
-                artist: track.artist.clone(),
-                artwork_url: track.artwork_url.clone(),
-                position: track.position,
-            });
-        }
-    }
+    let to_download = pipeline::filter_existing::exclude_already_downloaded_tracks(ctx, all_tracks).await;
 
     if !to_download.is_empty() {
-        core::run_download_batch(ctx, to_download).await;
+        if let Some(ref m) = ctx.dm {
+            for track in &to_download {
+                m.add_task(NewTask {
+                    id: track.id,
+                    title: track.title.clone(),
+                    artist: track.artist.clone(),
+                    artwork_url: track.artwork_url.clone(),
+                    position: track.position,
+                });
+            }
+        }
+        run_parallel_downloads(ctx, to_download).await;
     } else {
         println!("{} Everything synced!", "[INFO]".blue().bold());
     }
 
-    let sync_mode = ctx.settings.read().await.downloads.sync_mode;
-    ctx.storage
-        .write()
-        .await
-        .sync_storage(url, &remote_ids, &sync_mode)
-        .await?;
-
-    adb_device::sync_connected(ctx.storage.clone(), ctx.settings.clone()).await;
-
-    update_cached_client_id(&ctx.client, &ctx.settings).await;
+    pipeline::complete::finalize_pipeline_sync(ctx, url, &remote_ids).await?;
 
     Ok(())
 }
 
-fn exclude_existing_track(
-    storage: &mut MusicStorage,
-    track: DiscoveredTrack,
-) -> Option<DiscoveredTrack> {
-    if let Some(data) = storage
-        .tracks
-        .get_mut(&track.id)
-        .filter(|d| d.path.exists())
-    {
-        if data.position != track.position {
-            data.position = track.position;
-            let path = data.path.clone();
-            let position = track.position;
-            let handle = tokio::task::spawn_blocking(move || {
-                update_track_position(path, position)
-            });
-            tokio::spawn(async move {
-                if let Ok(Err(e)) = handle.await {
-                    tracing::warn!("Failed to update track position: {e}");
+/// Runs resolution, downloading and tagging steps sequentially for a single track.
+async fn run_track_download_pipeline(context: Context, task: DownloadTask) -> Option<JoinHandle<()>> {
+    let pipeline = async {
+        if let Some(manager) = &context.dm {
+            manager.update_downloading(task.id);
+        }
+        let display_name = task.display_name().to_string();
+        task.pb.set_message(format!("Downloading: {display_name}"));
+
+        let artwork_handle = pipeline::resolve::spawn_artwork_fetch(&context, task.artwork_url.as_deref());
+
+        let proto = pipeline::resolve::resolve_stream_source(&context, task.id).await?;
+
+        let url = proto.url().to_string();
+
+        pipeline::download::download_single_track(&context, &task, proto).await?;
+
+        Ok((artwork_handle, url))
+    };
+
+    match pipeline.await {
+        Ok((artwork_handle, url)) => Some(tokio::spawn(pipeline::complete::finalize_single_track(
+            context,
+            task,
+            artwork_handle,
+            url,
+        ))),
+        Err(err) => {
+            pipeline::complete::handle_track_failure(&context, &task, err).await;
+            None
+        }
+    }
+}
+
+async fn run_parallel_downloads(ctx: &Context, tracks: Vec<DiscoveredMusicTrack>) {
+    let mp = MultiProgress::new();
+    let total_tracks = tracks.len();
+    let total_pb = create_total_progress_bar(&mp, total_tracks as u64);
+
+    let (max_concurrent, naming_template) = {
+        let s = ctx.settings.read().await;
+        (
+            s.downloads.max_concurrent as usize,
+            s.downloads.naming_template.clone(),
+        )
+    };
+    let output_dir = PathBuf::from(&ctx.storage.read().await.base_path);
+
+    let results: Vec<_> = stream::iter(tracks)
+        .map(|mut track| {
+            track.artwork_url = track.artwork_url.map(|url| {
+                if url.contains("-large") {
+                    url.replacen("-large", "-t1080x1080", 1)
+                } else {
+                    url
                 }
             });
-        }
-        println!(
-            "{} {} - {}",
-            "[SKIP]".yellow().bold(),
-            track.artist,
-            track.title
-        );
-        None
-    } else {
-        Some(track)
-    }
+
+            let ctx = ctx.clone();
+            let mp = mp.clone();
+            let total_pb = total_pb.clone();
+            let filename = format!(
+                "{}.mp3",
+                clean_filename(
+                    &naming_template
+                        .replace("{artist}", &track.artist)
+                        .replace("{title}", &track.title),
+                )
+            );
+            let file_path = output_dir.join(filename);
+
+            async move {
+                let pb = create_spinner(&mp);
+
+                let task = DownloadTask {
+                    id: track.id,
+                    title: track.title,
+                    artist: track.artist,
+                    artwork_url: track.artwork_url,
+                    position: track.position,
+                    pb: pb.clone(),
+                    file_path,
+                };
+
+                let result = run_track_download_pipeline(ctx, task).await;
+                total_pb.inc(1);
+                pb.finish_and_clear();
+                result
+            }
+        })
+        .buffer_unordered(max_concurrent)
+        .collect()
+        .await;
+
+    let failed = results.iter().filter(|r| r.is_none()).count();
+    let handles: Vec<_> = results.into_iter().flatten().collect();
+    join_all(handles).await;
+
+    total_pb.finish_and_clear();
+    println!(
+        "{} Sync complete. {} downloaded, {} failed.",
+        "[SUCCESS]".green().bold(),
+        total_tracks - failed,
+        failed
+    );
 }

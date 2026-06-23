@@ -1,16 +1,41 @@
+use std::collections::HashSet;
 use std::time::{SystemTime, UNIX_EPOCH};
 
 use colored::Colorize;
 use tokio::task::JoinHandle;
 
 use crate::{
+    adb_device,
     api::types::AudioFormat,
-    downloader::{Context, core::pipeline::DownloadTask},
-    storage::LocalTrack,
-    utils::metadata::{SaveTrackArgs, save_track_info},
+    downloader::Context,
+    storage::LocalMusicTrack,
+    utils::{
+        metadata::{SaveTrackArgs, save_track_info},
+        soundcloud,
+    },
 };
+use super::super::DownloadTask;
 
-pub async fn finalize(
+pub async fn finalize_pipeline_sync(
+    context: &Context,
+    url: &str,
+    remote_ids: &HashSet<i64>,
+) -> anyhow::Result<()> {
+    let sync_mode = context.settings.read().await.downloads.sync_mode;
+    context.storage
+        .write()
+        .await
+        .sync_storage(url, remote_ids, &sync_mode)
+        .await?;
+
+    adb_device::sync_connected(context.storage.clone(), context.settings.clone()).await;
+
+    soundcloud::update_cached_client_id(&context.client, &context.settings).await;
+
+    Ok(())
+}
+
+pub async fn finalize_single_track(
     context: Context,
     task: DownloadTask,
     artwork_handle: Option<JoinHandle<Option<Vec<u8>>>>,
@@ -35,7 +60,7 @@ pub async fn finalize(
 
     context.storage.write().await.update_track(
         task.id,
-        LocalTrack {
+        LocalMusicTrack {
             path: task.file_path.clone(),
             artist: task.artist.clone(),
             title: task.title.clone(),
@@ -79,7 +104,7 @@ pub async fn finalize(
     }
 }
 
-pub async fn fail(context: &Context, task: &DownloadTask, err: anyhow::Error) {
+pub async fn handle_track_failure(context: &Context, task: &DownloadTask, err: anyhow::Error) {
     if let Some(manager) = &context.dm {
         manager.update_failed(task.id, format!("{:#}", err));
     }

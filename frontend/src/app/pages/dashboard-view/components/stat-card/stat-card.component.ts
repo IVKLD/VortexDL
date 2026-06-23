@@ -1,4 +1,4 @@
-import {ChangeDetectionStrategy, Component, input} from '@angular/core';
+import {Component, input} from '@angular/core';
 import {MatIcon} from '@angular/material/icon';
 
 @Component({
@@ -6,8 +6,7 @@ import {MatIcon} from '@angular/material/icon';
     imports: [MatIcon],
     templateUrl: './stat-card.component.html',
     styleUrl: './stat-card.component.scss',
-    changeDetection: ChangeDetectionStrategy.OnPush,
-})
+    })
 export class StatCardComponent {
     public readonly icon = input.required<string>();
     public readonly label = input.required<string>();

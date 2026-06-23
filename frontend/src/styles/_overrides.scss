@@ -41,28 +41,133 @@ app-player {
 }
 
 mat-form-field {
-  --mat-form-field-container-vertical-padding: .5em;
-  --mat-form-field-container-height: 2.5em;
-  --mat-form-field-outlined-container-shape: 5em;
+  --mat-form-field-container-vertical-padding: 0;
+  --mat-form-field-container-height: 42px;
+  --mat-form-field-outlined-container-shape: 21px;
 
-  input {
-    font-size: 2em;
+  --mdc-outlined-text-field-container-color: transparent;
+  --mdc-outlined-text-field-hover-container-color: transparent;
+  --mdc-outlined-text-field-focus-container-color: transparent;
+
+  --mdc-outlined-text-field-outline-color: rgba(255, 255, 255, 0.08);
+  --mdc-outlined-text-field-hover-outline-color: rgba(255, 255, 255, 0.16);
+  --mdc-outlined-text-field-focus-outline-color: var(--mat-sys-primary);
+  --mdc-outlined-text-field-outline-width: 1px;
+  --mdc-outlined-text-field-focus-outline-width: 1px;
+
+  --mdc-outlined-text-field-label-text-color: rgba(255, 255, 255, 0.4);
+  --mdc-outlined-text-field-hover-label-text-color: rgba(255, 255, 255, 0.6);
+  --mdc-outlined-text-field-focus-label-text-color: var(--mat-sys-primary);
+
+  input.mat-mdc-form-field-input-control {
+    font-size: 0.9rem;
+    font-weight: 450;
+    letter-spacing: -0.01em;
+    box-sizing: border-box;
+  }
+
+  .mat-mdc-form-field-flex {
+    align-items: center !important;
+  }
+
+  .mat-mdc-form-field-infix {
+    display: flex !important;
+    flex-direction: column !important;
+    justify-content: center !important;
+    padding-left: 20px !important;
+    padding-right: 20px !important;
+  }
+
+  .mat-mdc-form-field-icon-prefix+.mat-mdc-form-field-infix {
+    padding-left: 12px !important;
+  }
+
+  .mat-mdc-form-field-flex:has(.mat-mdc-form-field-icon-suffix) .mat-mdc-form-field-infix {
+    padding-right: 0 !important;
   }
 
   .mdc-text-field--outlined {
-    padding-right: calc(min(16px, var(--mat-form-field-outlined-container-shape, var(--mat-sys-corner-extra-small))) * 2);
-  }
+    border-radius: var(--mat-form-field-outlined-container-shape, 21px) !important;
+    transition: background-color 0.25s cubic-bezier(0.4, 0, 0.2, 1),
+      box-shadow 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    backdrop-filter: blur(4px);
+    padding-left: 0 !important;
+    padding-right: 0 !important;
 
-  .mdc-text-field--outlined .mdc-notched-outline .mdc-notched-outline__leading {
-    width: max(12px, calc(var(--mat-form-field-outlined-container-shape) - 2em), var(--mat-sys-corner-extra-small));
-  }
+    &.mdc-text-field--focused {
+      box-shadow: 0 0 0 3px color-mix(in srgb, var(--mat-sys-primary) 12%, transparent),
+        0 4px 12px rgba(0, 0, 0, 0.15);
+    }
 
-  .mdc-text-field--outlined {
-    padding-left: max(12px, calc(var(--mat-form-field-outlined-container-shape) - 2em), var(--mat-sys-corner-extra-small));
+    .mdc-notched-outline .mdc-notched-outline__leading {
+      width: 21px !important;
+    }
   }
 
   --mat-mdc-form-field-label-transform: translateY(-50%) translateX(0);
+
+  .mat-mdc-form-field-icon-prefix {
+    background: linear-gradient(135deg,
+        color-mix(in srgb, var(--mat-sys-primary) 18%, transparent),
+        color-mix(in srgb, var(--mat-sys-primary) 6%, transparent)) !important;
+    border-right: 1px solid rgba(255, 255, 255, 0.08) !important;
+    align-self: stretch !important;
+    width: 42px !important;
+    min-width: 42px !important;
+    max-width: 42px !important;
+    flex-shrink: 0 !important;
+    height: 42px !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    border-radius: var(--mat-form-field-outlined-container-shape, 21px) 0 0 var(--mat-form-field-outlined-container-shape, 21px) !important;
+    padding: 0 !important;
+    box-sizing: border-box !important;
+    margin: 0 !important;
+    color: rgba(255, 255, 255, 0.75) !important;
+    transition: background 0.25s ease, border-right-color 0.25s ease, color 0.25s ease;
+  }
+
+  .mat-mdc-form-field-icon-suffix {
+    color: rgba(255, 255, 255, 0.45);
+    transition: color 0.25s ease;
+    align-self: center !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    padding-right: 16px !important;
+    padding-left: 8px !important;
+
+    .mat-icon {
+      font-size: 1.2rem !important;
+      width: 1.2rem !important;
+      height: 1.2rem !important;
+    }
+  }
+
+  .mdc-text-field--focused {
+    .mat-mdc-form-field-icon-prefix {
+      background: linear-gradient(135deg,
+          color-mix(in srgb, var(--mat-sys-primary) 30%, transparent),
+          color-mix(in srgb, var(--mat-sys-primary) 15%, transparent)) !important;
+      border-right-color: color-mix(in srgb, var(--mat-sys-primary) 30%, transparent) !important;
+      color: #ffffff !important;
+    }
+
+    .mat-mdc-form-field-icon-suffix {
+      color: var(--mat-sys-primary);
+    }
+  }
 }
+
+.mat-mdc-button-base {
+
+  .mat-icon:only-child,
+  .mdc-button__label>.mat-icon:only-child {
+    margin: 0 !important;
+  }
+}
+
 
 .mat-mdc-dialog-container {
   --mat-dialog-with-actions-content-padding: 1em;
@@ -112,4 +217,78 @@ mat-form-field {
   background: rgba(255, 255, 255, 0.01);
   margin: 0;
   min-height: auto;
+}
+
+.mat-mdc-menu-item.delete-menu-item {
+  color: var(--mat-sys-error, #ff5252) !important;
+
+  .mat-icon {
+    color: var(--mat-sys-error, #ff5252) !important;
+  }
+}
+
+.vortex-context-menu {
+  background: rgba(30, 30, 30, 0.75);
+  backdrop-filter: blur(20px) saturate(160%);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+  padding: 6px;
+  min-width: 160px;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.35);
+  outline: none;
+
+  .vortex-menu-item {
+    background: transparent;
+    border: none;
+    border-radius: 8px;
+    color: rgba(255, 255, 255, 0.85);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 8px 12px;
+    width: 100%;
+    text-align: left;
+    transition: background 0.15s ease, color 0.15s ease;
+    font-size: 0.9rem;
+    font-weight: 500;
+    box-sizing: border-box;
+    outline: none;
+    height: auto;
+    min-height: auto;
+    line-height: normal;
+    
+    .mat-icon {
+      font-size: 1.25rem;
+      width: 1.25rem;
+      height: 1.25rem;
+      color: rgba(255, 255, 255, 0.6);
+      transition: color 0.15s ease;
+      margin: 0;
+    }
+
+    &:hover {
+      background: rgba(255, 255, 255, 0.06);
+      color: #ffffff;
+
+      .mat-icon {
+        color: #ffffff;
+      }
+    }
+
+    &.delete-menu-item {
+      color: var(--mat-sys-error, #ff5252);
+
+      .mat-icon {
+        color: var(--mat-sys-error, #ff5252);
+      }
+
+      &:hover {
+        background: rgba(255, 82, 82, 0.12);
+        color: #ff5252;
+      }
+    }
+  }
 }

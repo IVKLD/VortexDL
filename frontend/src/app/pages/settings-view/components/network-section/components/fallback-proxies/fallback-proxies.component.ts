@@ -1,4 +1,4 @@
-import {ChangeDetectionStrategy, Component, inject, input, signal} from '@angular/core';
+import {Component, inject, input, signal} from '@angular/core';
 import {CommonModule} from '@angular/common';
 import {MatIcon} from '@angular/material/icon';
 import {MatIconButton, MatButton} from '@angular/material/button';
@@ -22,8 +22,7 @@ import {parseErrorMessage} from '@shared/error-utils';
     ],
     templateUrl: './fallback-proxies.component.html',
     styleUrl: './fallback-proxies.component.scss',
-    changeDetection: ChangeDetectionStrategy.OnPush,
-})
+    })
 export class FallbackProxiesComponent {
     public readonly form = input.required<FieldTree<NetworkSettings>>();
 

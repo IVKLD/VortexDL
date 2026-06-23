@@ -14,7 +14,7 @@ use tokio::spawn;
 
 use crate::{
     api::{
-        download_manager::{DownloadStatus, ServerEvent},
+        download_manager::{DownloadItem, DownloadStatus, ServerEvent},
         errors::{ApiError, ErrorCode},
         state::AppState,
         types::{ApiStatus, DownloadRequest, DownloadStartResponse},
@@ -22,6 +22,14 @@ use crate::{
     downloader,
 };
 
+#[utoipa::path(
+    method(post),
+    path = "/api/download",
+    request_body = DownloadRequest,
+    responses(
+        (status = 202, description = "Download added to queue", body = DownloadStartResponse)
+    )
+)]
 pub async fn start_download(
     State(state): State<AppState>,
     Json(body): Json<DownloadRequest>,
@@ -46,7 +54,7 @@ pub async fn start_download(
     spawn(async move {
         let ctx = downloader::Context::from_state(&state).with_dm(state.download_manager.clone());
 
-        if let Err(e) = downloader::download(&ctx, &url).await {
+        if let Err(e) = downloader::run_download_pipeline(&ctx, &url).await {
             tracing::error!("Download failed for {url}: {e}");
         }
 
@@ -56,10 +64,27 @@ pub async fn start_download(
     Ok((StatusCode::ACCEPTED, Json(status)))
 }
 
+#[utoipa::path(
+    method(get),
+    path = "/api/download/queue",
+    responses(
+        (status = 200, description = "Get list of active downloads in queue", body = Vec<DownloadItem>)
+    )
+)]
 pub async fn get_download_queue(State(state): State<AppState>) -> impl IntoResponse {
     Json(state.download_manager.get_queue())
 }
 
+#[utoipa::path(
+    method(delete),
+    path = "/api/download/queue/{id}",
+    params(
+        ("id" = i64, Path, description = "Item ID to remove from queue")
+    ),
+    responses(
+        (status = 200, description = "Item removed successfully")
+    )
+)]
 pub async fn remove_from_queue(
     State(state): State<AppState>,
     Path(id): Path<i64>,
@@ -68,6 +93,13 @@ pub async fn remove_from_queue(
     StatusCode::OK
 }
 
+#[utoipa::path(
+    method(get),
+    path = "/api/download/events",
+    responses(
+        (status = 200, description = "SSE stream for active downloads", body = String)
+    )
+)]
 pub async fn download_events(
     State(state): State<AppState>,
 ) -> Sse<impl Stream<Item = Result<Event, Infallible>>> {
@@ -90,15 +122,30 @@ pub async fn download_events(
                 }
             }
         }
+        let mut interval = tokio::time::interval(std::time::Duration::from_secs(15));
+        interval.tick().await;
+
         loop {
-            match rx.recv().await {
-                Ok(event) => {
-                    if let Ok(evt) = Event::default().json_data(event) {
+            tokio::select! {
+                _ = interval.tick() => {
+                    if let Ok(evt) = Event::default().json_data(ServerEvent::Message {
+                        message: "ping".to_string(),
+                        level: "ping".to_string()
+                    }) {
                         yield Ok(evt);
                     }
                 }
-                Err(tokio::sync::broadcast::error::RecvError::Lagged(_)) => continue,
-                Err(_) => break,
+                res = rx.recv() => {
+                    match res {
+                        Ok(event) => {
+                            if let Ok(evt) = Event::default().json_data(event) {
+                                yield Ok(evt);
+                            }
+                        }
+                        Err(tokio::sync::broadcast::error::RecvError::Lagged(_)) => continue,
+                        Err(_) => break,
+                    }
+                }
             }
         }
     };

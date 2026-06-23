@@ -1,5 +1,5 @@
-import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
-import { PlayerService } from '@app/services/player.service';
+import {Component, input} from '@angular/core';
+import {MusicTrack} from '@shared/models/music-track.model';
 import { PlayerInfoComponent } from './components/player-info/player-info.component';
 import { PlayerControlsComponent } from './components/player-controls/player-controls.component';
 import { PlayerVolumeComponent } from './components/player-volume/player-volume.component';
@@ -13,8 +13,7 @@ import { PlayerVolumeComponent } from './components/player-volume/player-volume.
     ],
     templateUrl: './player.html',
     styleUrl: './player.scss',
-    changeDetection: ChangeDetectionStrategy.OnPush
-})
+    })
 export class PlayerComponent {
-    protected readonly player = inject(PlayerService);
+    public readonly track = input.required<MusicTrack>();
 }

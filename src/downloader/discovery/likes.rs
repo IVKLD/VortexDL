@@ -2,16 +2,16 @@ use anyhow::Result;
 use soundcloud_rs::Client;
 use url::Url;
 
-use crate::downloader::{
-    Context, DiscoveredTrack,
-    discovery::{fetch_likes_page, init_progress_spinner},
+use crate::{
+    downloader::{Context, discovery::{fetch_likes_page, init_progress_spinner}},
+    types::core::DiscoveredMusicTrack,
 };
 
 pub async fn discover_liked_tracks(
     ctx: &Context,
     client: &Client,
     id: i64,
-) -> Result<Vec<DiscoveredTrack>> {
+) -> Result<Vec<DiscoveredMusicTrack>> {
     let mut offset: Option<String> = None;
     let pb = init_progress_spinner(ctx, "Fetching track list...");
     let mut tracks = Vec::new();
@@ -26,7 +26,7 @@ pub async fn discover_liked_tracks(
         tracks.extend(
             res.collection
                 .into_iter()
-                .filter_map(|item| item.track.and_then(DiscoveredTrack::from_track)),
+                .filter_map(|item| item.track.and_then(DiscoveredMusicTrack::from_track)),
         );
 
         let Some(href) = res.next_href else {

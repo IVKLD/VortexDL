@@ -1,4 +1,4 @@
-import {ChangeDetectionStrategy, Component, input, output} from '@angular/core';
+import {Component, input, output} from '@angular/core';
 import {MatIcon} from '@angular/material/icon';
 import {MatDivider} from "@angular/material/list";
 import {MatTooltip} from "@angular/material/tooltip";
@@ -9,8 +9,7 @@ import {MatButton} from "@angular/material/button";
     imports: [MatIcon, MatDivider, MatTooltip, MatButton],
     templateUrl: './active-download-errors.component.html',
     styleUrl: './active-download-errors.component.scss',
-    changeDetection: ChangeDetectionStrategy.OnPush,
-})
+    })
 export class ActiveDownloadErrorsComponent {
     public readonly errors = input.required<string[]>();
 

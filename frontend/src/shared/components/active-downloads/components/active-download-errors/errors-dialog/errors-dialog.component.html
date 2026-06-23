@@ -1,0 +1,24 @@
+<h2 mat-dialog-title>Sync & Download Errors</h2>
+
+<mat-dialog-content>
+    @if (errors.length > 0) {
+        <mat-list>
+            @for (err of errors; track err) {
+                <mat-list-item>
+                    <div class="error-item">
+                        <mat-icon>error_outline</mat-icon>
+                        <span class="error-text">{{ err }}</span>
+                    </div>
+                </mat-list-item>
+            }
+        </mat-list>
+    } @else {
+        <p>No errors found.</p>
+    }
+</mat-dialog-content>
+
+<mat-dialog-actions align="end">
+    @if (errors.length > 0) {
+        <button mat-button color="warn" [mat-dialog-close]="'clear'">Clear All</button>
+    }
+</mat-dialog-actions>

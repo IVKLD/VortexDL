@@ -3,23 +3,26 @@ use std::collections::HashMap;
 use anyhow::{Result, anyhow};
 use soundcloud_rs::{Client, Identifier, Track};
 
-use crate::downloader::{Context, DiscoveredTrack, discovery::init_progress_spinner};
+use crate::{
+    downloader::{Context, discovery::init_progress_spinner},
+    types::core::DiscoveredMusicTrack,
+};
 
 pub async fn discover_playlist_tracks(
     ctx: &Context,
     client: &Client,
     id: i64,
-) -> Result<Vec<DiscoveredTrack>> {
+) -> Result<Vec<DiscoveredMusicTrack>> {
     let playlist = client.get_playlist(&Identifier::Id(id)).await?;
     let collection = playlist
         .tracks
         .ok_or_else(|| anyhow!("No tracks found in playlist"))?;
 
-    let mut tracks: Vec<DiscoveredTrack> = collection
+    let mut tracks: Vec<DiscoveredMusicTrack> = collection
         .into_iter()
         .enumerate()
         .filter_map(|(i, track)| {
-            DiscoveredTrack::from_track(track).map(|t| t.with_position(i.try_into().ok()))
+            DiscoveredMusicTrack::from_track(track).map(|t| t.with_position(i.try_into().ok()))
         })
         .collect();
 
@@ -47,7 +50,7 @@ pub async fn discover_playlist_tracks(
                     };
                     if let (Some(local_track), Some(mut updated)) = (
                         tracks.iter_mut().find(|t| t.id == track_id),
-                        DiscoveredTrack::from_track(track),
+                        DiscoveredMusicTrack::from_track(track),
                     ) {
                         updated.position = local_track.position;
                         *local_track = updated;

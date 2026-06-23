@@ -41,7 +41,7 @@
           };
 
           devShells.default = pkgs.mkShell {
-          buildInputs = with pkgs; [
+            buildInputs = with pkgs; [
               rustup
               pkg-config
               openssl
@@ -53,6 +53,7 @@
               ffmpeg
               clang
               mold
+              cargo-watch
             ];
 
             shellHook = ''

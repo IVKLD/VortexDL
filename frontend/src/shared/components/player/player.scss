@@ -1,14 +1,10 @@
 :host {
-  display: block;
-
-  .wrapper {
-    background: rgba(255, 255, 255, 0.03);
-    border: 1px solid rgba(255, 255, 255, 0.05);
-    border-radius: 1em;
-    padding: 20px 16px 24px;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    width: 100%;
-  }
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 1em;
+  padding: 20px 16px 24px;
 }

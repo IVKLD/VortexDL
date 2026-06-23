@@ -5,10 +5,11 @@ use std::{
 
 use serde::{Deserialize, Serialize};
 use tokio::sync::broadcast;
+use utoipa::ToSchema;
 
 use crate::api::types::AudioFormat;
 
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, ToSchema)]
 #[serde(rename_all = "lowercase")]
 pub enum DownloadStatus {
     Queued,
@@ -17,7 +18,7 @@ pub enum DownloadStatus {
     Failed,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
 #[serde(rename_all = "camelCase")]
 pub struct DownloadItem {
     pub id: i64,
@@ -32,6 +33,12 @@ pub struct DownloadItem {
     pub size: Option<u64>,
     pub error: Option<String>,
     pub position: Option<u32>,
+}
+
+impl DownloadItem {
+    pub fn is_active(&self) -> bool {
+        matches!(self.status, DownloadStatus::Queued | DownloadStatus::Downloading)
+    }
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -49,7 +56,7 @@ struct ManagerState {
 }
 
 #[derive(Debug, Clone)]
-pub struct AddTaskArgs {
+pub struct NewTask {
     pub id: i64,
     pub title: String,
     pub artist: String,
@@ -80,6 +87,12 @@ impl DownloadManager {
         self.state.lock().unwrap_or_else(|e| e.into_inner())
     }
 
+    fn maybe_sync_finished(&self) {
+        if !self.lock_state().tasks.values().any(|t| t.is_active()) {
+            let _ = self.tx.send(ServerEvent::SyncFinished);
+        }
+    }
+
     pub fn reserve_url(&self, url: &str) -> bool {
         self.lock_state().reserved_urls.insert(url.to_string())
     }
@@ -88,30 +101,32 @@ impl DownloadManager {
         self.lock_state().reserved_urls.remove(url);
     }
 
-    pub fn add_task(&self, args: AddTaskArgs) {
+    pub fn add_task(&self, task: NewTask) {
         let item = DownloadItem {
-            id: args.id,
-            title: args.title,
-            artist: args.artist,
+            id: task.id,
+            title: task.title,
+            artist: task.artist,
             status: DownloadStatus::Queued,
-            artwork_url: args.artwork_url,
+            artwork_url: task.artwork_url,
             format: None,
             created_at: None,
             source_url: None,
             progress: None,
             size: None,
             error: None,
-            position: args.position,
+            position: task.position,
         };
         let mut state = self.lock_state();
-        state.tasks.insert(args.id, item.clone());
+        state.tasks.insert(task.id, item.clone());
         self.notify_update(item);
     }
 
     pub fn update_downloading(&self, id: i64) {
         let updated = {
             let mut state = self.lock_state();
-            let Some(item) = state.tasks.get_mut(&id) else { return };
+            let Some(item) = state.tasks.get_mut(&id) else {
+                return;
+            };
             item.status = DownloadStatus::Downloading;
             item.progress = Some(0.0);
             item.clone()
@@ -122,7 +137,9 @@ impl DownloadManager {
     pub fn update_failed(&self, id: i64, error_message: String) {
         let updated = {
             let mut state = self.lock_state();
-            let Some(item) = state.tasks.get_mut(&id) else { return };
+            let Some(item) = state.tasks.get_mut(&id) else {
+                return;
+            };
             item.status = DownloadStatus::Failed;
             item.error = Some(error_message);
             let updated = item.clone();
@@ -130,12 +147,7 @@ impl DownloadManager {
             updated
         };
         self.notify_update(updated);
-        let has_active = self.lock_state().tasks.values().any(|t| {
-            matches!(t.status, DownloadStatus::Queued | DownloadStatus::Downloading)
-        });
-        if !has_active {
-            let _ = self.tx.send(ServerEvent::SyncFinished);
-        }
+        self.maybe_sync_finished();
     }
 
     pub fn update_finished(
@@ -148,7 +160,9 @@ impl DownloadManager {
     ) {
         let updated = {
             let mut state = self.lock_state();
-            let Some(item) = state.tasks.get_mut(&id) else { return };
+            let Some(item) = state.tasks.get_mut(&id) else {
+                return;
+            };
             item.status = DownloadStatus::Finished;
             item.format = Some(format);
             item.created_at = Some(created_at);
@@ -160,18 +174,15 @@ impl DownloadManager {
             updated
         };
         self.notify_update(updated);
-        let has_active = self.lock_state().tasks.values().any(|t| {
-            matches!(t.status, DownloadStatus::Queued | DownloadStatus::Downloading)
-        });
-        if !has_active {
-            let _ = self.tx.send(ServerEvent::SyncFinished);
-        }
+        self.maybe_sync_finished();
     }
 
     pub fn update_progress(&self, id: i64, current: u64, total: u64) {
         let to_notify = {
             let mut state = self.lock_state();
-            let Some(item) = state.tasks.get_mut(&id) else { return };
+            let Some(item) = state.tasks.get_mut(&id) else {
+                return;
+            };
             let progress = if total > 0 {
                 (current as f64 / total as f64) * 100.0
             } else {
@@ -193,15 +204,9 @@ impl DownloadManager {
     pub fn remove_task(&self, id: i64) {
         let removed = self.lock_state().tasks.remove(&id).is_some();
         if removed {
-            let has_active = self.lock_state().tasks.values().any(|t| {
-                matches!(t.status, DownloadStatus::Queued | DownloadStatus::Downloading)
-            });
-            if !has_active {
-                let _ = self.tx.send(ServerEvent::SyncFinished);
-            }
+            self.maybe_sync_finished();
         }
     }
-
 
     pub fn broadcast_event(&self, event: ServerEvent) {
         let _ = self.tx.send(event);
@@ -215,12 +220,7 @@ impl DownloadManager {
         self.lock_state()
             .tasks
             .values()
-            .filter(|t| {
-                matches!(
-                    t.status,
-                    DownloadStatus::Queued | DownloadStatus::Downloading
-                )
-            })
+            .filter(|t| t.is_active())
             .cloned()
             .collect()
     }

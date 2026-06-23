@@ -11,20 +11,24 @@ pub fn clean_filename(filename: &str) -> String {
             '/' | '\\' | ':' | '?' | '"' | '<' | '>' | '|' | '*' => '_',
             other => other,
         })
-        .fold(String::new(), |mut acc, c| {
-            let dominated = c == '_' || c == ' ';
-            if dominated {
-                if let Some(last_char) = acc.chars().last().filter(|&lc| lc == '_' || lc == ' ') {
-                    if c == '_' || last_char == '_' {
+        .fold((String::new(), None::<char>), |(mut acc, last), c| {
+            match (last, c) {
+                (Some(' ' | '_'), ' ' | '_') => {
+                    if last == Some('_') || c == '_' {
                         acc.pop();
                         acc.push('_');
+                        (acc, Some('_'))
+                    } else {
+                        (acc, last)
                     }
-                    return acc;
+                }
+                _ => {
+                    acc.push(c);
+                    (acc, Some(c))
                 }
             }
-            acc.push(c);
-            acc
-        });
+        })
+        .0;
 
     cleaned.trim().trim_end_matches('.').trim().to_string()
 }

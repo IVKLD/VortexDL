@@ -1,5 +1,5 @@
 import { effect, Injectable, inject, NgZone, signal } from '@angular/core';
-import { Track } from '@shared/models/track.model';
+import { MusicTrack } from '@shared/models/music-track.model';
 
 @Injectable({
     providedIn: 'root'
@@ -12,8 +12,8 @@ export class PlayerService {
         return this._audio;
     }
 
-    public readonly currentTrack = signal<Track | null>(null);
-    private readonly _queue = signal<Track[]>([]);
+    public readonly currentTrack = signal<MusicTrack | null>(null);
+    private readonly _queue = signal<MusicTrack[]>([]);
     public readonly queue = this._queue.asReadonly();
 
     public readonly isPlaying = signal(false);
@@ -30,7 +30,7 @@ export class PlayerService {
         this._volume.set(value);
     }
 
-    public setQueue(tracks: Track[]): void {
+    public setQueue(tracks: MusicTrack[]): void {
         this._queue.set(tracks);
     }
 
@@ -63,7 +63,7 @@ export class PlayerService {
         });
     }
 
-    public play(track: Track): void {
+    public play(track: MusicTrack): void {
         if (this.currentTrack()?.id === track.id) {
             this.togglePlay();
             return;
@@ -162,7 +162,7 @@ export class PlayerService {
         navigator.mediaSession.setActionHandler('nexttrack', () => this.next());
     }
 
-    private updateMediaSessionMetadata(track: Track): void {
+    private updateMediaSessionMetadata(track: MusicTrack): void {
         if (!('mediaSession' in navigator)) return;
 
         navigator.mediaSession.metadata = new MediaMetadata({

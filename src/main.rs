@@ -20,6 +20,7 @@ mod storage;
 mod types;
 mod ui;
 mod utils;
+mod watchdog;
 
 #[global_allocator]
 static ALLOC: mimalloc::MiMalloc = mimalloc::MiMalloc;
@@ -41,19 +42,21 @@ async fn main() -> Result<()> {
     let output_dir = args.resolve_output_dir(&settings);
     fs::create_dir_all(&output_dir)?;
 
-    let storage = Arc::new(RwLock::new(MusicStorage::new(output_dir)));
 
     let pb = create_standalone_spinner("Initializing SoundCloud...");
     let client = init_client_with_settings(&settings, None).await?;
     pb.finish_with_message("SoundCloud ready");
 
-    let state = AppState::new(Arc::new(client), storage, settings);
+    let storage = Arc::new(RwLock::new(MusicStorage::new(output_dir)));
+    let state = AppState::new(Arc::new(client), storage.clone(), settings);
 
     let pb_idx = create_standalone_spinner("Indexing local library...");
-    MusicStorage::index_library(state.storage.clone()).await;
+    MusicStorage::index_library(storage.clone()).await;
     pb_idx.finish_with_message("Local library indexed");
 
-    adb_device::init(state.storage.clone(), state.settings.clone());
+    watchdog::init(storage.clone(), state.settings.clone(), state.download_manager.clone()).await?;
+
+    adb_device::init(storage, state.settings.clone());
 
     cli::execute_app(state, args).await
 }

@@ -1,7 +1,6 @@
 use std::path::Path;
 
 use anyhow::Result;
-use colored::Colorize;
 use id3::{
     Content, Error as Id3Error, ErrorKind as Id3ErrorKind, Tag, TagLike, Version,
     frame::{ExtendedText, Frame, Picture, PictureType},
@@ -18,11 +17,10 @@ fn get_tag(path: impl AsRef<Path>) -> Result<Tag> {
             ..
         }) => Ok(Tag::new()),
         Err(e) => {
-            eprintln!(
-                "{} Failed to read ID3 tag at {}: {}. Starting fresh.",
-                "[WARN]".yellow().bold(),
-                path.display(),
-                e
+            tracing::warn!(
+                path = %path.display(),
+                error = %e,
+                "Failed to read ID3 tag, starting fresh",
             );
             Ok(Tag::new())
         }

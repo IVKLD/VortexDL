@@ -7,6 +7,8 @@ use axum::{
 };
 use tokio::net::TcpListener;
 use tower_http::cors::CorsLayer;
+use utoipa::OpenApi;
+use utoipa_swagger_ui::SwaggerUi;
 
 use crate::{
     api::{
@@ -16,10 +18,10 @@ use crate::{
             health::health,
             settings::{
                 get_settings,
-                test::{test_proxy, test_soundcloud},
+                diagnostics::{test_proxy, test_soundcloud},
                 update_settings,
             },
-            tracks::{get_tracks, indexing_tracks, remove_track, stream_track},
+            tracks::{get_tracks, reindex_library, remove_track, remove_tracks, stream_track},
         },
         state::AppState,
     },
@@ -33,31 +35,86 @@ pub mod state;
 pub mod static_files;
 pub mod types;
 
+#[derive(OpenApi)]
+#[openapi(
+    paths(
+        crate::api::handlers::health::health,
+        crate::api::handlers::download::start_download,
+        crate::api::handlers::download::get_download_queue,
+        crate::api::handlers::download::remove_from_queue,
+        crate::api::handlers::download::download_events,
+        crate::api::handlers::tracks::get_tracks,
+        crate::api::handlers::tracks::reindex_library,
+        crate::api::handlers::tracks::remove_track,
+        crate::api::handlers::tracks::remove_tracks,
+        crate::api::handlers::tracks::stream_track,
+        crate::api::handlers::devices::list_adb_devices,
+        crate::api::handlers::devices::get_device_storage_info,
+        crate::api::handlers::settings::get_settings,
+        crate::api::handlers::settings::update_settings,
+        crate::api::handlers::settings::diagnostics::test_soundcloud,
+        crate::api::handlers::settings::diagnostics::test_proxy,
+    ),
+    components(
+        schemas(
+            crate::api::types::DownloadRequest,
+            crate::api::types::ApiStatus,
+            crate::api::types::DownloadStartResponse,
+            crate::api::types::AudioFormat,
+            crate::api::types::MusicTrackRecord,
+            crate::api::types::HealthResponse,
+            crate::settings::SoundcloudSettings,
+            crate::settings::DownloadSettings,
+            crate::settings::AdbDeviceSettings,
+            crate::settings::AdbSettings,
+            crate::settings::NetworkSettings,
+            crate::settings::UserSettings,
+            crate::types::SyncMode,
+            crate::adb_device::StorageType,
+            crate::adb_device::StorageInfo,
+            crate::api::download_manager::DownloadStatus,
+            crate::api::download_manager::DownloadItem,
+            crate::api::handlers::settings::diagnostics::TestSoundCloudRequest,
+            crate::api::handlers::settings::diagnostics::TestProxiesRequest,
+            crate::api::handlers::settings::diagnostics::ProxyTestResult,
+            crate::api::handlers::settings::diagnostics::TestProxiesResponse,
+            crate::api::handlers::tracks::DeleteTracksPayload,
+        )
+    ),
+    tags(
+        (name = "VortexDL", description = "VortexDL REST API")
+    )
+)]
+struct ApiDoc;
+
 pub async fn run_server(state: AppState, args: &Args) -> anyhow::Result<()> {
     let router = build_router(state, args.serve).await;
     let addr: SocketAddr = format!("{}:{}", args.host, args.port).parse()?;
     let listener = TcpListener::bind(addr).await?;
 
-    println!("VortexDL running on http://{}", addr);
+    tracing::info!("VortexDL running on http://{}", addr);
     serve(listener, router).await?;
     Ok(())
 }
 
-pub async fn build_router(state: AppState, serve_frontend: bool) -> Router {
+pub async fn build_router(state: AppState, embed_frontend: bool) -> Router {
     let api_routes = Router::new()
         .route("/health", get(health))
         .nest("/download", download_routes())
-        .route("/downloads", get(get_tracks))
+        .route("/downloads", get(get_tracks).delete(remove_tracks))
         .route("/downloads/{id}", delete(remove_track))
         .route("/downloads/{id}/stream", get(stream_track))
-        .route("/downloads/indexing_tracks", get(indexing_tracks))
+        .route("/library/reindex", post(reindex_library))
         .route("/devices", get(list_adb_devices))
         .route("/devices/{device_id}/storage", get(get_device_storage_info))
         .nest("/settings", settings_routes());
 
-    let router = Router::new().nest("/api", api_routes).with_state(state);
+    let router = Router::new()
+        .nest("/api", api_routes)
+        .merge(SwaggerUi::new("/swagger-ui").url("/api-docs/openapi.json", ApiDoc::openapi()))
+        .with_state(state);
 
-    let router = if serve_frontend {
+    let router = if embed_frontend {
         router.fallback(static_files::static_handler)
     } else {
         router

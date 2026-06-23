@@ -1,4 +1,4 @@
-import {ChangeDetectionStrategy, Component, input} from '@angular/core';
+import {Component, input} from '@angular/core';
 import { MatIcon } from '@angular/material/icon';
 import { FieldTree, FormField } from '@angular/forms/signals';
 import { MatInput } from "@angular/material/input";
@@ -11,8 +11,7 @@ import { DownloadSettings, SystemSettings } from "@app/pages/settings-view/model
     imports: [MatIcon, FormField, MatLabel, MatFormField, MatHint, MatInput, MatSelect, MatOption, MatPrefix],
     templateUrl: './downloads-section.component.html',
     styleUrl: './downloads-section.component.scss',
-    changeDetection: ChangeDetectionStrategy.OnPush,
-})
+    })
 export class DownloadsSectionComponent {
     public readonly downloadsForm = input.required<FieldTree<DownloadSettings>>();
     public readonly systemForm = input.required<FieldTree<SystemSettings>>();

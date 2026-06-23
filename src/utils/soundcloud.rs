@@ -42,16 +42,15 @@ pub async fn init_client_with_settings(
 }
 
 pub async fn resolve_url(client: &Client, url: &str) -> Result<ResolveResponse> {
-    let response: ResolveResponse = client
+    client
         .get(
             "resolve",
             Some(&ResolveQuery {
                 url: Some(url.to_string()),
             }),
         )
-        .await?;
-
-    Ok(response)
+        .await
+        .map_err(Into::into)
 }
 
 pub async fn fetch_artwork(client: &reqwest::Client, url: &str) -> Option<Vec<u8>> {

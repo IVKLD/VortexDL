@@ -4,7 +4,7 @@ use indicatif::ProgressBar;
 use crate::{
     api::download_manager::ServerEvent,
     downloader::Context,
-    types::core::{TrackLikesQuery, TrackLikesResponse},
+    types::core::{MusicTrackLikesQuery, MusicTrackLikesResponse},
     ui::create_standalone_spinner,
 };
 
@@ -26,11 +26,11 @@ pub async fn fetch_likes_page(
     user_id: i64,
     offset: Option<&str>,
     limit: u32,
-) -> Result<TrackLikesResponse> {
+) -> Result<MusicTrackLikesResponse> {
     Ok(client
         .get(
             &format!("users/{user_id}/track_likes"),
-            Some(&TrackLikesQuery {
+            Some(&MusicTrackLikesQuery {
                 offset: offset.map(String::from),
                 limit,
             }),

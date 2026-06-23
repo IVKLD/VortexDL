@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, input } from '@angular/core';
+import {Component, input} from '@angular/core';
 import { MatIcon } from '@angular/material/icon';
 import { FieldTree, FormField } from '@angular/forms/signals';
 import { MatSlideToggle } from '@angular/material/slide-toggle';
@@ -13,8 +13,7 @@ import { AdbDeviceListComponent } from './components/adb-device-list/adb-device-
     imports: [MatIcon, MatSlideToggle, FormField, AdbDiscoveryComponent, AdbDeviceListComponent, MatDivider],
     templateUrl: './adb-section.component.html',
     styleUrl: './adb-section.component.scss',
-    changeDetection: ChangeDetectionStrategy.OnPush,
-})
+    })
 export class AdbSectionComponent {
     public readonly form = input.required<FieldTree<AdbSettings>>();
 

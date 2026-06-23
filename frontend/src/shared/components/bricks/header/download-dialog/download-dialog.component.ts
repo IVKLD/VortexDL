@@ -1,4 +1,4 @@
-import {ChangeDetectionStrategy, Component, inject, OnInit, signal} from '@angular/core';
+import {Component, inject, OnInit, signal} from '@angular/core';
 import {MusicTracksViewService} from "@app/pages/music-tracks-view/music-tracks-view.service";
 import {DialogRef} from "@angular/cdk/dialog";
 import {MatSnackBar} from "@angular/material/snack-bar";
@@ -36,8 +36,7 @@ const STORAGE_KEY = 'vortexdl_download_history';
     ],
     templateUrl: './download-dialog.component.html',
     styleUrl: './download-dialog.component.scss',
-    changeDetection: ChangeDetectionStrategy.OnPush,
-})
+    })
 export class DownloadDialogComponent implements OnInit {
     private readonly _trackService = inject(MusicTracksViewService);
     private readonly _dialogRef = inject(DialogRef);

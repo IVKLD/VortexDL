@@ -5,3 +5,4 @@ pub const SC_POSITION: &str = "sc-position";
 
 pub const APP_DIR: &str = "vortex-dl";
 pub const DB_NAME: &str = "vortex.redb";
+pub const ARCHIVE_DIR: &str = "Archive";

@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, computed, ElementRef, inject, OnDestroy, OnInit, Renderer2, viewChild } from '@angular/core';
+import {Component, computed, ElementRef, inject, OnDestroy, OnInit, Renderer2, viewChild} from '@angular/core';
 import { MatIcon } from '@angular/material/icon';
 import { PlayerService } from '@app/services/player.service';
 import {MatButton} from "@angular/material/button";
@@ -11,7 +11,6 @@ import {MatButton} from "@angular/material/button";
     ],
     templateUrl: './player-dial.component.html',
     styleUrl: './player-dial.component.scss',
-    changeDetection: ChangeDetectionStrategy.OnPush,
     host: {
         '(mousedown)': 'onMouseDown($event)',
         '(touchstart)': 'onTouchStart($event)',

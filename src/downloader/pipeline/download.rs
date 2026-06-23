@@ -5,15 +5,14 @@ use futures::StreamExt;
 use tokio::{fs, io::AsyncWriteExt, time::sleep};
 
 use crate::{
-    downloader::{
-        Context,
-        core::pipeline::{DownloadTask, resolve::StreamSource},
-    },
+    downloader::Context,
     ui,
     utils::{soundcloud::init_client_with_settings, verification::verify},
 };
+use super::super::DownloadTask;
+use super::resolve::StreamSource;
 
-pub async fn download(
+pub async fn download_single_track(
     context: &Context,
     task: &DownloadTask,
     stream_source: StreamSource,
