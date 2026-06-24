@@ -21,7 +21,7 @@ pub struct Args {
         action = clap::ArgAction::Version,
         help = "Print version information"
     )]
-    pub version: bool,
+    pub version: (),
     #[arg(help = "The SoundCloud URL to download (track, playlist, or user likes)")]
     pub url: Option<String>,
 
