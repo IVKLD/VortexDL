@@ -11,6 +11,9 @@ if ! git diff-index --quiet HEAD --; then
     exit 1
 fi
 
+echo -e "${BLUE}Fetching and rebasing main branch to get latest remote updates...${NC}"
+git pull --rebase origin main
+
 CURRENT_VERSION=$(grep "^version =" Cargo.toml | head -n 1 | cut -d '"' -f 2)
 echo -e "${BLUE}Current version:${NC} $CURRENT_VERSION"
 
