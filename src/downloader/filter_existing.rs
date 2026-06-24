@@ -18,7 +18,7 @@ pub async fn exclude_already_downloaded_tracks(
                 if let Some(data) = storage_write
                     .tracks
                     .get_mut(&track.id)
-                    .filter(|d| d.path.exists())
+                    .filter(|d| d.path.exists() && !d.is_archived())
                 {
                     if data.position != track.position {
                         data.position = track.position;

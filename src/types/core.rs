@@ -84,6 +84,14 @@ impl DiscoveredMusicTrack {
 
         let (artist, title) = parse_track_metadata(raw_title, uploader);
 
+        let artwork_url = artwork_url.map(|url| {
+            if url.contains("-large") {
+                url.replacen("-large", "-t1080x1080", 1)
+            } else {
+                url
+            }
+        });
+
         Self {
             id,
             title,

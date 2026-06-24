@@ -11,8 +11,17 @@ use crate::{
 
 #[derive(Parser, Debug)]
 #[command(name = "vortex-dl")]
+#[command(version)]
 #[command(about = "VortexDL: High-performance SoundCloud downloader with intelligent sync", long_about = None)]
+#[command(disable_version_flag = true)]
 pub struct Args {
+    #[arg(
+        short = 'v',
+        long = "version",
+        action = clap::ArgAction::Version,
+        help = "Print version information"
+    )]
+    pub version: bool,
     #[arg(help = "The SoundCloud URL to download (track, playlist, or user likes)")]
     pub url: Option<String>,
 

@@ -40,6 +40,28 @@ impl DownloadTask {
             .and_then(|s| s.to_str())
             .unwrap_or(&self.title)
     }
+
+    pub fn new(
+        track: &DiscoveredMusicTrack,
+        naming_template: &str,
+        output_dir: &std::path::Path,
+        pb: indicatif::ProgressBar,
+    ) -> Self {
+        let formatted = naming_template
+            .replace("{artist}", &track.artist)
+            .replace("{title}", &track.title);
+        let filename = format!("{}.mp3", clean_filename(&formatted));
+
+        Self {
+            id: track.id,
+            title: track.title.clone(),
+            artist: track.artist.clone(),
+            artwork_url: track.artwork_url.clone(),
+            position: track.position,
+            pb,
+            file_path: output_dir.join(filename),
+        }
+    }
 }
 
 /// Resolves SoundCloud URLs, checks database to avoid re-downloading, orchestrates parallel execution, and runs post-sync tasks.
@@ -123,40 +145,16 @@ async fn run_parallel_downloads(ctx: &Context, tracks: Vec<DiscoveredMusicTrack>
     let output_dir = PathBuf::from(&ctx.storage.read().await.base_path);
 
     let results: Vec<_> = stream::iter(tracks)
-        .map(|mut track| {
-            track.artwork_url = track.artwork_url.map(|url| {
-                if url.contains("-large") {
-                    url.replacen("-large", "-t1080x1080", 1)
-                } else {
-                    url
-                }
-            });
-
+        .map(|track| {
             let ctx = ctx.clone();
             let mp = mp.clone();
             let total_pb = total_pb.clone();
-            let filename = format!(
-                "{}.mp3",
-                clean_filename(
-                    &naming_template
-                        .replace("{artist}", &track.artist)
-                        .replace("{title}", &track.title),
-                )
-            );
-            let file_path = output_dir.join(filename);
+            let output_dir = output_dir.clone();
+            let naming_template = naming_template.clone();
 
             async move {
                 let pb = create_spinner(&mp);
-
-                let task = DownloadTask {
-                    id: track.id,
-                    title: track.title,
-                    artist: track.artist,
-                    artwork_url: track.artwork_url,
-                    position: track.position,
-                    pb: pb.clone(),
-                    file_path,
-                };
+                let task = DownloadTask::new(&track, &naming_template, &output_dir, pb.clone());
 
                 let result = run_track_download_pipeline(ctx, task).await;
                 total_pb.inc(1);

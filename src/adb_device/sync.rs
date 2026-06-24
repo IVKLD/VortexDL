@@ -6,6 +6,40 @@ use tokio::sync::RwLock;
 use super::{commands, state::SyncGuard, ui};
 use crate::{storage::MusicStorage, utils::filename::clean_filename};
 
+struct SyncDiff {
+    to_push: Vec<(String, String, std::path::PathBuf)>,
+    to_delete: Vec<String>,
+}
+
+fn diff_local_and_remote(
+    storage: &MusicStorage,
+    remote_files: &HashSet<String>,
+) -> SyncDiff {
+    let mut local_paths = HashSet::new();
+    let mut to_push = Vec::new();
+
+    for track in storage.tracks.values() {
+        let Some(name) = track.path.file_name().and_then(|f| f.to_str()) else {
+            continue;
+        };
+        let artist_dir = clean_filename(&track.artist);
+        let rel = format!("{artist_dir}/{name}");
+        local_paths.insert(rel.clone());
+
+        if !remote_files.contains(&rel) {
+            to_push.push((rel, artist_dir, track.path.clone()));
+        }
+    }
+
+    let to_delete = remote_files
+        .iter()
+        .filter(|f| !local_paths.contains(*f))
+        .cloned()
+        .collect();
+
+    SyncDiff { to_push, to_delete }
+}
+
 pub async fn sync_device(
     device: &str,
     remote_dir: &str,
@@ -23,50 +57,28 @@ pub async fn sync_device(
 
     let remote_files = commands::list_files(device, remote_dir).await?;
 
-    let mut local_paths = HashSet::new();
-    let mut to_push = Vec::new();
-
-    {
+    let diff = {
         let storage_read = storage.read().await;
-        let tracks = &storage_read.tracks;
-        if tracks.is_empty() {
+        if storage_read.tracks.is_empty() {
             return Ok(());
         }
+        diff_local_and_remote(&storage_read, &remote_files)
+    };
 
-        for track in tracks.values() {
-            let Some(name) = track.path.file_name().and_then(|f| f.to_str()) else {
-                continue;
-            };
-            let artist_dir = clean_filename(&track.artist);
-            let rel = format!("{artist_dir}/{name}");
-            local_paths.insert(rel.clone());
-
-            if !remote_files.contains(&rel) {
-                to_push.push((rel, artist_dir, track.path.clone()));
-            }
-        }
-    }
-
-    let to_delete: Vec<_> = remote_files
-        .iter()
-        .filter(|f| !local_paths.contains(*f))
-        .cloned()
-        .collect();
-
-    if to_push.is_empty() && to_delete.is_empty() {
+    if diff.to_push.is_empty() && diff.to_delete.is_empty() {
         return Ok(());
     }
 
     ui::sync_start(device, remote_dir);
 
-    if !to_delete.is_empty() {
-        ui::removing(to_delete.len(), device);
-        delete_tracks(device, remote_dir, &to_delete).await;
+    if !diff.to_delete.is_empty() {
+        ui::removing(diff.to_delete.len(), device);
+        delete_tracks(device, remote_dir, &diff.to_delete).await;
     }
 
-    if !to_push.is_empty() {
-        ui::pushing(to_push.len(), device);
-        push_tracks(device, remote_dir, to_push).await?;
+    if !diff.to_push.is_empty() {
+        ui::pushing(diff.to_push.len(), device);
+        push_tracks(device, remote_dir, diff.to_push).await?;
     }
 
     ui::sync_complete(device);

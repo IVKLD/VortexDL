@@ -40,3 +40,23 @@ jobs:
             target/release/vortex-dl
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Update flake.nix
+        run: |
+          VERSION=${GITHUB_REF#refs/tags/v}
+          BINARY_PATH="target/release/vortex-dl"
+          HASH=$(openssl dgst -sha256 -binary "$BINARY_PATH" | openssl base64)
+          SRI_HASH="sha256-$HASH"
+          
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          
+          git fetch origin main
+          git checkout main
+          
+          sed -i "s/version = \"[^\"]*\";/version = \"$VERSION\";/" flake.nix
+          sed -i "s/hash = \"[^\"]*\";/hash = \"$SRI_HASH\";/" flake.nix
+          
+          git add flake.nix
+          git commit -m "chore: release v$VERSION (update flake.nix)"
+          git push origin main
