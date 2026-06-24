@@ -19,7 +19,7 @@
 
             src = pkgs.fetchurl {
               url = "https://github.com/IVKLD/VortexDL/releases/download/v${version}/vortex-dl";
-              hash = "sha256-0wqx2mihpgzh1dhh76rj209jkzjy3y2girzgxp0yba6h77z21i2n=";
+              hash = "sha256-VsQg/jnQqOXB7e/n+IQfXv4pExAymwNhC/C/C2MVHXM=";
             };
 
             dontUnpack = true;
