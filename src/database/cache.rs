@@ -40,16 +40,35 @@ pub fn get_cached_music_tracks() -> Result<HashMap<String, CachedMusicTrack>> {
     Ok(map)
 }
 
-pub fn save_cached_music_tracks(tracks: &HashMap<String, CachedMusicTrack>) -> Result<()> {
+pub fn update_cached_tracks_batch(
+    to_update: &HashMap<String, CachedMusicTrack>,
+    to_remove: &std::collections::HashSet<String>,
+) -> Result<()> {
+    if to_update.is_empty() && to_remove.is_empty() {
+        return Ok(());
+    }
     let db = get_db();
     let write_txn = db.begin_write()?;
     {
-        let _ = write_txn.delete_table(CACHE_TABLE);
         let mut table = write_txn.open_table(CACHE_TABLE)?;
-        for (path, cached) in tracks {
+        for path in to_remove {
+            table.remove(path.as_str())?;
+        }
+        for (path, cached) in to_update {
             let json = serde_json::to_string(cached)?;
             table.insert(path.as_str(), json.as_str())?;
         }
+    }
+    write_txn.commit()?;
+    Ok(())
+}
+
+pub fn remove_cached_track(path: &str) -> Result<()> {
+    let db = get_db();
+    let write_txn = db.begin_write()?;
+    {
+        let mut table = write_txn.open_table(CACHE_TABLE)?;
+        table.remove(path)?;
     }
     write_txn.commit()?;
     Ok(())

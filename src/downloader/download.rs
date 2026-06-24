@@ -4,13 +4,12 @@ use anyhow::{Result, anyhow};
 use futures::StreamExt;
 use tokio::{fs, io::AsyncWriteExt, time::sleep};
 
+use super::{DownloadTask, resolve::StreamSource};
 use crate::{
     downloader::Context,
     ui,
     utils::{soundcloud::init_client_with_settings, verification::verify},
 };
-use super::super::DownloadTask;
-use super::resolve::StreamSource;
 
 pub async fn download_single_track(
     context: &Context,
@@ -19,6 +18,7 @@ pub async fn download_single_track(
 ) -> Result<()> {
     let max_retries = context.settings.read().await.max_retries;
     let mut attempts_left = max_retries.max(1);
+    let tmp_path = task.file_path.with_extension("mp3.tmp");
 
     loop {
         let result = match &stream_source {
@@ -31,10 +31,13 @@ pub async fn download_single_track(
         };
 
         match result {
-            Ok(()) => return Ok(()),
+            Ok(()) => {
+                fs::rename(&tmp_path, &task.file_path).await?;
+                return Ok(());
+            }
             Err(err) => {
                 attempts_left -= 1;
-                fs::remove_file(&task.file_path).await.ok();
+                fs::remove_file(&tmp_path).await.ok();
                 if attempts_left == 0 {
                     return Err(err);
                 }
@@ -68,7 +71,8 @@ async fn download_progressive(
         .set_message(format!("Downloading: {}", task.display_name()));
     ui::upgrade_to_download_bar(&task.pb, total);
 
-    let mut file = fs::File::create(&task.file_path).await?;
+    let tmp_path = task.file_path.with_extension("mp3.tmp");
+    let mut file = fs::File::create(&tmp_path).await?;
     let mut stream = response.bytes_stream();
 
     while let Some(chunk) = stream.next().await {
@@ -82,7 +86,7 @@ async fn download_progressive(
     }
 
     drop(file);
-    verify(&task.file_path, total).await?;
+    verify(&tmp_path, total).await?;
     Ok(())
 }
 
@@ -105,10 +109,12 @@ async fn download_hls(
         &context.client
     };
 
+    let tmp_path = task.file_path.with_extension("mp3.tmp");
+
     client
-        .download_hls_to_file(stream_url, &task.file_path)
+        .download_hls_to_file(stream_url, &tmp_path)
         .await
         .map_err(|err| anyhow!("HLS download failed: {err}"))?;
 
-    verify(&task.file_path, 0).await
+    verify(&tmp_path, 0).await
 }

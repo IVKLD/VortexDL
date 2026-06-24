@@ -1,9 +1,12 @@
-use std::collections::HashSet;
-use std::time::{SystemTime, UNIX_EPOCH};
+use std::{
+    collections::HashSet,
+    time::{SystemTime, UNIX_EPOCH},
+};
 
 use colored::Colorize;
 use tokio::task::JoinHandle;
 
+use super::DownloadTask;
 use crate::{
     adb_device,
     api::types::AudioFormat,
@@ -14,7 +17,6 @@ use crate::{
         soundcloud,
     },
 };
-use super::super::DownloadTask;
 
 pub async fn finalize_pipeline_sync(
     context: &Context,
@@ -22,7 +24,8 @@ pub async fn finalize_pipeline_sync(
     remote_ids: &HashSet<i64>,
 ) -> anyhow::Result<()> {
     let sync_mode = context.settings.read().await.downloads.sync_mode;
-    context.storage
+    context
+        .storage
         .write()
         .await
         .sync_storage(url, remote_ids, &sync_mode)

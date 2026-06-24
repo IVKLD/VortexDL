@@ -139,8 +139,10 @@ pub async fn remove_tracks(
     }
 
     if !errors.is_empty() {
-        return Err(ApiError::internal(format!("Errors during deletion: {}", errors.join("; ")))
-            .with_code(ErrorCode::IoError));
+        return Err(
+            ApiError::internal(format!("Errors during deletion: {}", errors.join("; ")))
+                .with_code(ErrorCode::IoError),
+        );
     }
 
     Ok(StatusCode::OK)

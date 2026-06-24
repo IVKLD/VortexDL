@@ -1,4 +1,4 @@
-import { computed, effect, inject, Injectable, signal, untracked } from '@angular/core';
+import { computed, inject, Injectable, signal } from '@angular/core';
 import { MusicTrack } from '@shared/models/music-track.model';
 import { Observable, tap } from 'rxjs';
 import Fuse from 'fuse.js';
@@ -15,14 +15,12 @@ export enum MusicSortOption {
 @Injectable({ providedIn: 'root' })
 export class MusicTracksViewState {
     constructor() {
-        effect(() => {
-            const option = this.sortOption();
-            untracked(() => {
-                this.startLoading();
-                const [sort, order] = option.split('-');
-                this._api.getAll(sort, order).subscribe({ next: tracks => this.setTracks = tracks });
-            });
-        });
+        this.loadTracks();
+    }
+
+    private loadTracks(): void {
+        this.startLoading();
+        this._api.getAll().subscribe({ next: tracks => this.setTracks = tracks });
     }
 
     private readonly _api = inject(MusicTracksViewService);
@@ -83,13 +81,20 @@ export class MusicTracksViewState {
 
     public removeTrack(track: MusicTrack): void {
         this._tracks.update(data => data.filter(t => t.id !== track.id));
-        this._selectedIds.update(ids => (ids.delete(track.id), new Set(ids)));
+        this._selectedIds.update(ids => {
+            ids.delete(track.id);
+            return new Set(ids);
+        });
     }
 
     public toggleSelect(track: MusicTrack): void {
         this._selectedIds.update(ids => {
             const next = new Set(ids);
-            next.has(track.id) ? next.delete(track.id) : next.add(track.id);
+            if (next.has(track.id)) {
+                next.delete(track.id);
+            } else {
+                next.add(track.id);
+            }
             return next;
         });
     }
@@ -104,8 +109,7 @@ export class MusicTracksViewState {
 
     public refresh(): Observable<MusicTrack[]> {
         this.startLoading();
-        const [sort, order] = this.sortOption().split('-');
-        return this._api.getAll(sort, order).pipe(tap(tracks => this.setTracks = tracks));
+        return this._api.getAll().pipe(tap(tracks => this.setTracks = tracks));
     }
 
     public setSortOption(option: MusicSortOption): void {

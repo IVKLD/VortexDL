@@ -2,7 +2,6 @@ use crate::{
     downloader::{Context, DiscoveredMusicTrack},
     utils::metadata::update_track_position,
 };
-use colored::Colorize;
 
 pub async fn exclude_already_downloaded_tracks(
     ctx: &Context,
@@ -12,7 +11,7 @@ pub async fn exclude_already_downloaded_tracks(
 
     let to_download: Vec<DiscoveredMusicTrack> = {
         let mut storage_write = ctx.storage.write().await;
-        
+
         tracks
             .into_iter()
             .filter_map(|track| {
@@ -25,9 +24,8 @@ pub async fn exclude_already_downloaded_tracks(
                         data.position = track.position;
                         position_updates.push((data.path.clone(), track.position));
                     }
-                    println!(
-                        "{} {} - {}",
-                        "[SKIP]".yellow().bold(),
+                    tracing::info!(
+                        "Skipping {} - {} (already downloaded)",
                         track.artist,
                         track.title
                     );

@@ -9,7 +9,7 @@ use crate::{
     api::{download_manager::DownloadManager, state::AppState},
     settings::SettingsManager,
     storage::MusicStorage,
-    utils::filename::clean_title,
+    utils::filename::parse_track_metadata,
 };
 
 // --- Sync Mode ---
@@ -77,11 +77,13 @@ impl DiscoveredMusicTrack {
         artist: Option<&soundcloud_rs::UserSummary>,
         artwork_url: Option<String>,
     ) -> Self {
-        let artist = artist
+        let uploader = artist
             .and_then(|u| u.username.as_deref())
-            .unwrap_or("Unknown")
-            .to_string();
-        let title = clean_title(title.unwrap_or("Unknown"));
+            .unwrap_or("Unknown");
+        let raw_title = title.unwrap_or("Unknown");
+
+        let (artist, title) = parse_track_metadata(raw_title, uploader);
+
         Self {
             id,
             title,
@@ -107,32 +109,15 @@ impl DiscoveredMusicTrack {
     }
 }
 
-// --- Discovery / SoundCloud Scraper Types ---
-
 #[derive(Serialize)]
-pub struct ResolveQuery {
-    pub url: Option<String>,
+pub struct ResolveQuery<'a> {
+    pub url: &'a str,
 }
 
 #[derive(Deserialize, Debug)]
-pub struct ResolveResponse {
-    pub id: i64,
-    pub kind: String,
-}
-
-#[derive(Deserialize, Debug)]
-pub struct MusicTrackLikesResponse {
-    pub collection: Vec<LikeItem>,
-    pub next_href: Option<String>,
-}
-
-#[derive(Deserialize, Debug)]
-pub struct LikeItem {
-    pub track: Option<soundcloud_rs::Track>,
-}
-
-#[derive(Serialize)]
-pub struct MusicTrackLikesQuery {
-    pub limit: u32,
-    pub offset: Option<String>,
+#[serde(tag = "kind", rename_all = "lowercase")]
+pub enum ResolvedResource {
+    Track(soundcloud_rs::Track),
+    User(soundcloud_rs::User),
+    Playlist(soundcloud_rs::Playlist),
 }

@@ -1,9 +1,9 @@
 use anyhow::Result;
-use soundcloud_rs::Client;
+use soundcloud_rs::{Client, Identifier, UserTrackLikesQuery};
 use url::Url;
 
 use crate::{
-    downloader::{Context, discovery::{fetch_likes_page, init_progress_spinner}},
+    downloader::{Context, discovery::init_progress_spinner},
     types::core::DiscoveredMusicTrack,
 };
 
@@ -18,7 +18,13 @@ pub async fn discover_liked_tracks(
     let limit = ctx.settings.read().await.limit_per_page;
 
     loop {
-        let res = fetch_likes_page(client, id, offset.as_deref(), limit).await?;
+        let query = UserTrackLikesQuery {
+            limit: Some(limit),
+            offset: offset.clone(),
+        };
+        let res = client
+            .get_user_track_likes(&Identifier::Id(id), Some(&query))
+            .await?;
         if res.collection.is_empty() {
             break;
         }

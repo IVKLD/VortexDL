@@ -33,12 +33,43 @@ pub fn clean_filename(filename: &str) -> String {
     cleaned.trim().trim_end_matches('.').trim().to_string()
 }
 
-pub fn clean_title(title: &str) -> String {
-    title
-        .split_once(" - ")
-        .map(|(_, name)| name.trim())
-        .unwrap_or(title.trim())
-        .to_string()
+fn normalize_name(name: &str) -> String {
+    name.chars()
+        .filter(|c| c.is_alphanumeric())
+        .collect::<String>()
+        .to_lowercase()
+}
+
+pub fn parse_track_metadata(raw_title: &str, uploader: &str) -> (String, String) {
+    let raw_title = raw_title.trim();
+    let uploader = uploader.trim();
+
+    if let Some((prefix, suffix)) = raw_title.split_once(" - ") {
+        let prefix_norm = normalize_name(prefix);
+        let uploader_norm = normalize_name(uploader);
+
+        if !prefix_norm.is_empty()
+            && (prefix_norm == uploader_norm
+                || uploader_norm.contains(&prefix_norm)
+                || prefix_norm.contains(&uploader_norm))
+        {
+            return (uploader.to_string(), suffix.trim().to_string());
+        }
+
+        let suffix_lower = suffix.to_lowercase();
+        let is_tag = suffix_lower.contains("remix")
+            || suffix_lower.contains("edit")
+            || suffix_lower.contains("vip")
+            || suffix_lower.contains("cover")
+            || suffix_lower.contains("mix")
+            || suffix_lower.contains("bootleg");
+
+        if !is_tag {
+            return (prefix.trim().to_string(), suffix.trim().to_string());
+        }
+    }
+
+    (uploader.to_string(), raw_title.to_string())
 }
 
 #[cfg(test)]
@@ -65,9 +96,26 @@ mod tests {
     }
 
     #[test]
-    fn test_clean_title() {
-        assert_eq!(clean_title("NEFFEX - Fight Back"), "Fight Back");
-        assert_eq!(clean_title("Fight Back"), "Fight Back");
-        assert_eq!(clean_title("Artist - Track - Remix"), "Track - Remix");
+    fn test_parse_track_metadata() {
+        assert_eq!(
+            parse_track_metadata("NEFFEX - Fight Back", "NEFFEX"),
+            ("NEFFEX".to_string(), "Fight Back".to_string())
+        );
+        assert_eq!(
+            parse_track_metadata("NEFFEX - Fight Back", "NEFFEX Music"),
+            ("NEFFEX Music".to_string(), "Fight Back".to_string())
+        );
+        assert_eq!(
+            parse_track_metadata("NEFFEX - Fight Back", "Copyright Free Channel"),
+            ("NEFFEX".to_string(), "Fight Back".to_string())
+        );
+        assert_eq!(
+            parse_track_metadata("Fight Back - Remix", "NEFFEX"),
+            ("NEFFEX".to_string(), "Fight Back - Remix".to_string())
+        );
+        assert_eq!(
+            parse_track_metadata("Fight Back", "NEFFEX"),
+            ("NEFFEX".to_string(), "Fight Back".to_string())
+        );
     }
 }

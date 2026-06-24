@@ -1,6 +1,5 @@
 import { inject, Injectable, NgZone, signal } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { MusicTracksViewService } from '../pages/music-tracks-view/music-tracks-view.service';
 import { MusicTracksViewState } from '../pages/music-tracks-view/music-tracks-view.state';
 import { PlayerService } from '@app/services/player.service';
 import { AudioFormat, MusicTrack } from '@shared/models/music-track.model';

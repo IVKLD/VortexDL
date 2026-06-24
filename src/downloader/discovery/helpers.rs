@@ -1,11 +1,7 @@
-use anyhow::Result;
 use indicatif::ProgressBar;
 
 use crate::{
-    api::download_manager::ServerEvent,
-    downloader::Context,
-    types::core::{MusicTrackLikesQuery, MusicTrackLikesResponse},
-    ui::create_standalone_spinner,
+    api::download_manager::ServerEvent, downloader::Context, ui::create_standalone_spinner,
 };
 
 pub fn init_progress_spinner(ctx: &Context, msg: &str) -> ProgressBar {
@@ -19,21 +15,4 @@ pub fn init_progress_spinner(ctx: &Context, msg: &str) -> ProgressBar {
     }
 
     pb
-}
-
-pub async fn fetch_likes_page(
-    client: &soundcloud_rs::Client,
-    user_id: i64,
-    offset: Option<&str>,
-    limit: u32,
-) -> Result<MusicTrackLikesResponse> {
-    Ok(client
-        .get(
-            &format!("users/{user_id}/track_likes"),
-            Some(&MusicTrackLikesQuery {
-                offset: offset.map(String::from),
-                limit,
-            }),
-        )
-        .await?)
 }

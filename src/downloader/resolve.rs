@@ -3,9 +3,11 @@ use soundcloud_rs::{Identifier, StreamType};
 use tokio::task::JoinHandle;
 
 use crate::{
-    downloader::{Context, DiscoveredMusicTrack, discovery::{
-        discover_liked_tracks, discover_playlist_tracks, discover_single_track, init_progress_spinner,
-    }},
+    downloader::{
+        Context, DiscoveredMusicTrack,
+        discovery::{discover_liked_tracks, discover_playlist_tracks, init_progress_spinner},
+    },
+    types::core::ResolvedResource,
     utils::{
         proxy::race_proxies,
         soundcloud::{fetch_artwork, init_client_with_settings, resolve_url},
@@ -65,15 +67,26 @@ async fn discover_tracks_from_url(
     client: &soundcloud_rs::Client,
 ) -> Result<Vec<DiscoveredMusicTrack>> {
     let pb = init_progress_spinner(ctx, "Resolving URL...");
-    let resolve_res = resolve_url(client, url).await;
     pb.finish_and_clear();
-    let resolve_res = resolve_res?;
 
-    let all_tracks = match resolve_res.kind.as_str() {
-        "user" | "likes" => discover_liked_tracks(ctx, client, resolve_res.id).await?,
-        "playlist" => discover_playlist_tracks(ctx, client, resolve_res.id).await?,
-        "track" => vec![discover_single_track(client, resolve_res.id).await?],
-        _ => return Err(anyhow::anyhow!("Unsupported resource kind: {}", resolve_res.kind)),
+    let all_tracks = match resolve_url(client, url).await? {
+        ResolvedResource::User(user) => {
+            let id = user
+                .id
+                .ok_or_else(|| anyhow::anyhow!("User ID is missing"))?;
+            discover_liked_tracks(ctx, client, id).await?
+        }
+        ResolvedResource::Playlist(playlist) => {
+            let id = playlist
+                .id
+                .ok_or_else(|| anyhow::anyhow!("Playlist ID is missing"))?;
+            discover_playlist_tracks(ctx, client, id).await?
+        }
+        ResolvedResource::Track(track) => {
+            let discovered = DiscoveredMusicTrack::from_track(track)
+                .ok_or_else(|| anyhow::anyhow!("Track missing required ID"))?;
+            vec![discovered]
+        }
     };
 
     Ok(all_tracks)

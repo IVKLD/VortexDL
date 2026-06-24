@@ -1,11 +1,15 @@
 use std::{path::Path, sync::Arc, time::Duration};
+
 use anyhow::Result;
 use notify::{RecommendedWatcher, RecursiveMode, Watcher};
 use tokio::sync::RwLock;
 
 use crate::{
     adb_device,
-    api::download_manager::{DownloadManager, ServerEvent},
+    api::{
+        download_manager::{DownloadManager, ServerEvent},
+        types::AudioFormat,
+    },
     settings::SettingsManager,
     storage::MusicStorage,
 };
@@ -48,14 +52,12 @@ pub async fn init(
                     }
                 }
                 _ = check_interval.tick() => {
-                    if let Some(t) = last_event_time {
-                        if t.elapsed() >= debounce_duration {
-                            last_event_time = None;
-                            tracing::info!("Watchdog: changes detected, reindexing library");
-                            MusicStorage::index_library(storage.clone()).await;
-                            adb_device::sync_connected(storage.clone(), settings.clone()).await;
-                            dm.broadcast_event(ServerEvent::SyncFinished);
-                        }
+                    if last_event_time.is_some_and(|t| t.elapsed() >= debounce_duration) {
+                        last_event_time = None;
+                        tracing::info!("Watchdog: changes detected, reindexing library");
+                        MusicStorage::index_library(storage.clone()).await;
+                        adb_device::sync_connected(storage.clone(), settings.clone()).await;
+                        dm.broadcast_event(ServerEvent::SyncFinished);
                     }
                 }
             }
@@ -71,8 +73,8 @@ fn is_relevant(event: &notify::Event) -> bool {
         return false;
     }
 
-    event.paths.iter().any(|path| {
-        path.extension()
-            .map_or(false, |ext| ext.to_string_lossy().to_lowercase() == "mp3")
-    })
+    event
+        .paths
+        .iter()
+        .any(|path| matches!(AudioFormat::from_path(path), AudioFormat::Mp3))
 }

@@ -17,9 +17,8 @@ use crate::{
             download::{download_events, get_download_queue, remove_from_queue, start_download},
             health::health,
             settings::{
-                get_settings,
                 diagnostics::{test_proxy, test_soundcloud},
-                update_settings,
+                get_settings, update_settings,
             },
             tracks::{get_tracks, reindex_library, remove_track, remove_tracks, stream_track},
         },

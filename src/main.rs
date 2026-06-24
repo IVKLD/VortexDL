@@ -42,7 +42,6 @@ async fn main() -> Result<()> {
     let output_dir = args.resolve_output_dir(&settings);
     fs::create_dir_all(&output_dir)?;
 
-
     let pb = create_standalone_spinner("Initializing SoundCloud...");
     let client = init_client_with_settings(&settings, None).await?;
     pb.finish_with_message("SoundCloud ready");
@@ -54,7 +53,12 @@ async fn main() -> Result<()> {
     MusicStorage::index_library(storage.clone()).await;
     pb_idx.finish_with_message("Local library indexed");
 
-    watchdog::init(storage.clone(), state.settings.clone(), state.download_manager.clone()).await?;
+    watchdog::init(
+        storage.clone(),
+        state.settings.clone(),
+        state.download_manager.clone(),
+    )
+    .await?;
 
     adb_device::init(storage, state.settings.clone());
 

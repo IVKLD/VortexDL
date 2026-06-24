@@ -5,7 +5,7 @@ use soundcloud_rs::{Client, ClientBuilder};
 
 use crate::{
     settings::{SettingsManager, UserSettings},
-    types::core::{ResolveQuery, ResolveResponse},
+    types::core::{ResolveQuery, ResolvedResource},
 };
 
 pub async fn update_cached_client_id(client: &Client, settings: &SettingsManager) {
@@ -41,18 +41,6 @@ pub async fn init_client_with_settings(
         .map_err(|e| anyhow::anyhow!("Failed to build SoundCloud client: {e}"))
 }
 
-pub async fn resolve_url(client: &Client, url: &str) -> Result<ResolveResponse> {
-    client
-        .get(
-            "resolve",
-            Some(&ResolveQuery {
-                url: Some(url.to_string()),
-            }),
-        )
-        .await
-        .map_err(Into::into)
-}
-
 pub async fn fetch_artwork(client: &reqwest::Client, url: &str) -> Option<Vec<u8>> {
     let resp = client
         .get(url)
@@ -61,4 +49,11 @@ pub async fn fetch_artwork(client: &reqwest::Client, url: &str) -> Option<Vec<u8
         .await
         .ok()?;
     resp.bytes().await.ok().map(|b| b.to_vec())
+}
+
+pub async fn resolve_url(client: &Client, url: &str) -> Result<ResolvedResource> {
+    client
+        .get("resolve", Some(&ResolveQuery { url }))
+        .await
+        .map_err(Into::into)
 }

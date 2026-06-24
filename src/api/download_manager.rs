@@ -37,7 +37,10 @@ pub struct DownloadItem {
 
 impl DownloadItem {
     pub fn is_active(&self) -> bool {
-        matches!(self.status, DownloadStatus::Queued | DownloadStatus::Downloading)
+        matches!(
+            self.status,
+            DownloadStatus::Queued | DownloadStatus::Downloading
+        )
     }
 }
 

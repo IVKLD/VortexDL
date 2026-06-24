@@ -1,7 +1,5 @@
-use std::collections::HashMap;
-
 use anyhow::{Result, anyhow};
-use soundcloud_rs::{Client, Identifier, Track};
+use soundcloud_rs::{Client, Identifier};
 
 use crate::{
     downloader::{Context, discovery::init_progress_spinner},
@@ -35,15 +33,7 @@ pub async fn discover_playlist_tracks(
     if !missing_ids.is_empty() {
         let pb = init_progress_spinner(ctx, "Resolving playlist track metadata...");
         for chunk in missing_ids.chunks(50) {
-            let ids_str = chunk
-                .iter()
-                .map(|id| id.to_string())
-                .collect::<Vec<_>>()
-                .join(",");
-
-            let query = HashMap::from([("ids", ids_str)]);
-
-            if let Ok(fetched_tracks) = client.get::<_, Vec<Track>>("tracks", Some(&query)).await {
+            if let Ok(fetched_tracks) = client.get_tracks(chunk).await {
                 for track in fetched_tracks {
                     let Some(track_id) = track.id else {
                         continue;

@@ -1,10 +1,12 @@
+mod complete;
 pub(crate) mod discovery;
-mod pipeline;
+mod download;
+mod filter_existing;
+mod resolve;
 
-use std::collections::HashSet;
-use std::path::PathBuf;
+use std::{collections::HashSet, path::PathBuf};
+
 use anyhow::Result;
-use colored::Colorize;
 use futures::{
     future::join_all,
     stream::{self, StreamExt},
@@ -13,9 +15,9 @@ use indicatif::MultiProgress;
 use tokio::task::JoinHandle;
 
 pub use crate::types::core::Context;
-use crate::types::core::DiscoveredMusicTrack;
 use crate::{
     api::download_manager::NewTask,
+    types::core::DiscoveredMusicTrack,
     ui::{create_spinner, create_total_progress_bar},
     utils::filename::clean_filename,
 };
@@ -42,10 +44,10 @@ impl DownloadTask {
 
 /// Resolves SoundCloud URLs, checks database to avoid re-downloading, orchestrates parallel execution, and runs post-sync tasks.
 pub async fn run_download_pipeline(ctx: &Context, url: &str) -> Result<()> {
-    let all_tracks = pipeline::resolve::resolve_tracks_from_url(ctx, url).await?;
+    let all_tracks = resolve::resolve_tracks_from_url(ctx, url).await?;
 
     let remote_ids: HashSet<i64> = all_tracks.iter().map(|track| track.id).collect();
-    let to_download = pipeline::filter_existing::exclude_already_downloaded_tracks(ctx, all_tracks).await;
+    let to_download = filter_existing::exclude_already_downloaded_tracks(ctx, all_tracks).await;
 
     if !to_download.is_empty() {
         if let Some(ref m) = ctx.dm {
@@ -61,16 +63,19 @@ pub async fn run_download_pipeline(ctx: &Context, url: &str) -> Result<()> {
         }
         run_parallel_downloads(ctx, to_download).await;
     } else {
-        println!("{} Everything synced!", "[INFO]".blue().bold());
+        tracing::info!("Everything synced!");
     }
 
-    pipeline::complete::finalize_pipeline_sync(ctx, url, &remote_ids).await?;
+    complete::finalize_pipeline_sync(ctx, url, &remote_ids).await?;
 
     Ok(())
 }
 
 /// Runs resolution, downloading and tagging steps sequentially for a single track.
-async fn run_track_download_pipeline(context: Context, task: DownloadTask) -> Option<JoinHandle<()>> {
+async fn run_track_download_pipeline(
+    context: Context,
+    task: DownloadTask,
+) -> Option<JoinHandle<()>> {
     let pipeline = async {
         if let Some(manager) = &context.dm {
             manager.update_downloading(task.id);
@@ -78,26 +83,26 @@ async fn run_track_download_pipeline(context: Context, task: DownloadTask) -> Op
         let display_name = task.display_name().to_string();
         task.pb.set_message(format!("Downloading: {display_name}"));
 
-        let artwork_handle = pipeline::resolve::spawn_artwork_fetch(&context, task.artwork_url.as_deref());
+        let artwork_handle = resolve::spawn_artwork_fetch(&context, task.artwork_url.as_deref());
 
-        let proto = pipeline::resolve::resolve_stream_source(&context, task.id).await?;
+        let proto = resolve::resolve_stream_source(&context, task.id).await?;
 
         let url = proto.url().to_string();
 
-        pipeline::download::download_single_track(&context, &task, proto).await?;
+        download::download_single_track(&context, &task, proto).await?;
 
         Ok((artwork_handle, url))
     };
 
     match pipeline.await {
-        Ok((artwork_handle, url)) => Some(tokio::spawn(pipeline::complete::finalize_single_track(
+        Ok((artwork_handle, url)) => Some(tokio::spawn(complete::finalize_single_track(
             context,
             task,
             artwork_handle,
             url,
         ))),
         Err(err) => {
-            pipeline::complete::handle_track_failure(&context, &task, err).await;
+            complete::handle_track_failure(&context, &task, err).await;
             None
         }
     }
@@ -168,9 +173,8 @@ async fn run_parallel_downloads(ctx: &Context, tracks: Vec<DiscoveredMusicTrack>
     join_all(handles).await;
 
     total_pb.finish_and_clear();
-    println!(
-        "{} Sync complete. {} downloaded, {} failed.",
-        "[SUCCESS]".green().bold(),
+    tracing::info!(
+        "Sync complete. {} downloaded, {} failed.",
         total_tracks - failed,
         failed
     );
