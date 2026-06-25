@@ -54,8 +54,8 @@ jobs:
           git fetch origin main
           git checkout main
           
-          sed -i "s/version = \"[^\"]*\";/version = \"$VERSION\";/" flake.nix
-          sed -i "s/hash = \"[^\"]*\";/hash = \"$SRI_HASH\";/" flake.nix
+          sed -i "s|version = \"[^\"]*\";|version = \"$VERSION\";|" flake.nix
+          sed -i "s|hash = \"[^\"]*\";|hash = \"$SRI_HASH\";|" flake.nix
           
           git add flake.nix
           git commit -m "chore: release v$VERSION (update flake.nix)"
