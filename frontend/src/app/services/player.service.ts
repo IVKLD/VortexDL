@@ -13,14 +13,22 @@ export class PlayerService {
         +(localStorage.getItem('player_volume') ?? 0.2)
     );
 
+    private readonly _shuffle = signal<boolean>(
+        localStorage.getItem('player_shuffle') === 'true'
+    );
+
+    private shuffleQueue: PlayableTrack[] = [];
+    private shuffleIndex = -1;
+
     public readonly currentTrack = signal<PlayableTrack | null>(null);
     public readonly queue = this._queue.asReadonly();
+    public readonly shuffle = this._shuffle.asReadonly();
 
     public readonly isPlaying = signal(false);
     public readonly progress = signal(0);
     public readonly duration = signal(0);
 
-    public readonly volume = this._volume.asReadonly()
+    public readonly volume = this._volume.asReadonly();
 
     constructor() {
         this.listenToAudioEvents();
@@ -113,6 +121,33 @@ export class PlayerService {
         });
     }
 
+    private generateShuffleQueue(current: PlayableTrack | null): void {
+        const q = [...this._queue()];
+        if (q.length === 0) {
+            this.shuffleQueue = [];
+            this.shuffleIndex = -1;
+            return;
+        }
+        
+        // Shuffle the tracks using Fisher-Yates algorithm
+        for (let i = q.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            const temp = q[i]!;
+            q[i] = q[j]!;
+            q[j] = temp;
+        }
+
+        if (current) {
+            const idx = q.findIndex(t => t.id === current.id);
+            if (idx !== -1) {
+                q.splice(idx, 1);
+                q.unshift(current);
+            }
+        }
+        this.shuffleQueue = q;
+        this.shuffleIndex = current ? 0 : -1;
+    }
+
     public get audio(): HTMLAudioElement {
         return this._audio;
     }
@@ -121,12 +156,35 @@ export class PlayerService {
         this._volume.set(value);
     }
 
+    public toggleShuffle(): void {
+        const newVal = !this._shuffle();
+        this._shuffle.set(newVal);
+        localStorage.setItem('player_shuffle', newVal.toString());
+        if (newVal) {
+            this.generateShuffleQueue(this.currentTrack());
+        } else {
+            this.shuffleQueue = [];
+            this.shuffleIndex = -1;
+        }
+    }
+
+
     public setQueue(tracks: PlayableTrack[]): void {
         this._queue.set(tracks);
+        if (this._shuffle()) {
+            this.generateShuffleQueue(this.currentTrack());
+        }
     }
 
     public removeFromQueue(trackId: number): void {
         this._queue.update(q => q.filter(t => t.id !== trackId));
+        if (this._shuffle()) {
+            this.shuffleQueue = this.shuffleQueue.filter(t => t.id !== trackId);
+            const current = this.currentTrack();
+            if (current) {
+                this.shuffleIndex = this.shuffleQueue.findIndex(t => t.id === current.id);
+            }
+        }
         const current = this.currentTrack();
         if (current && current.id === trackId) {
             this.audio.pause();
@@ -146,6 +204,15 @@ export class PlayerService {
         this.audio.src = streamUrl || `/api/downloads/${track.id}/stream`;
         this.audio.load();
         this.audio.play();
+
+        if (this._shuffle()) {
+            const idx = this.shuffleQueue.findIndex(t => t.id === track.id);
+            if (idx !== -1) {
+                this.shuffleIndex = idx;
+            } else {
+                this.generateShuffleQueue(track);
+            }
+        }
     }
 
     public togglePlay(): void {
@@ -176,11 +243,22 @@ export class PlayerService {
         
         if (queue.length === 0 || !current) return;
 
-        const currentIndex = queue.findIndex(t => t.id === current.id);
-        const nextIndex = (currentIndex + 1) % queue.length;
-        const nextTrack = queue[nextIndex];
-        
-        if (nextTrack) this.play(nextTrack);
+        if (this._shuffle()) {
+            if (this.shuffleQueue.length === 0) {
+                this.generateShuffleQueue(current);
+            }
+            if (this.shuffleQueue.length > 0) {
+                this.shuffleIndex = (this.shuffleIndex + 1) % this.shuffleQueue.length;
+                const nextTrack = this.shuffleQueue[this.shuffleIndex];
+                if (nextTrack) this.play(nextTrack);
+            }
+        } else {
+            const currentIndex = queue.findIndex(t => t.id === current.id);
+            const nextIndex = (currentIndex + 1) % queue.length;
+            const nextTrack = queue[nextIndex];
+            
+            if (nextTrack) this.play(nextTrack);
+        }
     }
 
     public previous(): void {
@@ -196,10 +274,21 @@ export class PlayerService {
         const queue = this.queue();
         if (queue.length === 0) return;
 
-        const currentIndex = queue.findIndex(t => t.id === current.id);
-        const prevIndex = (currentIndex - 1 + queue.length) % queue.length;
-        const prevTrack = queue[prevIndex];
-        
-        if (prevTrack) this.play(prevTrack);
+        if (this._shuffle()) {
+            if (this.shuffleQueue.length === 0) {
+                this.generateShuffleQueue(current);
+            }
+            if (this.shuffleQueue.length > 0) {
+                this.shuffleIndex = (this.shuffleIndex - 1 + this.shuffleQueue.length) % this.shuffleQueue.length;
+                const prevTrack = this.shuffleQueue[this.shuffleIndex];
+                if (prevTrack) this.play(prevTrack);
+            }
+        } else {
+            const currentIndex = queue.findIndex(t => t.id === current.id);
+            const prevIndex = (currentIndex - 1 + queue.length) % queue.length;
+            const prevTrack = queue[prevIndex];
+            
+            if (prevTrack) this.play(prevTrack);
+        }
     }
 }

@@ -1,5 +1,5 @@
 import { Component, inject, OnInit, signal, ChangeDetectionStrategy } from '@angular/core';
-import { form, FormRoot, max, min, required, FormField } from '@angular/forms/signals';
+import { form, FormRoot, max, min, required, validate, FieldTree, ValidationError, FormField } from '@angular/forms/signals';
 import { SettingsService, SettingsTestingService } from './settings.service';
 import { NotificationService } from '@app/services/notification.service';
 import { debounceTime, filter, finalize, switchMap, map, catchError, EMPTY, firstValueFrom } from 'rxjs';
@@ -12,7 +12,7 @@ import { WebSocketService } from '@app/services/websocket.service';
 import { MatIcon } from '@angular/material/icon';
 import { MatButton, MatIconButton } from '@angular/material/button';
 import { MatInput } from '@angular/material/input';
-import { MatFormField, MatHint, MatLabel, MatError, MatSuffix } from '@angular/material/form-field';
+import { MatFormField, MatHint, MatLabel, MatError } from '@angular/material/form-field';
 import { MatDivider } from '@angular/material/divider';
 import { SettingsSwitchCardComponent } from './components/settings-switch-card/settings-switch-card.component';
 import { FallbackProxiesComponent } from './components/network-section/components/fallback-proxies/fallback-proxies.component';
@@ -31,7 +31,6 @@ import { AdbDeviceListComponent } from './components/adb-section/components/adb-
         MatHint,
         MatLabel,
         MatError,
-        MatSuffix,
         MatDivider,
         SettingsSwitchCardComponent,
         FallbackProxiesComponent,
@@ -79,10 +78,17 @@ export class SettingsView implements OnInit {
     protected readonly connectedDevices = signal<string[]>([]);
     protected readonly isRefreshing = signal(false);
 
+    protected readonly soundcloudUrlTestError = signal<string | null>(null);
+    protected readonly proxyUrlTestError = signal<string | null>(null);
+
     protected readonly settingsForm =
         form(this.settingsModel, (f) => {
             englishOnly(f.soundcloud.profileUrl);
             soundCloudUrl(f.soundcloud.profileUrl);
+            validate(f.soundcloud.profileUrl, (ctx) => {
+                const testErr = this.soundcloudUrlTestError();
+                return (testErr && !ctx.state.dirty()) ? { kind: 'testFailed', message: testErr } : null;
+            });
 
             min(f.soundcloud.syncInterval, 1, { message: 'Interval must be at least 1 minute' });
             max(f.soundcloud.syncInterval, 1440, { message: 'Interval cannot exceed 24 hours' });
@@ -96,6 +102,22 @@ export class SettingsView implements OnInit {
             max(f.system.limitPerPage, 500, { message: 'Limit cannot exceed 500' });
             min(f.system.maxRetries, 0, { message: 'Max retries cannot be negative' });
             max(f.system.maxRetries, 20, { message: 'Max retries cannot exceed 20' });
+
+            validate(f.network.proxyUrl, (ctx) => {
+                const val = ctx.value();
+                const useProxy = ctx.valueOf(f.network.useProxy);
+                if (useProxy && !val) {
+                    return { kind: 'required', message: 'Proxy URL is required when proxy is enabled' };
+                }
+                if (val) {
+                    const match = /^(socks5|http|https):\/\/[a-zA-Z0-9\-_.:@]+$/i.test(val);
+                    if (!match) {
+                        return { kind: 'pattern', message: 'Invalid proxy URL (e.g. socks5://127.0.0.1:1080)' };
+                    }
+                }
+                const testErr = this.proxyUrlTestError();
+                return (testErr && !ctx.state.dirty()) ? { kind: 'testFailed', message: testErr } : null;
+            });
         }, {
             submission: {
                 action: async () => {
@@ -161,7 +183,19 @@ export class SettingsView implements OnInit {
 
         this._testing.testSoundCloud(this.settingsForm.soundcloud.profileUrl().value())
             .pipe(finalize(() => this.isTesting.set(false)))
-            .subscribe();
+            .subscribe({
+                next: () => {
+                    this.soundcloudUrlTestError.set(null);
+                    this.settingsForm.soundcloud.profileUrl().reset();
+                    this.settingsForm.soundcloud.profileUrl().reloadValidation();
+                },
+                error: (err) => {
+                    const errMsg = parseErrorMessage(err, 'Invalid SoundCloud configuration');
+                    this.soundcloudUrlTestError.set(errMsg);
+                    this.settingsForm.soundcloud.profileUrl().reset();
+                    this.settingsForm.soundcloud.profileUrl().reloadValidation();
+                }
+            });
     }
 
     protected testProxy() {
@@ -173,14 +207,24 @@ export class SettingsView implements OnInit {
             .subscribe({
                 next: (res) => {
                     if (res.valid) {
+                        this.proxyUrlTestError.set(null);
+                        this.settingsForm.network.proxyUrl().reset();
+                        this.settingsForm.network.proxyUrl().reloadValidation();
                         this._notification.success('Proxy connection successful');
                     } else {
                         const err = res.error || 'Proxy is not able to reach SoundCloud API';
+                        this.proxyUrlTestError.set(err);
+                        this.settingsForm.network.proxyUrl().reset();
+                        this.settingsForm.network.proxyUrl().reloadValidation();
                         this._notification.error(err);
                     }
                 },
                 error: (err) => {
-                    this._notification.error(parseErrorMessage(err, 'Proxy verification failed'));
+                    const errMsg = parseErrorMessage(err, 'Proxy verification failed');
+                    this.proxyUrlTestError.set(errMsg);
+                    this.settingsForm.network.proxyUrl().reset();
+                    this.settingsForm.network.proxyUrl().reloadValidation();
+                    this._notification.error(errMsg);
                 }
             });
     }
@@ -200,6 +244,10 @@ export class SettingsView implements OnInit {
         this.settingsForm.adb.devices().markAsDirty();
     }
 
+
+    protected hasFormatError(field: FieldTree<string>): boolean {
+        return field().errors().some((e: ValidationError) => e.kind !== 'testFailed');
+    }
 
     public ngOnInit() {
         this._api.getSettings()

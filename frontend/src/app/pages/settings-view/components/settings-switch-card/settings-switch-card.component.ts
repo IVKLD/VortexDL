@@ -12,4 +12,9 @@ export class SettingsSwitchCardComponent {
     public readonly title = input.required<string>();
     public readonly description = input.required<string>();
     public readonly control = input.required<FieldTree<boolean>>();
+
+    protected toggle(): void {
+        this.control()().value.set(!this.control()().value());
+        this.control()().markAsDirty();
+    }
 }

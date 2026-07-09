@@ -11,8 +11,12 @@ export function parseErrorMessage(error: HttpErrorResponse | Error | string | nu
 
     if (error instanceof HttpErrorResponse) {
         const errObj = error.error;
+        if (typeof errObj === 'string' && errObj.trim().length > 0) {
+            return errObj;
+        }
         if (errObj && typeof errObj === 'object') {
-            const message = 'error' in errObj && typeof errObj.error === 'string' ? errObj.error : undefined;
+            const message = ('error' in errObj && typeof errObj.error === 'string' ? errObj.error : undefined)
+                || ('message' in errObj && typeof errObj.message === 'string' ? errObj.message : undefined);
             const code = 'code' in errObj && typeof errObj.code === 'string' ? errObj.code : undefined;
             
             if (message && code) {

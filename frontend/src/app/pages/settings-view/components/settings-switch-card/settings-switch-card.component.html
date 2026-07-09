@@ -1,7 +1,12 @@
-<div class="switch-card">
+<div class="switch-card"
+     role="button"
+     tabindex="0"
+     (click)="toggle()"
+     (keydown.space)="$event.preventDefault(); toggle()"
+     (keydown.enter)="toggle()">
     <div>
         <strong>{{ title() }}</strong>
         <p>{{ description() }}</p>
     </div>
-    <mat-slide-toggle [formField]="control()" />
+    <mat-slide-toggle [formField]="control()" (click)="$event.stopPropagation()" tabindex="-1" />
 </div>
