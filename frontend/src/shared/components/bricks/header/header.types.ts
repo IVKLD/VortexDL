@@ -31,4 +31,3 @@ export interface HeaderSortBind<T = unknown> {
     value: Signal<T>;
     onSortChange: (value: T) => void;
 }
-

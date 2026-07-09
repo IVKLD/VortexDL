@@ -1,9 +1,8 @@
 import { Component, computed, inject, signal } from '@angular/core';
 import { ActivatedRoute, NavigationEnd, Router } from '@angular/router';
-import { HeaderConfig, HeaderFeature } from './header.types';
-import { filter, map, finalize } from 'rxjs';
+import { HeaderFeature } from './header.types';
+import { filter, finalize } from 'rxjs';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { RouteData } from '@app/app.routes';
 import { MusicTracksViewState } from '@app/pages/music-tracks-view/music-tracks-view.state';
 import { HeaderService } from './header.service';
 
@@ -19,7 +18,7 @@ import { MatDivider } from '@angular/material/divider';
 import { MatDialog } from '@angular/material/dialog';
 import { SettingsService } from '@app/pages/settings-view/settings.service';
 import { MusicTracksViewService } from '@app/pages/music-tracks-view/music-tracks-view.service';
-import { MatSnackBar } from '@angular/material/snack-bar';
+import { NotificationService } from '@app/services/notification.service';
 import { DownloadTrackingService } from '@app/services/download-tracking.service';
 import { DownloadDialogComponent } from './download-dialog/download-dialog.component';
 
@@ -41,7 +40,7 @@ export class Header {
     private readonly _dialog = inject(MatDialog);
     private readonly _settingsService = inject(SettingsService);
     private readonly _trackService = inject(MusicTracksViewService);
-    private readonly _snackBar = inject(MatSnackBar);
+    private readonly _notification = inject(NotificationService);
     private readonly _downloadTracking = inject(DownloadTrackingService);
     protected readonly headerService = inject(HeaderService);
     private readonly _localSyncing = signal(false);
@@ -63,27 +62,23 @@ export class Header {
     });
 
     constructor() {
-        this.headerService.config.set(this.getInitialHeaderConfig());
+        this.updateHeader();
 
         this._router.events.pipe(
             filter(event => event instanceof NavigationEnd),
-            map(() => {
-                let route = this._route.root;
-                while (route.firstChild) {
-                    route = route.firstChild;
-                }
-                const data: RouteData = route.snapshot.data;
-                return data.header;
-            }),
             takeUntilDestroyed()
-        ).subscribe(config => {
-            this.headerService.config.set(config);
-        });
+        ).subscribe(() => this.updateHeader());
     }
 
-    private getInitialHeaderConfig(): HeaderConfig | undefined {
-        const data: RouteData = this._route.root.snapshot.firstChild?.data || {};
-        return data.header;
+    private updateHeader() {
+        let route = this._route.root;
+        while (route.firstChild) {
+            route = route.firstChild;
+        }
+        const data = route.snapshot.data;
+        this.headerService.config.set(data['header']);
+        this.headerService.searchBind.set(data['headerSearch'] || null);
+        this.headerService.sortBind.set(data['headerSort'] || null);
     }
 
     protected onSearchKeydown(event: KeyboardEvent): void {
@@ -98,7 +93,7 @@ export class Header {
         this._settingsService.getSettings().subscribe({
             next: (settings) => {
                 if (!settings.soundcloud.profileUrl) {
-                    this._snackBar.open('Please configure SoundCloud URL in settings first', 'OK');
+                    this._notification.error('Please configure SoundCloud URL in settings first');
                     this._localSyncing.set(false);
                     return;
                 }

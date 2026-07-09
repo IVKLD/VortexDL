@@ -1,0 +1,19 @@
+@for (notification of service.notifications(); track notification.id) {
+<div class="notification-item" [class]="notification.type"
+     [class.dismissing]="notification.dismissing"
+     [class.shake]="notification.shaking"
+     role="button"
+     tabindex="0"
+     (click)="service.dismiss(notification.id)"
+     (keydown.enter)="service.dismiss(notification.id)"
+     (keydown.space)="service.dismiss(notification.id)">
+    <mat-icon>
+        @switch (notification.type) {
+            @case ('success') { check_circle }
+            @case ('error') { error }
+            @default { info }
+        }
+    </mat-icon>
+    <span class="message">{{ notification.message }}</span>
+</div>
+}

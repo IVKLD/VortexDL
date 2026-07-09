@@ -1,43 +1,37 @@
-<div class="music-container">
-    @defer (on idle) {
-        @if (tracks().length > 0) {
-            <rx-virtual-scroll-viewport [itemSize]="82" scrollWindow>
-                <app-music-card *rxVirtualFor="let track of tracks(); trackBy: 'id'"
-                                [isActive]="activeTrackId() === track.id"
-                                [isPlaying]="player.isTrackPlaying(track.id)"
-                                [isSelected]="state.selectedIds().has(track.id)"
-                                [track]="track" (playTrack)="playTrack(track)" (click)="handleCardClick(track)"
-                                [cdkContextMenuTriggerFor]="cardMenu"
-                                [cdkContextMenuTriggerData]="{ $implicit: track }">
-                    <aside meta>
-                        <span>{{ track.size | fileSize }}</span>
-                        <strong [attr.data-format]="track.format">{{ track.format }}</strong>
-                    </aside>
+<app-list-view-shell [loading]="state.isLoading() || state.isSearching()" 
+                     [hasResults]="tracks().length > 0">
 
-                    <div actions class="actions-wrapper">
-                        <menu role="presentation">
-                            <button [cdkMenuTriggerFor]="cardMenu" [cdkMenuTriggerData]="{ $implicit: track }"
-                                    (click)="$event.stopPropagation()" mat-icon-button>
-                                <mat-icon>more_vert</mat-icon>
-                            </button>
-                        </menu>
-                    </div>
-                </app-music-card>
-            </rx-virtual-scroll-viewport>
-        } @else {
-            <div class="empty-state">
-                <mat-icon>library_music</mat-icon>
-                <h3>No tracks yet</h3>
-                <p>Your library is empty. Go to Dashboard to start downloading music.</p>
-            </div>
-        }
-    } @placeholder (minimum 400ms) {
-        <div class="loading-placeholder">
-            <mat-icon class="spinner">sync</mat-icon>
-            <p>Loading library...</p>
-        </div>
-    }
-</div>
+    <app-search-skeleton skeleton/>
+
+    <ng-container results>
+        <rx-virtual-scroll-viewport [itemSize]="82" scrollWindow>
+            <app-music-card *rxVirtualFor="let track of tracks(); trackBy: 'id'"
+                            [isActive]="activeTrackId() === track.id"
+                            [isPlaying]="player.isTrackPlaying(track.id)"
+                            [isSelected]="state.selectedIds().has(track.id)"
+                            [track]="track" (playTrack)="playTrack(track)" (click)="handleCardClick(track)"
+                            [cdkContextMenuTriggerFor]="cardMenu"
+                            [cdkContextMenuTriggerData]="{ $implicit: track }">
+                <aside meta>
+                    <span>{{ track.size | fileSize }}</span>
+                    <strong [attr.data-format]="track.format">{{ track.format }}</strong>
+                </aside>
+
+                <div actions class="actions-wrapper">
+                    <menu role="presentation">
+                        <button [cdkMenuTriggerFor]="cardMenu" [cdkMenuTriggerData]="{ $implicit: track }"
+                                (click)="$event.stopPropagation()" mat-icon-button>
+                            <mat-icon>more_vert</mat-icon>
+                        </button>
+                    </menu>
+                </div>
+            </app-music-card>
+        </rx-virtual-scroll-viewport>
+    </ng-container>
+
+    <app-empty-pane empty icon="library_music" heading="No tracks yet"
+                    description="Your library is empty. Go to Dashboard to start downloading music."/>
+</app-list-view-shell>
 
 @if (state.hasSelection()) {
     <app-selection-bar [count]="state.selectedIds().size" (deleteSelected)="deleteSelected()"

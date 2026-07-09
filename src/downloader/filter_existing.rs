@@ -4,15 +4,15 @@ pub async fn exclude_already_downloaded_tracks(
     ctx: &Context,
     tracks: Vec<DiscoveredMusicTrack>,
 ) -> Vec<DiscoveredMusicTrack> {
-    let storage_write = ctx.storage.write().await;
+    let storage = ctx.storage.read().await;
 
     tracks
         .into_iter()
         .filter(|track| {
-            if storage_write
+            if storage
                 .tracks
                 .get(&track.id)
-                .map_or(false, |d| d.path.exists() && !d.is_archived())
+                .is_some_and(|d| d.path.exists() && !d.is_archived())
             {
                 tracing::info!(
                     "Skipping {} - {} (already downloaded)",

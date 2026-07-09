@@ -8,10 +8,9 @@ use axum::{
     response::IntoResponse,
 };
 use tokio::spawn;
-
 use crate::{
     api::{
-        download_manager::{DownloadItem, ServerEvent},
+        download_manager::{DownloadItem, MessageLevel, ServerEvent},
         errors::{ApiError, ErrorCode},
         state::AppState,
         types::{ApiStatus, DownloadRequest, DownloadStartResponse},
@@ -138,14 +137,14 @@ async fn handle_download_events(mut socket: WebSocket, state: AppState) {
 
     let welcome = ServerEvent::Message {
         message: "Connected to event stream".to_string(),
-        level: "info".to_string(),
+        level: MessageLevel::Info,
     };
     if !send_event(&mut socket, &welcome).await {
         return;
     }
 
     for item in queue {
-        let update = ServerEvent::TrackUpdate { item };
+        let update = ServerEvent::TrackUpdate { item: Box::new(item) };
         if !send_event(&mut socket, &update).await {
             return;
         }

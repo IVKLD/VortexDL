@@ -19,19 +19,34 @@ pub enum DownloadStatus {
     Failed,
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, ToSchema)]
+#[serde(rename_all = "lowercase")]
+pub enum MessageLevel {
+    Info,
+    Warn,
+    Error,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
+#[serde(rename_all = "camelCase")]
+pub struct DownloadTrackDetails {
+    pub title: String,
+    pub artist: String,
+    #[schema(value_type = Option<String>)]
+    pub artwork_url: Option<Url>,
+    #[schema(value_type = Option<String>)]
+    pub source_url: Option<Url>,
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
 #[serde(rename_all = "camelCase")]
 pub struct DownloadItem {
     pub id: i64,
-    pub title: String,
-    pub artist: String,
+    #[serde(flatten)]
+    pub details: DownloadTrackDetails,
     pub status: DownloadStatus,
-    #[schema(value_type = Option<String>)]
-    pub artwork_url: Option<Url>,
     pub format: Option<AudioFormat>,
     pub created_at: Option<u64>,
-    #[schema(value_type = Option<String>)]
-    pub source_url: Option<Url>,
     pub progress: Option<f64>,
     pub size: Option<u64>,
     pub error: Option<String>,
@@ -50,13 +65,15 @@ impl From<DiscoveredMusicTrack> for DownloadItem {
     fn from(task: DiscoveredMusicTrack) -> Self {
         Self {
             id: task.id,
-            title: task.title,
-            artist: task.artist,
+            details: DownloadTrackDetails {
+                title: task.title,
+                artist: task.artist,
+                artwork_url: task.artwork_url,
+                source_url: task.permalink_url,
+            },
             status: DownloadStatus::Queued,
-            artwork_url: task.artwork_url,
             format: None,
             created_at: None,
-            source_url: task.permalink_url,
             progress: None,
             size: None,
             error: None,
@@ -67,11 +84,11 @@ impl From<DiscoveredMusicTrack> for DownloadItem {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(tag = "type", rename_all = "lowercase")]
 pub enum ServerEvent {
-    TrackUpdate { item: DownloadItem },
+    TrackUpdate { item: Box<DownloadItem> },
     SyncFinished { url: Option<String> },
     SyncStarted { url: String },
     Error { message: String },
-    Message { message: String, level: String },
+    Message { message: String, level: MessageLevel },
 }
 
 struct ManagerState {
@@ -100,12 +117,6 @@ impl Default for DownloadManager {
 impl DownloadManager {
     fn lock_state(&self) -> MutexGuard<'_, ManagerState> {
         self.state.lock().unwrap_or_else(|e| e.into_inner())
-    }
-
-    fn maybe_sync_finished(&self) {
-        if !self.lock_state().tasks.values().any(|t| t.is_active()) {
-            let _ = self.tx.send(ServerEvent::SyncFinished { url: None });
-        }
     }
 
     pub fn reserve_url(&self, url: &Url) -> bool {
@@ -148,7 +159,6 @@ impl DownloadManager {
             updated
         };
         self.notify_update(updated);
-        self.maybe_sync_finished();
     }
 
     pub fn update_failed(&self, id: i64, error_message: &str) {
@@ -170,7 +180,7 @@ impl DownloadManager {
             item.status = DownloadStatus::Finished;
             item.format = Some(format);
             item.created_at = Some(created_at);
-            item.source_url = source_url.cloned();
+            item.details.source_url = source_url.cloned();
             item.progress = Some(100.0);
             item.size = Some(size);
         });
@@ -201,10 +211,7 @@ impl DownloadManager {
     }
 
     pub fn remove_task(&self, id: i64) {
-        let removed = self.lock_state().tasks.remove(&id).is_some();
-        if removed {
-            self.maybe_sync_finished();
-        }
+        self.lock_state().tasks.remove(&id);
     }
 
     pub fn broadcast_event(&self, event: ServerEvent) {
@@ -212,7 +219,7 @@ impl DownloadManager {
     }
 
     fn notify_update(&self, item: DownloadItem) {
-        self.broadcast_event(ServerEvent::TrackUpdate { item });
+        self.broadcast_event(ServerEvent::TrackUpdate { item: Box::new(item) });
     }
 
     pub fn get_queue(&self) -> Vec<DownloadItem> {

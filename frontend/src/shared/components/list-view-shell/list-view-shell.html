@@ -1,0 +1,23 @@
+<div class="list-view-shell">
+    @if (showSkeleton()) {
+        <div class="pane skeleton-pane">
+            <ng-content select="[skeleton]"/>
+        </div>
+    }
+
+    <div class="pane results-pane" [class.visible]="showResults()" [class.dimmed]="showResultsDimmed()">
+        <ng-content select="[results]"/>
+    </div>
+
+    @if (showEmpty() && !showResults()) {
+        <div class="pane empty-pane">
+            <ng-content select="[empty]"/>
+        </div>
+    }
+
+    @if (showInitial()) {
+        <div class="pane initial-pane">
+            <ng-content select="[initial]"/>
+        </div>
+    }
+</div>

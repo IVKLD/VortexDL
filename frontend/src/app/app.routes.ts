@@ -4,7 +4,10 @@ import { Route } from '@angular/router';
 import { HeaderConfig, HeaderFeature, HeaderSortOption } from '@shared/components/bricks/header/header.types';
 import { SettingsView } from './pages/settings-view/settings-view.component';
 import { SearchView } from './pages/search-view/search-view';
-import { MusicSortOption } from './pages/music-tracks-view/music-tracks-view.state';
+import { MusicSortOption, MusicTracksViewState } from './pages/music-tracks-view/music-tracks-view.state';
+import { SearchViewState } from './pages/search-view/search-view.state';
+import { inject } from '@angular/core';
+import { form } from '@angular/forms/signals';
 
 export interface RouteData {
     header?: HeaderConfig;
@@ -31,6 +34,21 @@ export const routes: CustomRoutes = [
     {
         path: 'musics',
         title: 'Musics',
+        resolve: {
+            headerSearch: () => {
+                const state = inject(MusicTracksViewState);
+                return {
+                    formField: state.searchForm,
+                };
+            },
+            headerSort: () => {
+                const state = inject(MusicTracksViewState);
+                return {
+                    value: state.sortOption,
+                    onSortChange: (sort: MusicSortOption) => state.setSortOption(sort),
+                };
+            },
+        },
         data: {
             header: {
                 title: 'Library',
@@ -49,6 +67,16 @@ export const routes: CustomRoutes = [
     {
         path: 'search',
         title: 'Search',
+        resolve: {
+            headerSearch: () => {
+                const state = inject(SearchViewState);
+                return {
+                    formField: form(state.query),
+                    onSubmit: (q: string) => state.search(q),
+                    onClear: () => state.clearSearch(),
+                };
+            },
+        },
         data: {
             header: {
                 title: 'SoundCloud Search',
@@ -70,4 +98,3 @@ export const routes: CustomRoutes = [
         component: SettingsView,
     },
 ];
-

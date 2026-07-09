@@ -1,17 +1,18 @@
-import {Component, inject} from '@angular/core';
-import {MatButton} from '@angular/material/button';
-import {MatSidenav, MatSidenavContainer, MatSidenavContent} from '@angular/material/sidenav';
-import {RouterLink, RouterLinkActive} from '@angular/router';
-import {LogoComponent} from '../../logo/logo';
-import {ActiveDownloadsComponent} from '../../active-downloads/active-downloads';
-import {MatIcon} from '@angular/material/icon';
-import {Header} from "@shared/components/bricks/header/header";
-import {PlayerComponent} from '@shared/components/player/player';
-import {DownloadTrackingService} from '@app/services/download-tracking.service';
-import {MatDialog} from '@angular/material/dialog';
-import {ActiveDownloadErrorsComponent} from '../../active-downloads/components/active-download-errors/active-download-errors.component';
-import {ErrorsDialogComponent, ErrorsDialogResult} from '../../active-downloads/components/active-download-errors/errors-dialog/errors-dialog.component';
-import {PlayerService} from '@app/services/player.service';
+import { Component, inject } from '@angular/core';
+import { MatButton } from '@angular/material/button';
+import { MatSidenav, MatSidenavContainer, MatSidenavContent } from '@angular/material/sidenav';
+import { RouterLink, RouterLinkActive } from '@angular/router';
+import { LogoComponent } from '../../logo/logo';
+import { ActiveDownloadsComponent } from '../../active-downloads/active-downloads';
+import { MatIcon } from '@angular/material/icon';
+import { Header } from "@shared/components/bricks/header/header";
+import { PlayerComponent } from '@shared/components/player/player';
+import { DownloadTrackingService } from '@app/services/download-tracking.service';
+import { MatDialog } from '@angular/material/dialog';
+import { ActiveDownloadErrorsComponent } from '../../active-downloads/components/active-download-errors/active-download-errors.component';
+import { ErrorsDialogComponent, ErrorsDialogResult } from '../../active-downloads/components/active-download-errors/errors-dialog/errors-dialog.component';
+import { PlayerService } from '@app/services/player.service';
+import { SidebarNotifications } from '../../sidebar-notifications/sidebar-notifications';
 
 interface SidebarNavItem {
     path: string;
@@ -59,10 +60,11 @@ const SIDEBAR_NAV_ITEMS: SidebarNavItem[] = [
         Header,
         PlayerComponent,
         ActiveDownloadErrorsComponent,
+        SidebarNotifications,
     ],
     templateUrl: './sidebar.html',
     styleUrl: './sidebar.scss',
-    })
+})
 export class Sidebar {
     private readonly dialog = inject(MatDialog);
     protected readonly tracking = inject(DownloadTrackingService);

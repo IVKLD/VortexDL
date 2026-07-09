@@ -8,7 +8,11 @@ use super::{DownloadTask, resolve::StreamSource};
 use crate::{
     downloader::Context,
     ui,
-    utils::{soundcloud::SoundCloudClientBuilder, verification::verify},
+    utils::{
+        http::build_http_client,
+        soundcloud::SoundCloudClientBuilder,
+        verification::verify,
+    },
 };
 
 pub async fn download_single_track(
@@ -60,14 +64,7 @@ async fn download_progressive(
 ) -> Result<()> {
     let settings = context.settings.read().await;
     let active_proxy = proxy_url.or_else(|| settings.network.get_proxy_url());
-    let client = match active_proxy {
-        Some(proxy) => reqwest::Client::builder()
-            .proxy(reqwest::Proxy::all(proxy)?)
-            .connect_timeout(Duration::from_secs(5))
-            .timeout(Duration::from_secs(30))
-            .build()?,
-        None => context.http.clone(),
-    };
+    let client = build_http_client(active_proxy, 5, 30);
     let response = client.get(url).send().await?.error_for_status()?;
     let total = response.content_length().unwrap_or(0);
 

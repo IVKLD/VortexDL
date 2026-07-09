@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use anyhow::{Result, anyhow};
 use soundcloud_rs::{Client, Identifier};
 
@@ -29,17 +31,17 @@ pub async fn discover_playlist_tracks(
 
     if !missing_ids.is_empty() {
         let pb = init_progress_spinner(ctx, "Resolving playlist track metadata...");
+
+        let index: HashMap<i64, usize> =
+            tracks.iter().enumerate().map(|(i, t)| (t.id, i)).collect();
+
         for chunk in missing_ids.chunks(50) {
             if let Ok(fetched_tracks) = client.get_tracks(chunk).await {
                 for track in fetched_tracks {
-                    let Some(track_id) = track.id else {
-                        continue;
-                    };
-                    if let (Some(local_track), Some(updated)) = (
-                        tracks.iter_mut().find(|t| t.id == track_id),
-                        DiscoveredMusicTrack::from_track(track),
-                    ) {
-                        *local_track = updated;
+                    let Some(track_id) = track.id else { continue };
+                    let Some(updated) = DiscoveredMusicTrack::from_track(track) else { continue };
+                    if let Some(&idx) = index.get(&track_id) {
+                        tracks[idx] = updated;
                     }
                 }
             }

@@ -1,6 +1,6 @@
 import { HttpClient } from '@angular/common/http';
 import { inject, Injectable, NgZone } from '@angular/core';
-import { MatSnackBar } from '@angular/material/snack-bar';
+import { NotificationService } from '@app/services/notification.service';
 import { catchError, Observable, tap, throwError } from 'rxjs';
 import { UserSettingsRdo } from './models/user-settings.rdo';
 import { UserSettingsDto } from './models/user-settings.dto';
@@ -11,7 +11,7 @@ import { StorageInfo } from './models/settings-form.model';
 @Injectable({providedIn: 'root'})
 export class SettingsService {
     private readonly _http = inject(HttpClient);
-    private readonly _snack = inject(MatSnackBar);
+    private readonly _notification = inject(NotificationService);
 
     public getSettings() {
         return this._http.get<UserSettingsRdo>('/settings');
@@ -19,9 +19,9 @@ export class SettingsService {
 
     public updateSettings(userSettings: UserSettingsDto) {
         return this._http.post('/settings', userSettings).pipe(
-            tap(() => this._snack.open('Settings updated', 'OK')),
+            tap(() => this._notification.success('Settings updated')),
             catchError((error) => {
-                this._snack.open(parseErrorMessage(error, 'Failed to update settings'), 'Close');
+                this._notification.error(parseErrorMessage(error, 'Failed to update settings'));
                 return throwError(() => error);
             })
         );
@@ -39,14 +39,14 @@ export class SettingsService {
 @Injectable({providedIn: 'root'})
 export class SettingsTestingService {
     private readonly _http = inject(HttpClient);
-    private readonly _snack = inject(MatSnackBar);
+    private readonly _notification = inject(NotificationService);
     private readonly _zone = inject(NgZone);
 
     public testSoundCloud(url: string) {
         return this._http.post<string>('/settings/test/soundcloud', {url}).pipe(
-            tap(() => this._snack.open('SoundCloud URL is valid', 'OK')),
+            tap(() => this._notification.success('SoundCloud URL is valid')),
             catchError((error) => {
-                this._snack.open(parseErrorMessage(error, 'Invalid configuration'), 'Close');
+                this._notification.error(parseErrorMessage(error, 'Invalid configuration'));
                 return throwError(() => error);
             })
         );

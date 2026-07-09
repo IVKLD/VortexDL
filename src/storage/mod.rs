@@ -1,17 +1,16 @@
 pub mod metadata;
 mod model;
 mod scanner;
-mod sync;
+pub mod sync;
 
 use std::collections::{HashMap, HashSet};
 use std::io;
+use std::path::Path;
 use anyhow::Result;
 use tokio::task::spawn_blocking;
 
 pub use model::LocalMusicTrack;
-use crate::{
-    database::cache::{remove_cached_track, update_cached_tracks_batch},
-};
+use crate::database::cache::{remove_cached_track, update_cached_tracks_batch};
 
 #[derive(Default)]
 pub struct MusicStorage {
@@ -38,9 +37,7 @@ impl MusicStorage {
         let Some(data) = self.tracks.remove(&id) else {
             return Ok(None);
         };
-        if data.path.exists() {
-            tokio::fs::remove_file(&data.path).await?;
-        }
+        delete_track_file(&data.path).await?;
         let path_str = data.path.to_string_lossy().into_owned();
         let _ = spawn_blocking(move || {
             let _ = remove_cached_track(&path_str);
@@ -58,11 +55,8 @@ impl MusicStorage {
 
         for id in ids {
             if let Some(data) = self.tracks.remove(&id) {
-                if data.path.exists() {
-                    tokio::fs::remove_file(&data.path).await?;
-                }
-                let path_str = data.path.to_string_lossy().into_owned();
-                to_remove_cache.insert(path_str);
+                delete_track_file(&data.path).await?;
+                to_remove_cache.insert(data.path.to_string_lossy().into_owned());
                 removed.push(data);
             }
         }
@@ -76,4 +70,11 @@ impl MusicStorage {
 
         Ok(removed)
     }
+}
+
+async fn delete_track_file(path: &Path) -> Result<(), io::Error> {
+    if path.exists() {
+        tokio::fs::remove_file(path).await?;
+    }
+    Ok(())
 }

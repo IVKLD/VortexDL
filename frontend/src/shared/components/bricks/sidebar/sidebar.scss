@@ -15,6 +15,17 @@
       flex-direction: column;
       width: 240px;
 
+      .container {
+        display: flex;
+        flex-direction: column;
+
+        height: 100%;
+
+        app-sidebar-notifications {
+          margin: auto 0 1em 0;
+        }
+      }
+
       div {
         display: flex;
         flex-direction: column;

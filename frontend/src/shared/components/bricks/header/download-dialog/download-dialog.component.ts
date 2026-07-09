@@ -1,7 +1,6 @@
 import {Component, inject, OnInit, signal} from '@angular/core';
 import {MusicTracksViewService} from "@app/pages/music-tracks-view/music-tracks-view.service";
 import {DialogRef} from "@angular/cdk/dialog";
-import {MatSnackBar} from "@angular/material/snack-bar";
 import {form, FormField, required} from "@angular/forms/signals";
 import {soundCloudUrl} from "@shared/validators/form.validators";
 import {ensureStringArray} from "@shared/utils/array.utils";
@@ -38,10 +37,9 @@ const STORAGE_KEY = 'vortexdl_download_history';
 export class DownloadDialogComponent implements OnInit {
     private readonly _trackService = inject(MusicTracksViewService);
     private readonly _dialogRef = inject(DialogRef);
-    private readonly _snackBar = inject(MatSnackBar);
     private readonly _urlValue = signal('');
 
-    protected history: string[] = [];
+    protected readonly history = signal<string[]>([]);
     protected readonly urlField = form(this._urlValue, (f) => {
         required(f, {message: 'URL is required'});
         soundCloudUrl(f);
@@ -53,22 +51,24 @@ export class DownloadDialogComponent implements OnInit {
 
         try {
             const parsed = JSON.parse(saved);
-            this.history = ensureStringArray(parsed);
+            this.history.set(ensureStringArray(parsed));
         } catch {
-            this.history = [];
+            this.history.set([]);
         }
     }
 
     private addToHistory(url: string) {
-        if (!this.history.includes(url)) {
-            this.history = [url, ...this.history.slice(0, 4)];
-            localStorage.setItem(STORAGE_KEY, JSON.stringify(this.history));
+        if (!this.history().includes(url)) {
+            const next = [url, ...this.history().slice(0, 4)];
+            this.history.set(next);
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
         }
     }
 
     protected removeFromHistory(item: string) {
-        this.history = this.history.filter(i => i !== item);
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(this.history));
+        const next = this.history().filter(i => i !== item);
+        this.history.set(next);
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
     }
 
     protected selectHistory(item: string) {

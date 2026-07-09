@@ -7,7 +7,7 @@ use tokio::sync::RwLock;
 use crate::{
     adb_device,
     api::{
-        download_manager::{DownloadManager, ServerEvent},
+        download_manager::{DownloadManager, MessageLevel, ServerEvent},
         types::AudioFormat,
     },
     settings::SettingsManager,
@@ -76,7 +76,7 @@ pub async fn init(
 
                         dm.broadcast_event(ServerEvent::Message {
                             message: "Library changes detected, reindexing...".to_string(),
-                            level: "info".to_string(),
+                            level: MessageLevel::Info,
                         });
 
                         let tracks = MusicStorage::scan_library(&path_to_watch).await;
@@ -85,7 +85,7 @@ pub async fn init(
 
                         dm.broadcast_event(ServerEvent::Message {
                             message: "Library reindexing and sync completed".to_string(),
-                            level: "info".to_string(),
+                            level: MessageLevel::Info,
                         });
                         dm.broadcast_event(ServerEvent::SyncFinished { url: None });
                     }

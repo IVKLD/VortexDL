@@ -1,0 +1,5 @@
+<mat-icon [class.primary]="accent()">{{ icon() }}</mat-icon>
+<h3>{{ heading() }}</h3>
+@if (description(); as desc) {
+    <p>{{ desc }}</p>
+}

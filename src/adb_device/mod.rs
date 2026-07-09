@@ -114,24 +114,8 @@ async fn connect_and_subscribe() -> Result<tokio::net::TcpStream, AdbError> {
     if &status == b"OKAY" {
         Ok(stream)
     } else if &status == b"FAIL" {
-        let mut len_buf = [0u8; 4];
-        if let Err(e) = stream.read_exact(&mut len_buf).await {
-            return Err(AdbError::Other(anyhow::anyhow!(
-                "Failed to read FAIL message length: {e}"
-            )));
-        }
-        let len_str = std::str::from_utf8(&len_buf)
-            .map_err(|e| AdbError::Other(anyhow::anyhow!("FAIL length not valid UTF-8: {e}")))?;
-        let len = usize::from_str_radix(len_str, 16)
-            .map_err(|e| AdbError::Other(anyhow::anyhow!("FAIL length not valid hex: {e}")))?;
-
-        let mut err_buf = vec![0u8; len];
-        if let Err(e) = stream.read_exact(&mut err_buf).await {
-            return Err(AdbError::Other(anyhow::anyhow!(
-                "Failed to read FAIL message payload: {e}"
-            )));
-        }
-        let err_msg = String::from_utf8_lossy(&err_buf).into_owned();
+        let payload = read_adb_hex_packet(&mut stream).await?;
+        let err_msg = String::from_utf8_lossy(&payload).into_owned();
         Err(AdbError::Other(anyhow::anyhow!(
             "ADB server returned FAIL: {err_msg}"
         )))
@@ -143,15 +127,13 @@ async fn connect_and_subscribe() -> Result<tokio::net::TcpStream, AdbError> {
     }
 }
 
-async fn read_device_list_update(
-    stream: &mut tokio::net::TcpStream,
-) -> Result<HashSet<String>, AdbError> {
+async fn read_adb_hex_packet(stream: &mut tokio::net::TcpStream) -> Result<Vec<u8>, AdbError> {
     use tokio::io::AsyncReadExt;
     let mut len_buf = [0u8; 4];
     stream
         .read_exact(&mut len_buf)
         .await
-        .map_err(|e| AdbError::Other(anyhow::anyhow!("Failed to read update length: {e}")))?;
+        .map_err(|e| AdbError::Other(anyhow::anyhow!("Failed to read packet length: {e}")))?;
     let len_str = std::str::from_utf8(&len_buf)
         .map_err(|e| AdbError::Other(anyhow::anyhow!("Length not valid UTF-8: {e}")))?;
     let len = usize::from_str_radix(len_str, 16)
@@ -161,7 +143,14 @@ async fn read_device_list_update(
     stream
         .read_exact(&mut payload)
         .await
-        .map_err(|e| AdbError::Other(anyhow::anyhow!("Failed to read update payload: {e}")))?;
+        .map_err(|e| AdbError::Other(anyhow::anyhow!("Failed to read packet payload: {e}")))?;
+    Ok(payload)
+}
+
+async fn read_device_list_update(
+    stream: &mut tokio::net::TcpStream,
+) -> Result<HashSet<String>, AdbError> {
+    let payload = read_adb_hex_packet(stream).await?;
     let payload_str = String::from_utf8(payload)
         .map_err(|e| AdbError::Other(anyhow::anyhow!("Payload not valid UTF-8: {e}")))?;
 

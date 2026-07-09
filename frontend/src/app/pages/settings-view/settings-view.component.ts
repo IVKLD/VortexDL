@@ -1,8 +1,8 @@
 import { Component, inject, OnInit, signal, ChangeDetectionStrategy } from '@angular/core';
 import { form, FormRoot, max, min, required, FormField } from '@angular/forms/signals';
 import { SettingsService, SettingsTestingService } from './settings.service';
-import { MatSnackBar } from '@angular/material/snack-bar';
-import { debounceTime, filter, finalize, switchMap, map, catchError, EMPTY } from 'rxjs';
+import { NotificationService } from '@app/services/notification.service';
+import { debounceTime, filter, finalize, switchMap, map, catchError, EMPTY, firstValueFrom } from 'rxjs';
 import { toObservable, takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { parseErrorMessage } from '@shared/error-utils';
 import { englishOnly, soundCloudUrl } from '@shared/validators/form.validators';
@@ -45,7 +45,7 @@ export class SettingsView implements OnInit {
 
     private readonly _api = inject(SettingsService);
     private readonly _testing = inject(SettingsTestingService);
-    private readonly _snack = inject(MatSnackBar);
+    private readonly _notification = inject(NotificationService);
     private readonly _ws = inject(WebSocketService);
     protected readonly isTesting = signal(false);
     protected readonly isNetworkTesting = signal(false);
@@ -81,7 +81,6 @@ export class SettingsView implements OnInit {
 
     protected readonly settingsForm =
         form(this.settingsModel, (f) => {
-            required(f.soundcloud.profileUrl, { message: 'Profile URL is required' });
             englishOnly(f.soundcloud.profileUrl);
             soundCloudUrl(f.soundcloud.profileUrl);
 
@@ -97,6 +96,17 @@ export class SettingsView implements OnInit {
             max(f.system.limitPerPage, 500, { message: 'Limit cannot exceed 500' });
             min(f.system.maxRetries, 0, { message: 'Max retries cannot be negative' });
             max(f.system.maxRetries, 20, { message: 'Max retries cannot exceed 20' });
+        }, {
+            submission: {
+                action: async () => {
+                    if (this.settingsForm().valid()) {
+                        const payload = this.settingsForm().value();
+                        await firstValueFrom(this._api.updateSettings(payload));
+                        this.settingsForm().reset(payload);
+                    }
+                    return [];
+                }
+            }
         });
 
     constructor() {
@@ -163,14 +173,14 @@ export class SettingsView implements OnInit {
             .subscribe({
                 next: (res) => {
                     if (res.valid) {
-                        this._snack.open('Proxy connection successful', 'OK');
+                        this._notification.success('Proxy connection successful');
                     } else {
                         const err = res.error || 'Proxy is not able to reach SoundCloud API';
-                        this._snack.open(err, 'Close');
+                        this._notification.error(err);
                     }
                 },
                 error: (err) => {
-                    this._snack.open(parseErrorMessage(err, 'Proxy verification failed'), 'Close');
+                    this._notification.error(parseErrorMessage(err, 'Proxy verification failed'));
                 }
             });
     }
@@ -189,6 +199,7 @@ export class SettingsView implements OnInit {
         this.settingsForm.adb.devices().value.update(current => current.filter((_, i) => i !== index));
         this.settingsForm.adb.devices().markAsDirty();
     }
+
 
     public ngOnInit() {
         this._api.getSettings()

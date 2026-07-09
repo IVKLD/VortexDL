@@ -11,14 +11,15 @@ import { MatIcon } from '@angular/material/icon';
 import { SelectionBar } from '@shared/components/selection-bar/selection-bar';
 import { CdkMenuModule } from '@angular/cdk/menu';
 import { OverlayContainer } from '@angular/cdk/overlay';
+import { EmptyPaneComponent } from '@shared/components/empty-pane/empty-pane';
+import { SearchSkeletonComponent } from '../search-view/components/search-skeleton/search-skeleton';
+import { ListViewShellComponent } from '@shared/components/list-view-shell/list-view-shell';
 import { FileSizePipe } from '@shared/pipes/file-size.pipe';
 import { MatIconButton } from '@angular/material/button';
-import { HeaderService } from '@shared/components/bricks/header/header.service';
-import { form, debounce } from '@angular/forms/signals';
 
 @Component({
     selector: 'app-music-tracks-view',
-    imports: [MusicCard, RxVirtualScrollViewportComponent, RxVirtualFor, FixedSizeVirtualScrollStrategy, RxVirtualScrollWindowDirective, MatIcon, SelectionBar, CdkMenuModule, FileSizePipe, MatIconButton],
+    imports: [MusicCard, RxVirtualScrollViewportComponent, RxVirtualFor, FixedSizeVirtualScrollStrategy, RxVirtualScrollWindowDirective, MatIcon, SelectionBar, CdkMenuModule, FileSizePipe, MatIconButton, SearchSkeletonComponent, EmptyPaneComponent, ListViewShellComponent],
     templateUrl: './music-tracks-view.html',
     styleUrl: './music-tracks-view.scss',
 })
@@ -26,29 +27,15 @@ export class MusicTracksView {
     private readonly _api = inject(MusicTracksViewService);
     private readonly _dialog = inject(MatDialog);
     private readonly _overlayContainer = inject(OverlayContainer);
-    private readonly _headerService = inject(HeaderService);
 
     protected readonly state = inject(MusicTracksViewState);
     protected readonly player = inject(PlayerService);
     protected readonly tracks = this.state.sortedTracks;
 
-    protected readonly searchForm = form(this.state.searchQuery, (p) => {
-        debounce(p, 200);
-    });
-
     protected readonly activeTrackId = computed(() => this.player.currentTrack()?.id);
 
     constructor() {
         this._api.indexing().subscribe();
-
-        this._headerService.bindSearch({
-            formField: this.searchForm
-        });
-
-        this._headerService.bindSort({
-            value: this.state.sortOption,
-            onSortChange: (sort) => this.state.setSortOption(sort)
-        });
     }
 
     protected playTrack(track: MusicTrack): void {

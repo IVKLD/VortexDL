@@ -18,11 +18,11 @@
     </mat-form-field>
 
     <div>
-        @if (history.length > 0) {
+        @if (history().length > 0) {
             <div class="history-section">
                 <h3>Recent URLs</h3>
                 <mat-list>
-                    @for (item of history; track item) {
+                    @for (item of history(); track item) {
                         <mat-list-item (click)="selectHistory(item)"
                                        [class.active]="urlField().value() === item"
                         >

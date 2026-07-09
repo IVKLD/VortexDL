@@ -11,6 +11,7 @@ use crate::{
         discovery::{discover_liked_tracks, discover_playlist_tracks, init_progress_spinner},
     },
     utils::{
+        http::build_http_client,
         proxy::race_proxies,
         soundcloud::{ResolvedResource, SoundCloudClientBuilder, resolve_url},
     },
@@ -158,16 +159,8 @@ pub fn spawn_artwork_fetch(
     let url = artwork_url?.clone();
     let ctx = ctx.clone();
     Some(tokio::spawn(async move {
-        let settings = ctx.settings.read().await;
-        let mut builder = reqwest::Client::builder()
-            .connect_timeout(Duration::from_secs(5))
-            .timeout(Duration::from_secs(10));
-
-        if let Some(proxy) = settings.network.get_proxy_url().and_then(|p| reqwest::Proxy::all(p).ok()) {
-            builder = builder.proxy(proxy);
-        }
-
-        let client = builder.build().unwrap_or_else(|_| ctx.http.clone());
+        let proxy_url = ctx.settings.read().await.network.get_proxy_url().map(String::from);
+        let client = build_http_client(proxy_url.as_deref(), 5, 10);
         let resp = client
             .get(url)
             .timeout(Duration::from_secs(5))

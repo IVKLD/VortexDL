@@ -32,7 +32,6 @@ use crate::{
 pub struct Context {
     pub storage: Arc<RwLock<MusicStorage>>,
     pub client: Arc<soundcloud_rs::Client>,
-    pub http: reqwest::Client,
     pub dm: Option<Arc<DownloadManager>>,
     pub settings: SettingsManager,
 }
@@ -42,7 +41,6 @@ impl Context {
         Self {
             storage: state.storage.clone(),
             client: state.client.clone(),
-            http: state.http.clone(),
             dm: None,
             settings: state.settings.clone(),
         }

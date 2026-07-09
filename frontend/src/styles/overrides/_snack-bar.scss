@@ -1,59 +1,33 @@
 .mat-mdc-snack-bar-container {
   display: flex !important;
-  justify-content: center !important;
-  background: transparent !important;
-  box-shadow: none !important;
-  border: none !important;
 
-  .mat-mdc-snack-bar-surface,
   .mdc-snackbar__surface {
-    background: rgba(30, 30, 30, 0.65) !important;
-    backdrop-filter: blur(20px) !important;
-    -webkit-backdrop-filter: blur(20px) !important;
-    border: 1px solid rgba(255, 255, 255, 0.1) !important;
-    border-radius: 100px !important;
-    padding: 8px 8px 8px 24px !important;
-    min-width: unset !important;
-    max-width: 650px !important;
-    width: auto !important;
-    display: flex !important;
-    align-items: center !important;
-    box-sizing: border-box !important;
-    box-shadow: none !important;
+    --mat-snack-bar-supporting-text-color: white;
+    --mat-snack-bar-container-color: rgba(30, 30, 30, 0.65);
+    --mat-snack-bar-container-shape: 20em;
+
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(20px);
+    padding: 8px 8px 8px 24px;
+    box-shadow: none;
   }
 
-  .mat-mdc-snack-bar-label,
-  .mdc-snackbar__label {
-    font-size: 0.95rem !important;
-    font-weight: 600 !important;
-    color: #ffffff !important;
-    padding: 0 !important;
-    line-height: normal !important;
-    display: flex !important;
-    align-items: center !important;
-    flex: 1 1 auto !important;
-    min-width: 0 !important;
-    max-width: none !important;
-    margin-right: 20px !important;
+  .mat-mdc-snack-bar-label {
+    font-weight: 600;
+    padding: 0;
+    display: flex;
+    align-items: center;
   }
 
   .mat-mdc-snack-bar-actions,
   .mdc-snackbar__actions {
-    display: flex !important;
-    align-items: center !important;
-    padding: 0 !important;
-    margin: 0 !important;
-    flex: 0 0 auto !important;
+    margin-left: .4em;
   }
 
   .mat-mdc-snack-bar-action {
     color: var(--mat-sys-primary, #90caf9) !important;
     font-weight: 700 !important;
-    font-size: 0.85rem !important;
-    letter-spacing: 0.03em !important;
-    height: 32px !important;
-    padding: 0 16px !important;
-    border-radius: 100px !important;
+    height: 32px;
     transition: background-color 0.2s ease, transform 0.1s ease !important;
 
     &:hover {

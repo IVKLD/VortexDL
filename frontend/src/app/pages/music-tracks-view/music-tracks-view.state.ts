@@ -3,6 +3,7 @@ import { MusicTrack } from '@shared/models/music-track.model';
 import { Observable, tap } from 'rxjs';
 import Fuse from 'fuse.js';
 import { MusicTracksViewService } from '@app/pages/music-tracks-view/music-tracks-view.service';
+import { form, debounce } from '@angular/forms/signals';
 
 export enum MusicSortOption {
     NAME_ASC = 'name-asc',
@@ -13,16 +14,11 @@ export enum MusicSortOption {
 
 @Injectable({ providedIn: 'root' })
 export class MusicTracksViewState {
-
     private readonly _api = inject(MusicTracksViewService);
 
     private readonly _isLoading = signal<boolean>(true);
-
     private readonly _tracks = signal<MusicTrack[]>([]);
-
-
     private readonly _sortOption = signal<MusicSortOption>(MusicSortOption.DATE_DESC);
-
     private readonly _selectedIds = signal<Set<number>>(new Set());
 
     private readonly _fuse = computed(() =>
@@ -36,11 +32,20 @@ export class MusicTracksViewState {
             ignoreLocation: true,
         })
     );
+
+    public readonly searchQuery = signal<string>('');
+    
+    public readonly searchForm = form(this.searchQuery, (p) => {
+        debounce(p, 200);
+    });
+
+    public readonly isSearching = computed(() => {
+        return this.searchForm().value() !== this.searchQuery();
+    });
+
     public readonly isLoading = this._isLoading.asReadonly();
     public readonly tracks = this._tracks.asReadonly();
     public readonly sortOption = this._sortOption.asReadonly();
-
-    public readonly searchQuery = signal<string>('');
     public readonly selectedIds = this._selectedIds.asReadonly();
 
     public readonly hasSelection = computed(() => this._selectedIds().size > 0);
@@ -60,6 +65,7 @@ export class MusicTracksViewState {
             return order === 'desc' ? -cmp : cmp;
         });
     });
+
     constructor() {
         this.loadTracks();
     }
