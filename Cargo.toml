@@ -1,6 +1,6 @@
 [package]
 name = "vortex-dl"
-version = "0.3.9"
+version = "0.4.0"
 default-run = "vortex-dl"
 edition = "2024"
 repository = "https://github.com/IVKLD/VortexDL"
