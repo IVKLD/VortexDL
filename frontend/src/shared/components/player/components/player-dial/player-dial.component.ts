@@ -19,16 +19,12 @@ import {MatButton} from "@angular/material/button";
     }
 })
 export class PlayerDialComponent implements OnInit, OnDestroy {
-    protected readonly player = inject(PlayerService);
     private readonly elementRef = inject<ElementRef<HTMLElement>>(ElementRef);
     private readonly renderer = inject(Renderer2);
+    protected readonly player = inject(PlayerService);
 
     private readonly progressCircle = viewChild.required<ElementRef<SVGCircleElement>>('progressCircle');
     private readonly timerText = viewChild.required<ElementRef<HTMLSpanElement>>('timerText');
-
-    protected readonly playIcon = computed(() =>
-        this.player.isPlaying() ? 'pause' : 'play_arrow'
-    );
 
     private isDragging = false;
     private isHovered = false;
@@ -43,21 +39,14 @@ export class PlayerDialComponent implements OnInit, OnDestroy {
     private animationFrameId?: number;
     private lastText = '';
 
-    ngOnInit(): void {
-        this.runLoop();
-    }
-
-    ngOnDestroy(): void {
-        this.cleanupDrag();
-        if (this.animationFrameId) {
-            cancelAnimationFrame(this.animationFrameId);
-        }
-    }
-
     private runLoop = (): void => {
         this.updateUI();
         this.animationFrameId = requestAnimationFrame(this.runLoop);
     };
+
+    protected readonly playIcon = computed(() =>
+        this.player.isPlaying() ? 'pause' : 'play_arrow'
+    );
 
     private updateUI(): void {
         const duration = this.player.duration() || 0;
@@ -75,44 +64,6 @@ export class PlayerDialComponent implements OnInit, OnDestroy {
                 this.renderer.setProperty(this.timerText().nativeElement, 'innerText', text);
             }
         }
-    }
-
-    protected onMouseEnter(): void {
-        this.isHovered = true;
-    }
-
-    protected onMouseLeave(): void {
-        this.isHovered = false;
-    }
-
-    protected onMouseDown(event: MouseEvent): void {
-        this.startDrag(event.clientX, event.clientY);
-
-        this.dragMoveListener = this.renderer.listen('document', 'mousemove', (moveEvent: MouseEvent) => {
-            this.updateDragProgress(moveEvent.clientX, moveEvent.clientY);
-        });
-
-        this.dragUpListener = this.renderer.listen('document', 'mouseup', () => {
-            this.endDrag();
-        });
-    }
-
-    protected onTouchStart(event: TouchEvent): void {
-        const touch = event.touches[0];
-        if (!touch) return;
-        
-        this.startDrag(touch.clientX, touch.clientY);
-
-        this.dragMoveListener = this.renderer.listen('document', 'touchmove', (moveEvent: TouchEvent) => {
-            const moveTouch = moveEvent.touches[0];
-            if (moveTouch) {
-                this.updateDragProgress(moveTouch.clientX, moveTouch.clientY);
-            }
-        });
-
-        this.dragUpListener = this.renderer.listen('document', 'touchend', () => {
-            this.endDrag();
-        });
     }
 
     private startDrag(clientX: number, clientY: number): void {
@@ -165,5 +116,54 @@ export class PlayerDialComponent implements OnInit, OnDestroy {
         const mins = Math.floor(seconds / 60);
         const secs = Math.floor(seconds % 60);
         return `${mins}:${secs.toString().padStart(2, '0')}`;
+    }
+
+    protected onMouseEnter(): void {
+        this.isHovered = true;
+    }
+
+    protected onMouseLeave(): void {
+        this.isHovered = false;
+    }
+
+    protected onMouseDown(event: MouseEvent): void {
+        this.startDrag(event.clientX, event.clientY);
+
+        this.dragMoveListener = this.renderer.listen('document', 'mousemove', (moveEvent: MouseEvent) => {
+            this.updateDragProgress(moveEvent.clientX, moveEvent.clientY);
+        });
+
+        this.dragUpListener = this.renderer.listen('document', 'mouseup', () => {
+            this.endDrag();
+        });
+    }
+
+    protected onTouchStart(event: TouchEvent): void {
+        const touch = event.touches[0];
+        if (!touch) return;
+        
+        this.startDrag(touch.clientX, touch.clientY);
+
+        this.dragMoveListener = this.renderer.listen('document', 'touchmove', (moveEvent: TouchEvent) => {
+            const moveTouch = moveEvent.touches[0];
+            if (moveTouch) {
+                this.updateDragProgress(moveTouch.clientX, moveTouch.clientY);
+            }
+        });
+
+        this.dragUpListener = this.renderer.listen('document', 'touchend', () => {
+            this.endDrag();
+        });
+    }
+
+    ngOnInit(): void {
+        this.runLoop();
+    }
+
+    ngOnDestroy(): void {
+        this.cleanupDrag();
+        if (this.animationFrameId) {
+            cancelAnimationFrame(this.animationFrameId);
+        }
     }
 }

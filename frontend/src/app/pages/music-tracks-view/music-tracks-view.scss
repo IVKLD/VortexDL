@@ -3,12 +3,72 @@
 }
 
 .music-container {
-  height: calc(100vh - 90px);
+  height: auto;
 }
 
 app-music-card {
   width: 100%;
   margin: 0 auto;
+
+  &:hover {
+    .actions-wrapper {
+      opacity: 1;
+    }
+  }
+
+  .actions-wrapper {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    width: 40px;
+    flex-shrink: 0;
+    opacity: 0;
+    transition: opacity 0.2s ease-in-out;
+
+    &:has(button[aria-expanded="true"]) {
+      opacity: 1;
+    }
+  }
+
+  aside {
+    display: flex;
+    align-items: center;
+    gap: 1em;
+    margin-right: 1em;
+
+    strong {
+      font-size: 0.7rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      padding: .1em .8em;
+      border-radius: 2em;
+      background: rgba(255, 255, 255, 0.05);
+      color: rgba(255, 255, 255, 0.85);
+      border: 1px solid rgba(255, 255, 255, 0.05);
+
+      &[data-format="flac"],
+      &[data-format="wav"] {
+        color: #64ffda;
+        background: rgba(100, 255, 218, 0.05);
+        border-color: rgba(100, 255, 218, 0.1);
+      }
+    }
+
+    span {
+      font-size: 0.8rem;
+      color: rgba(255, 255, 255, 0.85);
+      font-variant-numeric: tabular-nums;
+      letter-spacing: .12em;
+    }
+  }
+
+  menu {
+    overflow: hidden;
+    white-space: nowrap;
+    display: flex;
+    gap: 4px;
+  }
 }
 
 .empty-state {

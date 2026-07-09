@@ -19,8 +19,6 @@ import {ActiveDownloadItemComponent} from './components/active-download-item/act
     ],
     })
 export class ActiveDownloadsComponent {
-    public readonly items = input.required<DownloadItem[]>();
-    public readonly remove = output<number>();
 
     protected readonly sortedActiveDownloads = computed(() => {
         return [...this.items()]
@@ -30,4 +28,6 @@ export class ActiveDownloadsComponent {
                 return 0;
             });
     });
+    public readonly items = input.required<DownloadItem[]>();
+    public readonly remove = output<number>();
 }

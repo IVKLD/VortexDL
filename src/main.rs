@@ -6,7 +6,7 @@ use tokio::sync::RwLock;
 
 use crate::{
     api::state::AppState, cli::Args, storage::MusicStorage, ui::create_standalone_spinner,
-    utils::soundcloud::init_client_with_settings,
+    utils::soundcloud::SoundCloudClientBuilder,
 };
 
 mod adb_device;
@@ -43,14 +43,19 @@ async fn main() -> Result<()> {
     fs::create_dir_all(&output_dir)?;
 
     let pb = create_standalone_spinner("Initializing SoundCloud...");
-    let client = init_client_with_settings(&settings, None).await?;
+    let storage = Arc::new(RwLock::new(MusicStorage::default()));
+    let settings_manager = crate::settings::SettingsManager::new(settings.clone());
+    let client = SoundCloudClientBuilder::new(&settings)
+        .with_settings_manager(settings_manager.clone())
+        .build()
+        .await?;
     pb.finish_with_message("SoundCloud ready");
 
-    let storage = Arc::new(RwLock::new(MusicStorage::new(output_dir)));
-    let state = AppState::new(Arc::new(client), storage.clone(), settings);
+    let state = AppState::from_parts(client, storage.clone(), settings_manager);
 
     let pb_idx = create_standalone_spinner("Indexing local library...");
-    MusicStorage::index_library(storage.clone()).await;
+    let tracks = MusicStorage::scan_library(&output_dir).await;
+    storage.write().await.update_tracks(tracks);
     pb_idx.finish_with_message("Local library indexed");
 
     watchdog::init(

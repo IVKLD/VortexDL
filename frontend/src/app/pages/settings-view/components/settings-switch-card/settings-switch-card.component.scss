@@ -1,0 +1,41 @@
+:host {
+  display: block;
+}
+
+.switch-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: var(--vortex-card-bg);
+  border: 1px solid var(--vortex-card-border);
+  border-radius: 12px;
+  padding: 16px 20px;
+  gap: 20px;
+  transition: background-color 0.25s ease, border-color 0.25s ease, box-shadow 0.25s ease;
+
+  &:hover {
+    background: rgba(255, 255, 255, 0.025);
+    border-color: rgba(255, 255, 255, 0.08);
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+  }
+
+  div {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    flex: 1;
+
+    strong {
+      font-size: 0.95rem;
+      font-weight: 500;
+      color: var(--vortex-text-primary);
+    }
+
+    p {
+      margin: 0;
+      font-size: 0.8rem;
+      color: var(--vortex-text-secondary);
+      line-height: 1.3;
+    }
+  }
+}

@@ -1,0 +1,10 @@
+app-player {
+  .mdc-slider__thumb,
+  .mdc-slider__track--active_fill {
+    transition-duration: 0ms !important;
+  }
+}
+
+.mat-icon {
+  font-variation-settings: 'wght' 300;
+}

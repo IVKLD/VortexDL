@@ -3,7 +3,7 @@ use soundcloud_rs::{Client, Identifier};
 
 use crate::{
     downloader::{Context, discovery::init_progress_spinner},
-    types::core::DiscoveredMusicTrack,
+    types::DiscoveredMusicTrack,
 };
 
 pub async fn discover_playlist_tracks(
@@ -18,10 +18,7 @@ pub async fn discover_playlist_tracks(
 
     let mut tracks: Vec<DiscoveredMusicTrack> = collection
         .into_iter()
-        .enumerate()
-        .filter_map(|(i, track)| {
-            DiscoveredMusicTrack::from_track(track).map(|t| t.with_position(i.try_into().ok()))
-        })
+        .filter_map(DiscoveredMusicTrack::from_track)
         .collect();
 
     let missing_ids: Vec<i64> = tracks
@@ -38,11 +35,10 @@ pub async fn discover_playlist_tracks(
                     let Some(track_id) = track.id else {
                         continue;
                     };
-                    if let (Some(local_track), Some(mut updated)) = (
+                    if let (Some(local_track), Some(updated)) = (
                         tracks.iter_mut().find(|t| t.id == track_id),
                         DiscoveredMusicTrack::from_track(track),
                     ) {
-                        updated.position = local_track.position;
                         *local_track = updated;
                     }
                 }

@@ -1,8 +1,11 @@
 import {Component, inject} from '@angular/core';
 import {MAT_DIALOG_DATA, MatDialogActions, MatDialogClose, MatDialogContent, MatDialogTitle} from "@angular/material/dialog";
 import {MatButton} from "@angular/material/button";
-import {MatList, MatListItem} from "@angular/material/list";
 import {MatIcon} from "@angular/material/icon";
+
+export enum ErrorsDialogResult {
+    Clear = 'clear'
+}
 
 @Component({
     selector: 'app-errors-dialog',
@@ -12,8 +15,6 @@ import {MatIcon} from "@angular/material/icon";
         MatDialogActions,
         MatDialogClose,
         MatButton,
-        MatList,
-        MatListItem,
         MatIcon
     ],
     templateUrl: './errors-dialog.component.html',
@@ -21,4 +22,5 @@ import {MatIcon} from "@angular/material/icon";
 })
 export class ErrorsDialogComponent {
     protected readonly errors = inject<string[]>(MAT_DIALOG_DATA);
+    protected readonly ErrorsDialogResult = ErrorsDialogResult;
 }

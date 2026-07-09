@@ -16,6 +16,10 @@ pub fn sync_complete(device: &str) {
     ok!("Sync complete [{device}]");
 }
 
+pub fn sync_not_needed(device: &str) {
+    info!("Sync not needed, no changes on [{device}]");
+}
+
 pub fn removing(count: usize, device: &str) {
     info!("Removing {count} orphaned tracks from [{device}]");
 }

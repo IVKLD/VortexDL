@@ -1,0 +1,85 @@
+@if (loading() && results().length === 0) {
+    <app-search-skeleton/>
+}
+
+@if (results().length > 0) {
+    <rx-virtual-scroll-viewport [itemSize]="82" scrollWindow>
+        <app-music-card *rxVirtualFor="let track of results(); trackBy: 'id'" [track]="track"
+                        [isPlaying]="player.isTrackPlaying(track.id)"
+                        [isLoadingStream]="loadingStreamId() === track.id" (playTrack)="togglePlay(track)"
+                        [cdkContextMenuTriggerFor]="cardMenu" [cdkContextMenuTriggerData]="{ $implicit: track }">
+            @if (track.genre || (track.duration !== null && track.duration !== undefined) || (track.playbackCount !== null
+                && track.playbackCount !== undefined)) {
+                <div meta class="meta">
+                    @if (track.genre) {
+                        <span class="genre">{{ track.genre }}</span>
+                    }
+                    @if (track.duration !== null && track.duration !== undefined) {
+                        <span class="duration">{{ track.duration | duration }}</span>
+                    }
+                    @if (track.playbackCount !== null && track.playbackCount !== undefined) {
+                        <span class="plays">
+                <mat-icon>play_arrow</mat-icon>
+                            {{ track.playbackCount | compactNumber }}
+            </span>
+                    }
+                </div>
+            }
+
+            <div actions class="search-actions">
+                <menu role="presentation">
+                    <button [cdkMenuTriggerFor]="cardMenu" [cdkMenuTriggerData]="{ $implicit: track }"
+                            (click)="$event.stopPropagation()" mat-icon-button>
+                        <mat-icon>more_vert</mat-icon>
+                    </button>
+                </menu>
+            </div>
+        </app-music-card>
+    </rx-virtual-scroll-viewport>
+
+    @if (loading() && hasMore()) {
+        <div class="list-loader">
+            <mat-spinner diameter="30"/>
+        </div>
+    }
+}
+
+@if (isEmpty()) {
+    <div class="empty-state">
+        <mat-icon>search_off</mat-icon>
+        <h3>No results found</h3>
+        <p>Try a different search query</p>
+    </div>
+}
+
+@if (!searched() && !results().length) {
+    <div class="empty-state">
+        <mat-icon class="primary">travel_explore</mat-icon>
+        <h3>Search SoundCloud</h3>
+        <p>Find tracks, artists and music to download</p>
+    </div>
+}
+
+<ng-template #cardMenu let-trackData>
+    @let isPlaying = player.isTrackPlaying(trackData.id);
+    @let isDownloaded = downloadedIds().has(trackData.id);
+    @let isDownloading = downloadingIds().has(trackData.id);
+
+    <div cdkMenu>
+        <button cdkMenuItem (click)="togglePlay(trackData)">
+            <mat-icon>{{ isPlaying ? 'pause' : 'play_arrow' }}</mat-icon>
+            <span>{{ isPlaying ? 'Pause' : 'Play' }}</span>
+        </button>
+        <button cdkMenuItem [disabled]="isDownloaded || isDownloading"
+                (click)="downloadTrack(trackData)">
+            <mat-icon>download</mat-icon>
+            <span>Download</span>
+        </button>
+        @if (isDownloaded) {
+            <button cdkMenuItem class="delete" (click)="deleteTrack(trackData)">
+                <mat-icon>delete</mat-icon>
+                <span>Delete</span>
+            </button>
+        }
+    </div>
+</ng-template>

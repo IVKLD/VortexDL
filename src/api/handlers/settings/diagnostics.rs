@@ -1,6 +1,15 @@
-use axum::{Json, extract::State, http::StatusCode, response::IntoResponse};
+use axum::{
+    Json,
+    extract::{
+        State,
+        ws::{Message, WebSocket, WebSocketUpgrade},
+    },
+    http::StatusCode,
+    response::IntoResponse,
+};
 use serde::{Deserialize, Serialize};
 use soundcloud_rs::ClientBuilder;
+use url::Url;
 use utoipa::ToSchema;
 
 use crate::{
@@ -14,7 +23,8 @@ use crate::{
 #[derive(Deserialize, ToSchema)]
 #[serde(rename_all = "camelCase")]
 pub struct TestSoundCloudRequest {
-    pub url: String,
+    #[schema(value_type = String)]
+    pub url: Url,
 }
 
 #[utoipa::path(
@@ -42,13 +52,6 @@ pub async fn test_soundcloud(
                 .with_code(ErrorCode::SoundCloudError)
         })
 }
-
-#[derive(Deserialize, ToSchema)]
-#[serde(rename_all = "camelCase")]
-pub struct TestProxiesRequest {
-    pub proxy_urls: Vec<String>,
-}
-
 #[derive(Serialize, ToSchema)]
 #[serde(rename_all = "camelCase")]
 pub struct ProxyTestResult {
@@ -57,54 +60,54 @@ pub struct ProxyTestResult {
     pub error: Option<String>,
 }
 
-#[derive(Serialize, ToSchema)]
-#[serde(rename_all = "camelCase")]
-pub struct TestProxiesResponse {
-    pub results: Vec<ProxyTestResult>,
-}
-
 #[utoipa::path(
-    method(post),
-    path = "/api/settings/test/proxy",
-    request_body = TestProxiesRequest,
+    method(get),
+    path = "/api/settings/test/proxy/ws",
     responses(
-        (status = 200, description = "Proxy test results", body = TestProxiesResponse)
+        (status = 101, description = "WebSocket upgrade to test multiple proxies concurrently with real-time feedback")
     )
 )]
-pub async fn test_proxy(
-    State(_state): State<AppState>,
-    Json(payload): Json<TestProxiesRequest>,
-) -> Result<impl IntoResponse, ApiError> {
-    let mut tasks = tokio::task::JoinSet::new();
+pub async fn test_proxy_ws(ws: WebSocketUpgrade) -> impl IntoResponse {
+    ws.on_upgrade(handle_proxy_ws)
+}
 
-    for url in payload.proxy_urls {
-        tasks.spawn(async move {
-            match ClientBuilder::new().with_proxy(url.clone()).build().await {
-                Ok(client) if client.health_check().await => ProxyTestResult {
-                    url,
-                    valid: true,
-                    error: None,
-                },
-                Ok(_) => ProxyTestResult {
-                    url,
-                    valid: false,
-                    error: Some("Proxy is not able to reach SoundCloud API".to_string()),
-                },
-                Err(e) => ProxyTestResult {
-                    url,
-                    valid: false,
-                    error: Some(format!("Failed to build client: {e}")),
-                },
+async fn handle_proxy_ws(mut socket: WebSocket) {
+    let proxies = match socket.recv().await {
+        Some(Ok(Message::Text(text))) => serde_json::from_str::<Vec<String>>(&text).ok(),
+        _ => None,
+    };
+    if let Some(proxies) = proxies {
+        let mut tasks = tokio::task::JoinSet::new();
+
+        for url in proxies {
+            tasks.spawn(async move {
+                match ClientBuilder::new().with_proxy(url.clone()).build().await {
+                    Ok(client) if client.health_check().await => ProxyTestResult {
+                        url,
+                        valid: true,
+                        error: None,
+                    },
+                    Ok(_) => ProxyTestResult {
+                        url,
+                        valid: false,
+                        error: Some("Proxy is not able to reach SoundCloud API".to_string()),
+                    },
+                    Err(e) => ProxyTestResult {
+                        url,
+                        valid: false,
+                        error: Some(format!("Failed to build client: {e}")),
+                    },
+                }
+            });
+        }
+
+        while let Some(res) = tasks.join_next().await {
+            if let Ok(Ok(msg_str)) = res.map(|result| serde_json::to_string(&result)) {
+                let send_res = socket.send(Message::Text(msg_str.into())).await;
+                if send_res.is_err() {
+                    break;
+                }
             }
-        });
-    }
-
-    let mut results = Vec::new();
-    while let Some(res) = tasks.join_next().await {
-        if let Ok(result) = res {
-            results.push(result);
         }
     }
-
-    Ok((StatusCode::OK, Json(TestProxiesResponse { results })))
 }

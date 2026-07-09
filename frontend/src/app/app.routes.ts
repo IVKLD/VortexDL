@@ -1,8 +1,10 @@
-import {DashboardView} from './pages/dashboard-view/dashboard-view';
-import {MusicTracksView} from './pages/music-tracks-view/music-tracks-view';
-import {Route} from '@angular/router';
-import {HeaderConfig, HeaderFeature} from '@shared/components/bricks/header/header.types';
-import {SettingsView} from './pages/settings-view/settings-view.component';
+import { DashboardView } from './pages/dashboard-view/dashboard-view';
+import { MusicTracksView } from './pages/music-tracks-view/music-tracks-view';
+import { Route } from '@angular/router';
+import { HeaderConfig, HeaderFeature, HeaderSortOption } from '@shared/components/bricks/header/header.types';
+import { SettingsView } from './pages/settings-view/settings-view.component';
+import { SearchView } from './pages/search-view/search-view';
+import { MusicSortOption } from './pages/music-tracks-view/music-tracks-view.state';
 
 export interface RouteData {
     header?: HeaderConfig;
@@ -33,9 +35,28 @@ export const routes: CustomRoutes = [
             header: {
                 title: 'Library',
                 features: [HeaderFeature.Stats, HeaderFeature.Search, HeaderFeature.Sort],
+                searchPlaceholder: 'Search in library...',
+                sortOptions: [
+                    { label: 'Newest First', shortLabel: 'Newest', value: MusicSortOption.DATE_DESC, icon: 'clock_arrow_down' },
+                    { label: 'Oldest First', shortLabel: 'Oldest', value: MusicSortOption.DATE_ASC, icon: 'clock_arrow_up' },
+                    { label: 'Alphabetical (A-Z)', shortLabel: 'A-Z', value: MusicSortOption.NAME_ASC, icon: 'sort_by_alpha' },
+                    { label: 'Alphabetical (Z-A)', shortLabel: 'Z-A', value: MusicSortOption.NAME_DESC, icon: 'sort_by_alpha' },
+                ] as HeaderSortOption<MusicSortOption>[],
             },
         },
         component: MusicTracksView,
+    },
+    {
+        path: 'search',
+        title: 'Search',
+        data: {
+            header: {
+                title: 'SoundCloud Search',
+                features: [HeaderFeature.Stats, HeaderFeature.Search],
+                searchPlaceholder: 'Search SoundCloud...',
+            },
+        },
+        component: SearchView,
     },
     {
         path: 'settings',

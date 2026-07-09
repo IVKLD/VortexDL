@@ -17,33 +17,40 @@
             </button>
         </div>
 
-        <mat-form-field class="textarea-field" appearance="fill">
-            <textarea matInput placeholder="Example:&#10;socks5://84.47.150.125:1080&#10;socks4://192.111.137.35:4145"
+        <div class="textarea-container">
+            <textarea class="simple-textarea" placeholder="Example:&#10;socks5://84.47.150.125:1080&#10;socks4://192.111.137.35:4145"
                       rows="10" [value]="pastedText()" (input)="onTextChange($event)"></textarea>
-            <mat-hint>Supports SOCKS4, SOCKS5, and HTTP proxy URLs (e.g. socks5://user:pass@host:port)</mat-hint>
-        </mat-form-field>
+            <span class="textarea-hint">Supports SOCKS4, SOCKS5, and HTTP proxy URLs (e.g. socks5://user:pass@host:port)</span>
+        </div>
 
         @if (parsedProxies().length > 0) {
             <div class="logs-box-wrapper">
-                <h4>Diagnostics Log</h4>
-                <div class="container">
-                    @for (proxy of parsedProxies(); track proxy) {
-                        <div class="log-row">
-                            <span class="log-proxy-name">{{ proxy }}</span>
-                            <span class="status-icon-wrapper">
-                                    @if (importStatuses()[proxy]?.loading) {
-                                        <mat-icon class="status-icon loading-icon rotating">sync</mat-icon>
-                                    } @else if (importStatuses()[proxy]?.valid === true) {
-                                        <mat-icon class="status-icon success-icon">check_circle</mat-icon>
-                                    } @else if (importStatuses()[proxy]?.valid === false) {
-                                        <mat-icon class="status-icon failed-icon"
-                                                  [matTooltip]="importStatuses()[proxy]?.error || 'Verification failed'">error</mat-icon>
-                                    } @else {
-                                        <mat-icon class="status-icon idle-icon">help_outline</mat-icon>
-                                    }
-                                </span>
-                        </div>
+                <header class="log-header-row">
+                    <h4>Diagnostics Log</h4>
+                    @if (isTesting() && checkingCount() > 0) {
+                        <span class="checking-badge">
+                            {{ checkingCount() }} checking
+                        </span>
                     }
+                </header>
+                <div class="container">
+                    <rx-virtual-scroll-viewport [itemSize]="33">
+                        <div *rxVirtualFor="let status of importStatuses(); trackBy: 'url'" class="log-row">
+                            <span class="log-proxy-name">{{ status.url }}</span>
+                            <span class="status-icon-wrapper">
+                                @if (status.loading) {
+                                    <mat-icon class="status-icon loading-icon rotating">sync</mat-icon>
+                                } @else if (status.valid === true) {
+                                    <mat-icon class="status-icon success-icon">check_circle</mat-icon>
+                                } @else if (status.valid === false) {
+                                    <mat-icon class="status-icon failed-icon"
+                                              [matTooltip]="status.error || 'Verification failed'">error</mat-icon>
+                                } @else {
+                                    <mat-icon class="status-icon idle-icon">help_outline</mat-icon>
+                                }
+                            </span>
+                        </div>
+                    </rx-virtual-scroll-viewport>
                 </div>
             </div>
         }
@@ -51,11 +58,19 @@
 
     <div class="dialog-block">
         <div class="column-header-row">
-            <h3 class="column-title">Working Proxies</h3>
-            @if (workingProxies().length > 0) {
-                <span class="verified-badge">
+            <div class="header-title-group">
+                <h3 class="column-title">Working Proxies</h3>
+                @if (workingProxies().length > 0) {
+                    <span class="verified-badge">
                         {{ workingProxies().length }} Verified
                     </span>
+                }
+            </div>
+            @if (workingProxies().length > 0) {
+                <button type="button" mat-flat-button (click)="copyToClipboard()" [disabled]="copied()">
+                    <mat-icon>{{ copied() ? 'check' : 'content_copy' }}</mat-icon>
+                    <span>{{ copied() ? 'Copied!' : 'Copy List' }}</span>
+                </button>
             }
         </div>
 
@@ -77,13 +92,6 @@
                 </div>
             }
         </div>
-
-        @if (workingProxies().length > 0) {
-            <button type="button" mat-stroked-button (click)="copyToClipboard()">
-                <mat-icon>content_copy</mat-icon>
-                <span>Copy Working list</span>
-            </button>
-        }
     </div>
 </mat-dialog-content>
 

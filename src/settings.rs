@@ -4,7 +4,7 @@ use serde::{Deserialize, Serialize};
 use tokio::sync::RwLock;
 use utoipa::ToSchema;
 
-use crate::{database::update_settings, types::SyncMode};
+use crate::database::update_settings;
 
 #[derive(Serialize, Deserialize, Debug, Clone, ToSchema)]
 #[serde(rename_all = "camelCase")]
@@ -21,7 +21,6 @@ pub struct DownloadSettings {
     pub output_path: String,
     pub max_concurrent: u32,
     pub naming_template: String,
-    pub sync_mode: SyncMode,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, ToSchema)]
@@ -57,17 +56,13 @@ impl NetworkSettings {
             None
         }
     }
+}
 
-    pub fn get_proxy(&self) -> Option<reqwest::Proxy> {
-        let url = self.get_proxy_url()?;
-        match reqwest::Proxy::all(url) {
-            Ok(proxy) => Some(proxy),
-            Err(e) => {
-                tracing::warn!("Invalid proxy URL '{}': {e}", url);
-                None
-            }
-        }
-    }
+#[derive(Serialize, Deserialize, Debug, Clone, ToSchema)]
+#[serde(rename_all = "camelCase")]
+pub struct SystemSettings {
+    pub limit_per_page: u32,
+    pub max_retries: u32,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, ToSchema)]
@@ -79,8 +74,7 @@ pub struct UserSettings {
     pub adb: AdbSettings,
     #[serde(default)]
     pub network: NetworkSettings,
-    pub limit_per_page: u32,
-    pub max_retries: u32,
+    pub system: SystemSettings,
 }
 
 impl Default for UserSettings {
@@ -96,12 +90,13 @@ impl Default for UserSettings {
                 output_path: "./downloads".to_string(),
                 max_concurrent: 3,
                 naming_template: "{artist} - {title}".to_string(),
-                sync_mode: SyncMode::Silent,
             },
             adb: AdbSettings::default(),
             network: NetworkSettings::default(),
-            limit_per_page: 100,
-            max_retries: 5,
+            system: SystemSettings {
+                limit_per_page: 100,
+                max_retries: 5,
+            },
         }
     }
 }
@@ -122,6 +117,13 @@ impl SettingsManager {
         self.inner.read().await
     }
 
+    pub fn get_proxy_url_sync(&self) -> Option<String> {
+        self.inner
+            .try_read()
+            .ok()
+            .and_then(|s| s.network.get_proxy_url().map(String::from))
+    }
+
     pub async fn update(&self, new_settings: UserSettings) -> anyhow::Result<()> {
         update_settings(&new_settings)?;
         *self.inner.write().await = new_settings;
@@ -130,5 +132,9 @@ impl SettingsManager {
 
     pub async fn update_in_memory(&self, new_settings: UserSettings) {
         *self.inner.write().await = new_settings;
+    }
+
+    pub async fn output_path(&self) -> String {
+        self.inner.read().await.downloads.output_path.clone()
     }
 }

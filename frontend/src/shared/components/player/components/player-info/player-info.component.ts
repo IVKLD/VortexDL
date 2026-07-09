@@ -1,7 +1,7 @@
 import {Component, input} from '@angular/core';
 import {NgOptimizedImage} from "@angular/common";
 import {MatIcon} from '@angular/material/icon';
-import {Track} from "@shared/models/track.model";
+import {PlayableTrack} from "@shared/models/music-track.model";
 
 @Component({
     selector: 'app-player-info',
@@ -13,5 +13,5 @@ import {Track} from "@shared/models/track.model";
     styleUrl: './player-info.component.scss',
     })
 export class PlayerInfoComponent {
-    public readonly data = input.required<Track>();
+    public readonly data = input.required<PlayableTrack>();
 }

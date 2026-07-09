@@ -4,7 +4,7 @@ use url::Url;
 
 use crate::{
     downloader::{Context, discovery::init_progress_spinner},
-    types::core::DiscoveredMusicTrack,
+    types::DiscoveredMusicTrack,
 };
 
 pub async fn discover_liked_tracks(
@@ -15,7 +15,7 @@ pub async fn discover_liked_tracks(
     let mut offset: Option<String> = None;
     let pb = init_progress_spinner(ctx, "Fetching track list...");
     let mut tracks = Vec::new();
-    let limit = ctx.settings.read().await.limit_per_page;
+    let limit = ctx.settings.read().await.system.limit_per_page;
 
     loop {
         let query = UserTrackLikesQuery {

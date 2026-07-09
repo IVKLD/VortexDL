@@ -1,6 +1,6 @@
 use std::{collections::HashSet, io::ErrorKind};
 
-use anyhow::{Context, Result};
+use anyhow::Result;
 use serde::Serialize;
 use tokio::process::Command;
 
@@ -21,14 +21,30 @@ impl std::fmt::Display for AdbError {
 
 impl std::error::Error for AdbError {}
 
-async fn adb(device: &str, args: &[&str]) -> Result<String> {
-    let output = Command::new("adb")
-        .arg("-s")
-        .arg(device)
+pub async fn run_adb_raw(args: &[&str]) -> Result<std::process::Output, AdbError> {
+    Command::new("adb")
+        .env("ADB_LIBUSB", "0")
         .args(args)
         .output()
         .await
-        .with_context(|| format!("adb {} spawn failed", args.first().unwrap_or(&"")))?;
+        .map_err(|e| {
+            if e.kind() == ErrorKind::NotFound {
+                AdbError::NotAvailable
+            } else {
+                AdbError::Other(anyhow::anyhow!(
+                    "Failed to run adb {}: {e}",
+                    args.first().unwrap_or(&"")
+                ))
+            }
+        })
+}
+
+async fn adb(device: &str, args: &[&str]) -> Result<String> {
+    let mut final_args = vec!["-s", device];
+    final_args.extend_from_slice(args);
+    let output = run_adb_raw(&final_args)
+        .await
+        .map_err(|e| anyhow::anyhow!("{e}"))?;
 
     if !output.status.success() {
         anyhow::bail!("{}", String::from_utf8_lossy(&output.stderr).trim());
@@ -38,17 +54,7 @@ async fn adb(device: &str, args: &[&str]) -> Result<String> {
 }
 
 pub async fn list_devices() -> Result<HashSet<String>, AdbError> {
-    let output = Command::new("adb")
-        .arg("devices")
-        .output()
-        .await
-        .map_err(|e| {
-            if e.kind() == ErrorKind::NotFound {
-                AdbError::NotAvailable
-            } else {
-                AdbError::Other(anyhow::anyhow!("Failed to run `adb devices`: {e}"))
-            }
-        })?;
+    let output = run_adb_raw(&["devices"]).await?;
 
     if !output.status.success() {
         return Err(AdbError::Other(anyhow::anyhow!(
@@ -83,12 +89,21 @@ fn shell_escape(s: &str) -> String {
 }
 
 pub async fn ensure_dir(device: &str, dir: &str) -> Result<()> {
-    adb(device, &["shell", "mkdir", "-p", &shell_escape(dir)]).await?;
+    adb(
+        device,
+        &["shell", &format!("mkdir -p {}", shell_escape(dir))],
+    )
+    .await?;
     Ok(())
 }
 
 pub async fn list_files(device: &str, dir: &str) -> Result<HashSet<String>> {
-    match adb(device, &["shell", "find", &shell_escape(dir), "-type", "f"]).await {
+    match adb(
+        device,
+        &["shell", &format!("find {} -type f", shell_escape(dir))],
+    )
+    .await
+    {
         Ok(stdout) => {
             let prefix = format!("{}/", dir.trim_end_matches('/'));
             Ok(stdout
@@ -109,12 +124,17 @@ pub async fn push(device: &str, local: &str, remote: &str) -> Result<()> {
 }
 
 pub async fn delete_file(device: &str, path: &str) -> Result<()> {
-    adb(device, &["shell", "rm", "-f", &shell_escape(path)]).await?;
+    adb(device, &["shell", &format!("rm -f {}", shell_escape(path))]).await?;
     Ok(())
 }
 
 pub async fn delete_dir(device: &str, path: &str) -> Result<()> {
-    adb(device, &["shell", "rmdir", &shell_escape(path)]).await?;
+    adb(device, &["shell", &format!("rmdir {}", shell_escape(path))]).await?;
+    Ok(())
+}
+
+pub async fn sync_device_fs(device: &str) -> Result<()> {
+    adb(device, &["shell", "sync"]).await?;
     Ok(())
 }
 
@@ -138,7 +158,7 @@ pub struct StorageInfo {
 pub async fn get_device_storages(device: &str) -> Result<Vec<StorageInfo>> {
     let mut storages = Vec::new();
 
-    match adb(device, &["shell", "ls", "/storage"]).await {
+    match adb(device, &["shell", "ls /storage"]).await {
         Ok(output) => {
             for line in output.lines() {
                 let name = line.trim();

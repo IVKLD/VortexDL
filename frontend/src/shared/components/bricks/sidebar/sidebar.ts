@@ -10,7 +10,7 @@ import {PlayerComponent} from '@shared/components/player/player';
 import {DownloadTrackingService} from '@app/services/download-tracking.service';
 import {MatDialog} from '@angular/material/dialog';
 import {ActiveDownloadErrorsComponent} from '../../active-downloads/components/active-download-errors/active-download-errors.component';
-import {ErrorsDialogComponent} from '../../active-downloads/components/active-download-errors/errors-dialog/errors-dialog.component';
+import {ErrorsDialogComponent, ErrorsDialogResult} from '../../active-downloads/components/active-download-errors/errors-dialog/errors-dialog.component';
 import {PlayerService} from '@app/services/player.service';
 
 interface SidebarNavItem {
@@ -31,6 +31,11 @@ const SIDEBAR_NAV_ITEMS: SidebarNavItem[] = [
         path: '/musics',
         icon: 'library_music',
         label: 'Library',
+    },
+    {
+        path: '/search',
+        icon: 'travel_explore',
+        label: 'Search',
     },
     {
         path: '/settings',
@@ -59,10 +64,10 @@ const SIDEBAR_NAV_ITEMS: SidebarNavItem[] = [
     styleUrl: './sidebar.scss',
     })
 export class Sidebar {
-    protected readonly navItems = SIDEBAR_NAV_ITEMS;
+    private readonly dialog = inject(MatDialog);
     protected readonly tracking = inject(DownloadTrackingService);
     protected readonly player = inject(PlayerService);
-    private readonly dialog = inject(MatDialog);
+    protected readonly navItems = SIDEBAR_NAV_ITEMS;
 
     protected openErrorsDialog() {
         const dialogRef = this.dialog.open(ErrorsDialogComponent, {
@@ -72,7 +77,7 @@ export class Sidebar {
         });
 
         dialogRef.afterClosed().subscribe(result => {
-            if (result === 'clear') {
+            if (result === ErrorsDialogResult.Clear) {
                 this.tracking.clearError();
             }
         });

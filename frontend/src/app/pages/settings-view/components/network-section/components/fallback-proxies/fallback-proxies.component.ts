@@ -1,7 +1,7 @@
 import {Component, inject, input, signal} from '@angular/core';
 import {CommonModule} from '@angular/common';
 import {MatIcon} from '@angular/material/icon';
-import {MatIconButton, MatButton} from '@angular/material/button';
+import {MatIconButton} from '@angular/material/button';
 import {MatTooltip} from '@angular/material/tooltip';
 import {MatDialog} from '@angular/material/dialog';
 import {FieldTree} from "@angular/forms/signals";
@@ -18,19 +18,24 @@ import {parseErrorMessage} from '@shared/error-utils';
 @Component({
     selector: 'app-fallback-proxies',
     imports: [
-        CommonModule, MatIcon, MatIconButton, MatTooltip, MatButton, MatDivider
+        CommonModule, MatIcon, MatIconButton, MatTooltip, MatDivider
     ],
     templateUrl: './fallback-proxies.component.html',
     styleUrl: './fallback-proxies.component.scss',
     })
 export class FallbackProxiesComponent {
-    public readonly form = input.required<FieldTree<NetworkSettings>>();
 
     private readonly _testing = inject(SettingsTestingService);
     private readonly _dialog = inject(MatDialog);
+    public readonly form = input.required<FieldTree<NetworkSettings>>();
 
     public readonly proxyStatuses = signal<Record<string, { loading: boolean; valid?: boolean; error?: string }>>({});
     public readonly isTestingAll = signal<boolean>(false);
+
+    get hasFailedProxies(): boolean {
+        const current = this.form().fallbackProxies().value() || [];
+        return current.some((p: string) => this.proxyStatuses()[p]?.valid === false);
+    }
 
     remove(proxy: string): void {
         const current = this.form().fallbackProxies().value() || [];
@@ -74,11 +79,10 @@ export class FallbackProxiesComponent {
         }));
 
         this._testing.testProxy([proxy]).subscribe({
-            next: (response) => {
-                const result = response.results[0];
+            next: (result) => {
                 this.proxyStatuses.update(prev => ({
                     ...prev,
-                    [proxy]: {loading: false, valid: result?.valid ?? false, error: result?.error || undefined}
+                    [proxy]: {loading: false, valid: result.valid, error: result.error || undefined}
                 }));
             },
             error: (err: HttpErrorResponse | Error) => {
@@ -104,27 +108,29 @@ export class FallbackProxiesComponent {
         }
 
         this._testing.testProxy(proxies).subscribe({
-            next: (response) => {
-                for (const result of response.results) {
-                    this.proxyStatuses.update(prev => ({
-                        ...prev,
-                        [result.url]: {
-                            loading: false,
-                            valid: result.valid,
-                            error: result.error || undefined
-                        }
-                    }));
-                }
-                this.isTestingAll.set(false);
+            next: (result) => {
+                this.proxyStatuses.update(prev => ({
+                    ...prev,
+                    [result.url]: {
+                        loading: false,
+                        valid: result.valid,
+                        error: result.error || undefined
+                    }
+                }));
             },
             error: (err: HttpErrorResponse | Error) => {
                 const errorDetail = parseErrorMessage(err, 'Verification failed');
                 for (const proxy of proxies) {
-                    this.proxyStatuses.update(prev => ({
-                        ...prev,
-                        [proxy]: {loading: false, valid: false, error: errorDetail}
-                    }));
+                    if (this.proxyStatuses()[proxy]?.loading) {
+                        this.proxyStatuses.update(prev => ({
+                            ...prev,
+                            [proxy]: {loading: false, valid: false, error: errorDetail}
+                        }));
+                    }
                 }
+                this.isTestingAll.set(false);
+            },
+            complete: () => {
                 this.isTestingAll.set(false);
             }
         });

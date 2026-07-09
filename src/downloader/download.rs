@@ -8,7 +8,7 @@ use super::{DownloadTask, resolve::StreamSource};
 use crate::{
     downloader::Context,
     ui,
-    utils::{soundcloud::init_client_with_settings, verification::verify},
+    utils::{soundcloud::SoundCloudClientBuilder, verification::verify},
 };
 
 pub async fn download_single_track(
@@ -16,7 +16,7 @@ pub async fn download_single_track(
     task: &DownloadTask,
     stream_source: StreamSource,
 ) -> Result<()> {
-    let max_retries = context.settings.read().await.max_retries;
+    let max_retries = context.settings.read().await.system.max_retries;
     let mut attempts_left = max_retries.max(1);
     let tmp_path = task.file_path.with_extension("mp3.tmp");
 
@@ -58,9 +58,13 @@ async fn download_progressive(
     url: &str,
     proxy_url: Option<&str>,
 ) -> Result<()> {
-    let client = match proxy_url {
+    let settings = context.settings.read().await;
+    let active_proxy = proxy_url.or_else(|| settings.network.get_proxy_url());
+    let client = match active_proxy {
         Some(proxy) => reqwest::Client::builder()
             .proxy(reqwest::Proxy::all(proxy)?)
+            .connect_timeout(Duration::from_secs(5))
+            .timeout(Duration::from_secs(30))
             .build()?,
         None => context.http.clone(),
     };
@@ -81,7 +85,7 @@ async fn download_progressive(
         task.pb.inc(chunk.len() as u64);
 
         if let Some(manager) = &context.dm {
-            manager.update_progress(task.id, task.pb.position(), total);
+            manager.update_progress(task.track.id, task.pb.position(), total);
         }
     }
 
@@ -99,9 +103,14 @@ async fn download_hls(
     task.pb
         .set_message(format!("Downloading (HLS): {}", task.display_name()));
 
+    let settings = context.settings.read().await;
+    let active_proxy = proxy_url.or_else(|| settings.network.get_proxy_url());
+
     let proxied_client;
-    let client = if let Some(proxy) = proxy_url {
-        proxied_client = init_client_with_settings(&*context.settings.read().await, Some(proxy))
+    let client: &soundcloud_rs::Client = if let Some(proxy) = active_proxy {
+        proxied_client = SoundCloudClientBuilder::new(&settings)
+            .with_proxy(Some(proxy))
+            .build()
             .await
             .map_err(|err| anyhow!("Failed to build proxied client: {err}"))?;
         &proxied_client

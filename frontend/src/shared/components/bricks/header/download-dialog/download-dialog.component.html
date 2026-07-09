@@ -2,7 +2,10 @@
 
 <mat-dialog-content>
     <mat-form-field>
-        <mat-label>SoundCloud URL</mat-label>
+        <mat-label>
+            <mat-icon>link</mat-icon>
+            SoundCloud URL
+        </mat-label>
         <input
                 (keyup.enter)="onDownload()"
                 [formField]="urlField"
@@ -11,7 +14,6 @@
         @if (urlField().invalid()) {
             <mat-error>{{ urlField().errors()[0]?.message }}</mat-error>
         }
-        <mat-icon matIconPrefix>link</mat-icon>
         <mat-hint>Liked, Playlist, or Track URL</mat-hint>
     </mat-form-field>
 

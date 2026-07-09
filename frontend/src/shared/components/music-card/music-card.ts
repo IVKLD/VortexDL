@@ -1,50 +1,34 @@
-import {Component, input, output, inject} from '@angular/core';
-import {MusicTrack} from '@shared/models/music-track.model';
-import {MatIconButton} from '@angular/material/button';
-import {NgOptimizedImage} from '@angular/common';
-import {MatIcon} from '@angular/material/icon';
-import {FileSizePipe} from '@shared/pipes/file-size.pipe';
-import {outputFromObservable} from "@angular/core/rxjs-interop";
-import {Subject} from "rxjs";
-import {CdkMenuModule} from '@angular/cdk/menu';
-import {OverlayContainer} from '@angular/cdk/overlay';
+import { Component, input, output } from '@angular/core';
+import { MatIconButton } from '@angular/material/button';
+import { NgOptimizedImage } from '@angular/common';
+import { MatIcon } from '@angular/material/icon';
+import { MatProgressSpinner } from '@angular/material/progress-spinner';
+
+export interface MusicCardTrack {
+    id: number;
+    artist: string;
+    title: string;
+    artworkUrl?: string | null;
+}
 
 @Component({
     selector: 'app-music-card',
-    imports: [MatIconButton, NgOptimizedImage, MatIcon, FileSizePipe, CdkMenuModule],
+    imports: [MatIconButton, NgOptimizedImage, MatIcon, MatProgressSpinner],
     templateUrl: './music-card.html',
     styleUrl: './music-card.scss',
     host: {
-        '(click)': 'clickTrack.emit()',
-        '[class.active]': 'isActive()',
+        '[class.active]': 'isActive() || isPlaying()',
         '[class.selected]': 'isSelected()',
         'role': 'button',
         'tabindex': '0'
     }
 })
 export class MusicCard {
-    private readonly _overlayContainer = inject(OverlayContainer);
-
-    public readonly track = input.required<MusicTrack>();
+    public readonly track = input.required<MusicCardTrack>();
     public readonly isActive = input<boolean>(false);
     public readonly isPlaying = input<boolean>(false);
     public readonly isSelected = input<boolean>(false);
+    public readonly isLoadingStream = input<boolean>(false);
 
-    public readonly playTrack = output<MusicTrack>();
-    public readonly toggleSelect = output<void>();
-
-    protected readonly _deleteTrackSubj = new Subject<void>();
-    public readonly deleteTrack = outputFromObservable(this._deleteTrackSubj);
-
-    public readonly clickTrack = output<void>();
-
-    protected isMenuOpen(): boolean {
-        return this._overlayContainer.getContainerElement().hasChildNodes();
-    }
-
-    protected onDeleteClick() {
-        this._deleteTrackSubj.next();
-    }
+    public readonly playTrack = output<MusicCardTrack>();
 }
-
-

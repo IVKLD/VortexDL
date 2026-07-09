@@ -4,9 +4,8 @@ import {DialogRef} from "@angular/cdk/dialog";
 import {MatSnackBar} from "@angular/material/snack-bar";
 import {form, FormField, required} from "@angular/forms/signals";
 import {soundCloudUrl} from "@shared/validators/form.validators";
-import {DownloadProgressSnackbar} from "@shared/components/download-progress-snackbar/download-progress-snackbar";
 import {ensureStringArray} from "@shared/utils/array.utils";
-import {MatError, MatFormField, MatHint, MatInput, MatLabel, MatPrefix} from "@angular/material/input";
+import {MatError, MatFormField, MatHint, MatInput, MatLabel} from "@angular/material/input";
 import {MatIcon} from "@angular/material/icon";
 import {MatDialogActions, MatDialogClose, MatDialogContent, MatDialogTitle} from "@angular/material/dialog";
 import {MatList, MatListItem} from "@angular/material/list";
@@ -19,7 +18,6 @@ const STORAGE_KEY = 'vortexdl_download_history';
     imports: [
         MatError,
         MatIcon,
-        MatPrefix,
         MatHint,
         MatDialogContent,
         MatDialogTitle,
@@ -49,8 +47,23 @@ export class DownloadDialogComponent implements OnInit {
         soundCloudUrl(f);
     });
 
-    public ngOnInit() {
-        this.loadHistory();
+    private loadHistory() {
+        const saved = localStorage.getItem(STORAGE_KEY);
+        if (!saved) return;
+
+        try {
+            const parsed = JSON.parse(saved);
+            this.history = ensureStringArray(parsed);
+        } catch {
+            this.history = [];
+        }
+    }
+
+    private addToHistory(url: string) {
+        if (!this.history.includes(url)) {
+            this.history = [url, ...this.history.slice(0, 4)];
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(this.history));
+        }
     }
 
     protected removeFromHistory(item: string) {
@@ -70,13 +83,6 @@ export class DownloadDialogComponent implements OnInit {
         this._trackService.download(url).subscribe({
             next: () => {
                 this._dialogRef.close();
-
-                this._snackBar.openFromComponent(DownloadProgressSnackbar, {
-                    duration: 5000,
-                    panelClass: 'download-snackbar',
-                    horizontalPosition: 'right',
-                    verticalPosition: 'bottom',
-                });
             },
             error: err => {
                 console.error('Download failed', err);
@@ -84,22 +90,7 @@ export class DownloadDialogComponent implements OnInit {
         });
     }
 
-    private loadHistory() {
-        const saved = localStorage.getItem(STORAGE_KEY);
-        if (!saved) return;
-
-        try {
-            const parsed = JSON.parse(saved);
-            this.history = ensureStringArray(parsed);
-        } catch {
-            this.history = [];
-        }
-    }
-
-    private addToHistory(url: string) {
-        if (!this.history.includes(url)) {
-            this.history = [url, ...this.history.slice(0, 4)];
-            localStorage.setItem(STORAGE_KEY, JSON.stringify(this.history));
-        }
+    public ngOnInit() {
+        this.loadHistory();
     }
 }

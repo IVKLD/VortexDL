@@ -1,10 +1,7 @@
 use std::{fs::File, io::ErrorKind, path::Path};
 
 use anyhow::{Result, anyhow};
-use symphonia::core::{
-    errors::Error, formats::FormatOptions, io::MediaSourceStream, meta::MetadataOptions,
-    probe::Hint,
-};
+use symphonia::core::{errors::Error, io::MediaSourceStream, probe::Hint};
 use tokio::fs;
 
 pub async fn verify(path: impl AsRef<Path>, expected_size: u64) -> Result<()> {
@@ -37,28 +34,25 @@ fn verify_format(path: &Path) -> bool {
     let Ok(file) = File::open(path) else {
         return false;
     };
-
     let mut hint = Hint::new();
-    let mss = MediaSourceStream::new(Box::new(file), Default::default());
-
     if let Some(ext) = path.extension().and_then(|e| e.to_str()) {
         hint.with_extension(ext);
     }
-
-    let format_opts = FormatOptions {
-        enable_gapless: false,
-        ..Default::default()
-    };
-
-    let meta_opts = MetadataOptions::default();
-
-    let Ok(mut probed) =
-        symphonia::default::get_probe().format(&hint, mss, &format_opts, &meta_opts)
-    else {
+    let mss = MediaSourceStream::new(Box::new(file), Default::default());
+    let Ok(mut probed) = symphonia::default::get_probe().format(
+        &hint,
+        mss,
+        &Default::default(),
+        &Default::default(),
+    ) else {
         return false;
     };
-
     let Some(track) = probed.format.default_track() else {
+        return false;
+    };
+    let Ok(mut decoder) =
+        symphonia::default::get_codecs().make(&track.codec_params, &Default::default())
+    else {
         return false;
     };
 
@@ -69,6 +63,9 @@ fn verify_format(path: &Path) -> bool {
         match probed.format.next_packet() {
             Ok(packet) => {
                 if packet.track_id() == track_id {
+                    if decoder.decode(&packet).is_err() {
+                        return false;
+                    }
                     packet_count += 1;
                     if packet_count > 100 {
                         return true;
@@ -76,11 +73,9 @@ fn verify_format(path: &Path) -> bool {
                 }
             }
             Err(Error::IoError(err)) if err.kind() == ErrorKind::UnexpectedEof => {
-                return packet_count > 100;
+                return packet_count > 0;
             }
-            Err(_) => break,
+            Err(_) => return false,
         }
     }
-
-    packet_count > 100
 }

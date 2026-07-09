@@ -1,0 +1,247 @@
+.mat-mdc-form-field-input-control.mat-mdc-form-field-input-control {
+  font-size: 0.85rem !important;
+}
+
+input[type="number"]::-webkit-outer-spin-button,
+input[type="number"]::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+input[type="number"] {
+  -moz-appearance: textfield;
+}
+
+mat-form-field {
+  --mat-form-field-container-vertical-padding: 0;
+  --mat-form-field-container-height: 40px;
+  --mat-form-field-outlined-container-shape: 20px;
+  --mdc-outlined-text-field-container-shape: 20px;
+
+  --mdc-outlined-text-field-container-color: rgba(255, 255, 255, 0.02);
+  --mdc-outlined-text-field-hover-container-color: rgba(255, 255, 255, 0.04);
+  --mdc-outlined-text-field-focus-container-color: rgba(255, 255, 255, 0.05);
+
+  --mdc-outlined-text-field-outline-color: rgba(255, 255, 255, 0.08);
+  --mdc-outlined-text-field-hover-outline-color: rgba(255, 255, 255, 0.14);
+  --mdc-outlined-text-field-focus-outline-color: var(--mat-sys-primary);
+  --mdc-outlined-text-field-outline-width: 1px;
+  --mdc-outlined-text-field-focus-outline-width: 1px;
+
+  --mdc-outlined-text-field-label-text-color: rgba(255, 255, 255, 0.4);
+  --mdc-outlined-text-field-hover-label-text-color: rgba(255, 255, 255, 0.6);
+  --mdc-outlined-text-field-focus-label-text-color: var(--mat-sys-primary);
+
+  input.mat-mdc-form-field-input-control {
+    font-size: 0.875rem;
+    font-weight: 500;
+    letter-spacing: -0.01em;
+    box-sizing: border-box;
+    color: rgba(255, 255, 255, 0.95);
+  }
+
+  .mat-mdc-floating-label {
+    display: inline-block !important;
+
+    .mat-icon {
+      font-size: 1.1rem !important;
+      width: 1.1rem !important;
+      height: 1.1rem !important;
+      line-height: 1.1rem !important;
+      margin: 0 !important;
+      margin-right: 6px !important;
+      display: inline-block !important;
+      vertical-align: -0.18em !important;
+    }
+
+    &:not(.mdc-floating-label--float-above) {
+      top: 50% !important;
+      transform: translateY(-50%) !important;
+    }
+  }
+
+  .mat-mdc-form-field-flex {
+    align-items: center !important;
+  }
+
+  .mat-mdc-form-field-infix {
+    display: flex !important;
+    flex-direction: column !important;
+    justify-content: center !important;
+    padding-left: 20px !important;
+    padding-right: 20px !important;
+  }
+
+  .mat-mdc-form-field-icon-prefix + .mat-mdc-form-field-infix {
+    padding-left: 10px !important;
+  }
+
+  .mat-mdc-form-field-flex:has(.mat-mdc-form-field-icon-suffix) .mat-mdc-form-field-infix {
+    padding-right: 0 !important;
+  }
+
+  .mdc-text-field--outlined {
+    border-radius: var(--mat-form-field-outlined-container-shape, 20px) !important;
+    transition: background-color 0.2s ease, box-shadow 0.2s ease;
+    backdrop-filter: blur(8px);
+    padding-left: 0 !important;
+    padding-right: 0 !important;
+
+    &.mdc-text-field--focused {
+      box-shadow: 0 0 0 3px color-mix(in srgb, var(--mat-sys-primary) 12%, transparent),
+        0 4px 20px rgba(0, 0, 0, 0.35);
+    }
+
+    &.mdc-text-field--invalid {
+      --mdc-outlined-text-field-outline-color: var(--mat-sys-error, #f44336);
+      --mdc-outlined-text-field-hover-outline-color: var(--mat-sys-error, #f44336);
+      --mdc-outlined-text-field-focus-outline-color: var(--mat-sys-error, #f44336);
+      --mdc-outlined-text-field-label-text-color: var(--mat-sys-error, #f44336);
+      --mdc-outlined-text-field-hover-label-text-color: var(--mat-sys-error, #f44336);
+      --mdc-outlined-text-field-focus-label-text-color: var(--mat-sys-error, #f44336);
+
+      &.mdc-text-field--focused {
+        box-shadow: 0 0 0 3px color-mix(in srgb, var(--mat-sys-error, #f44336) 15%, transparent),
+          0 4px 20px rgba(0, 0, 0, 0.35);
+      }
+
+      .mat-mdc-form-field-icon-prefix {
+        color: var(--mat-sys-error, #f44336) !important;
+      }
+      
+      .mat-mdc-form-field-icon-suffix {
+        color: var(--mat-sys-error, #f44336) !important;
+      }
+    }
+
+    .mdc-notched-outline .mdc-notched-outline__leading {
+      width: 20px !important;
+      border-radius: var(--mat-form-field-outlined-container-shape, 20px) 0 0 var(--mat-form-field-outlined-container-shape, 20px) !important;
+    }
+
+    .mdc-notched-outline .mdc-notched-outline__trailing {
+      border-radius: 0 var(--mat-form-field-outlined-container-shape, 20px) var(--mat-form-field-outlined-container-shape, 20px) 0 !important;
+    }
+  }
+
+  .mat-mdc-form-field-icon-prefix {
+    background: transparent !important;
+    border-right: none !important;
+    align-self: center !important;
+    width: 40px !important;
+    min-width: 40px !important;
+    max-width: 40px !important;
+    flex-shrink: 0 !important;
+    height: 40px !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    padding: 0 !important;
+    box-sizing: border-box !important;
+    margin: 0 !important;
+    color: rgba(255, 255, 255, 0.4) !important;
+    transition: color 0.2s ease;
+
+    .mat-icon {
+      font-size: 1.25rem !important;
+      width: 1.25rem !important;
+      height: 1.25rem !important;
+    }
+  }
+
+  .mat-mdc-form-field-icon-suffix {
+    color: rgba(255, 255, 255, 0.4);
+    transition: color 0.2s ease;
+    align-self: center !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    padding-right: 16px !important;
+    padding-left: 8px !important;
+
+    .mat-icon {
+      font-size: 1.2rem !important;
+      width: 1.2rem !important;
+      height: 1.2rem !important;
+    }
+  }
+
+  .mdc-text-field--focused {
+    .mat-mdc-form-field-icon-prefix {
+      color: var(--mat-sys-primary) !important;
+    }
+
+    .mat-mdc-form-field-icon-suffix {
+      color: var(--mat-sys-primary);
+    }
+  }
+
+  .mat-mdc-text-field-wrapper:hover:not(.mdc-text-field--focused):not(.mdc-text-field--disabled) {
+    .mat-mdc-form-field-icon-prefix {
+      color: rgba(255, 255, 255, 0.6) !important;
+    }
+    .mat-mdc-form-field-icon-suffix {
+      color: rgba(255, 255, 255, 0.6) !important;
+    }
+  }
+}
+
+.mat-mdc-form-field-has-icon-prefix,
+.mat-form-field-has-icon-prefix {
+  &.mat-form-field-should-float {
+    .mat-mdc-text-field-wrapper {
+      --mat-mdc-form-field-label-offset-x: -30px !important;
+    }
+  }
+
+  .mdc-notched-outline .mdc-notched-outline__leading {
+    width: 40px !important;
+  }
+}
+
+.simple-textarea {
+  transition: background-color 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease !important;
+  background-color: rgba(255, 255, 255, 0.02) !important;
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+  backdrop-filter: blur(8px);
+  color: rgba(255, 255, 255, 0.95) !important;
+  border-radius: 12px !important;
+
+  &:hover {
+    background-color: rgba(255, 255, 255, 0.04) !important;
+    border-color: rgba(255, 255, 255, 0.14) !important;
+  }
+
+  &:focus {
+    background-color: rgba(255, 255, 255, 0.05) !important;
+    border-color: var(--mat-sys-primary) !important;
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--mat-sys-primary) 12%, transparent),
+      0 4px 20px rgba(0, 0, 0, 0.35) !important;
+  }
+}
+
+mat-slide-toggle {
+  --mdc-switch-selected-focus-handle-state-layer-color: var(--mat-sys-primary);
+  --mdc-switch-selected-handle-state-layer-color: var(--mat-sys-primary);
+  --mdc-switch-selected-hover-handle-state-layer-color: var(--mat-sys-primary);
+  --mdc-switch-selected-pressed-handle-state-layer-color: var(--mat-sys-primary);
+  
+  --mdc-switch-selected-focus-track-color: color-mix(in srgb, var(--mat-sys-primary) 50%, transparent);
+  --mdc-switch-selected-hover-track-color: color-mix(in srgb, var(--mat-sys-primary) 50%, transparent);
+  --mdc-switch-selected-track-color: color-mix(in srgb, var(--mat-sys-primary) 40%, transparent);
+  --mdc-switch-selected-pressed-track-color: color-mix(in srgb, var(--mat-sys-primary) 50%, transparent);
+  
+  --mdc-switch-selected-focus-handle-color: var(--mat-sys-primary);
+  --mdc-switch-selected-hover-handle-color: var(--mat-sys-primary);
+  --mdc-switch-selected-handle-color: var(--mat-sys-primary);
+  --mdc-switch-selected-pressed-handle-color: var(--mat-sys-primary);
+
+  --mdc-switch-unselected-focus-track-color: rgba(255, 255, 255, 0.12);
+  --mdc-switch-unselected-hover-track-color: rgba(255, 255, 255, 0.12);
+  --mdc-switch-unselected-track-color: rgba(255, 255, 255, 0.08);
+  --mdc-switch-unselected-pressed-track-color: rgba(255, 255, 255, 0.12);
+
+  --mdc-switch-unselected-focus-handle-color: rgba(255, 255, 255, 0.4);
+  --mdc-switch-unselected-hover-handle-color: rgba(255, 255, 255, 0.4);
+  --mdc-switch-unselected-handle-color: rgba(255, 255, 255, 0.35);
+  --mdc-switch-unselected-pressed-handle-color: rgba(255, 255, 255, 0.4);
+}

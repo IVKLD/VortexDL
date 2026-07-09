@@ -1,20 +1,17 @@
-use std::convert::Infallible;
-
 use axum::{
     Json,
-    extract::{Path, State},
-    http::StatusCode,
-    response::{
-        IntoResponse,
-        sse::{Event, KeepAlive, Sse},
+    extract::{
+        Path, State,
+        ws::{Message, WebSocket, WebSocketUpgrade},
     },
+    http::StatusCode,
+    response::IntoResponse,
 };
-use futures_util::stream::Stream;
 use tokio::spawn;
 
 use crate::{
     api::{
-        download_manager::{DownloadItem, DownloadStatus, ServerEvent},
+        download_manager::{DownloadItem, ServerEvent},
         errors::{ApiError, ErrorCode},
         state::AppState,
         types::{ApiStatus, DownloadRequest, DownloadStartResponse},
@@ -35,9 +32,6 @@ pub async fn start_download(
     Json(body): Json<DownloadRequest>,
 ) -> Result<impl IntoResponse, ApiError> {
     let url = body.url;
-    if url.is_empty() {
-        return Err(ApiError::bad_request("Empty URL").with_code(ErrorCode::EmptyUrl));
-    }
 
     tracing::info!("Download request: {url}");
 
@@ -45,6 +39,10 @@ pub async fn start_download(
         return Err(ApiError::conflict("This URL is already being processed")
             .with_code(ErrorCode::AlreadyProcessing));
     }
+
+    state
+        .download_manager
+        .broadcast_event(ServerEvent::SyncStarted { url: url.to_string() });
 
     let status = DownloadStartResponse {
         status: ApiStatus::Queued,
@@ -56,12 +54,31 @@ pub async fn start_download(
 
         if let Err(e) = downloader::run_download_pipeline(&ctx, &url).await {
             tracing::error!("Download failed for {url}: {e}");
+            state.download_manager.broadcast_event(ServerEvent::Error {
+                message: format!("Download failed: {e}"),
+            });
         }
 
         state.download_manager.release_url(&url);
+        state
+            .download_manager
+            .broadcast_event(ServerEvent::SyncFinished {
+                url: Some(url.to_string()),
+            });
     });
 
     Ok((StatusCode::ACCEPTED, Json(status)))
+}
+
+#[utoipa::path(
+    method(get),
+    path = "/api/download/syncing",
+    responses(
+        (status = 200, description = "Get list of currently syncing URLs", body = Vec<String>)
+    )
+)]
+pub async fn get_syncing_urls(State(state): State<AppState>) -> impl IntoResponse {
+    Json(state.download_manager.get_reserved_urls())
 }
 
 #[utoipa::path(
@@ -97,58 +114,52 @@ pub async fn remove_from_queue(
     method(get),
     path = "/api/download/events",
     responses(
-        (status = 200, description = "SSE stream for active downloads", body = String)
+        (status = 101, description = "WebSocket upgrade for active downloads")
     )
 )]
 pub async fn download_events(
+    ws: WebSocketUpgrade,
     State(state): State<AppState>,
-) -> Sse<impl Stream<Item = Result<Event, Infallible>>> {
+) -> impl IntoResponse {
+    ws.on_upgrade(move |socket| handle_download_events(socket, state))
+}
+
+async fn send_event(socket: &mut WebSocket, event: &ServerEvent) -> bool {
+    if let Ok(msg_str) = serde_json::to_string(event) {
+        socket.send(Message::Text(msg_str.into())).await.is_ok()
+    } else {
+        true
+    }
+}
+
+async fn handle_download_events(mut socket: WebSocket, state: AppState) {
     let queue = state.download_manager.get_queue();
     let mut rx = state.download_manager.subscribe();
 
-    let stream = async_stream::stream! {
-        if let Ok(evt) = Event::default().json_data(ServerEvent::Message {
-            message: "Connected to event stream".to_string(),
-            level: "info".to_string()
-        }) {
-            yield Ok(evt);
-        }
-
-        for item in queue {
-            if matches!(item.status, DownloadStatus::Queued | DownloadStatus::Downloading) {
-                let res = Event::default().json_data(ServerEvent::TrackUpdate { item });
-                if let Ok(evt) = res {
-                    yield Ok(evt);
-                }
-            }
-        }
-        let mut interval = tokio::time::interval(std::time::Duration::from_secs(15));
-        interval.tick().await;
-
-        loop {
-            tokio::select! {
-                _ = interval.tick() => {
-                    if let Ok(evt) = Event::default().json_data(ServerEvent::Message {
-                        message: "ping".to_string(),
-                        level: "ping".to_string()
-                    }) {
-                        yield Ok(evt);
-                    }
-                }
-                res = rx.recv() => {
-                    match res {
-                        Ok(event) => {
-                            if let Ok(evt) = Event::default().json_data(event) {
-                                yield Ok(evt);
-                            }
-                        }
-                        Err(tokio::sync::broadcast::error::RecvError::Lagged(_)) => continue,
-                        Err(_) => break,
-                    }
-                }
-            }
-        }
+    let welcome = ServerEvent::Message {
+        message: "Connected to event stream".to_string(),
+        level: "info".to_string(),
     };
+    if !send_event(&mut socket, &welcome).await {
+        return;
+    }
 
-    Sse::new(stream).keep_alive(KeepAlive::default())
+    for item in queue {
+        let update = ServerEvent::TrackUpdate { item };
+        if !send_event(&mut socket, &update).await {
+            return;
+        }
+    }
+
+    loop {
+        match rx.recv().await {
+            Ok(event) => {
+                if !send_event(&mut socket, &event).await {
+                    break;
+                }
+            }
+            Err(tokio::sync::broadcast::error::RecvError::Lagged(_)) => continue,
+            Err(_) => break,
+        }
+    }
 }

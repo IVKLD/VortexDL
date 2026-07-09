@@ -1,17 +1,20 @@
-.error-item {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 8px 0;
-  width: 100%;
+.list {
+  > .item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 8px 0;
+    width: 100%;
+    white-space: normal;
 
-  mat-icon {
-    flex-shrink: 0;
-    color: var(--mat-sys-error, #ff5252);
-  }
+    mat-icon {
+      flex-shrink: 0;
+      color: var(--mat-sys-error, #ff5252);
+    }
 
-  .error-text {
-    font-size: 14px;
-    line-height: 1.4;
+    > .text {
+      font-size: 14px;
+      line-height: 1.4;
+    }
   }
 }

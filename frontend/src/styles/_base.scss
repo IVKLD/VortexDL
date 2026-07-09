@@ -1,5 +1,6 @@
 html {
   height: 100%;
+  scrollbar-gutter: stable;
 }
 
 body {
@@ -9,16 +10,24 @@ body {
   font: var(--mat-sys-body-medium);
   margin: 0;
   height: 100%;
+  overflow: auto;
 
   ::-webkit-scrollbar {
-    width: 4px;
-    height: 4px;
+    width: 6px;
+    height: 6px;
+  }
+
+  ::-webkit-scrollbar-track {
     background: transparent;
   }
 
   ::-webkit-scrollbar-thumb {
-    background: var(--mat-sys-on-primary-container);
-    border-radius: 1em;
+    background: rgba(255, 255, 255, 0.08);
+    border-radius: 3px;
+
+    &:hover {
+      background: rgba(255, 255, 255, 0.15);
+    }
   }
 
   ::-webkit-scrollbar-corner {
@@ -26,23 +35,23 @@ body {
   }
 
   ::placeholder {
-    color: var(--mat-sys-on-surface-variant) !important;
-    opacity: 0.5 !important;
+    color: var(--mat-sys-on-surface-variant);
+    opacity: 0.5;
   }
 
   ::-webkit-input-placeholder {
-    color: var(--mat-sys-on-surface-variant) !important;
-    opacity: 0.5 !important;
+    color: var(--mat-sys-on-surface-variant);
+    opacity: 0.5;
   }
 
   ::-moz-placeholder {
-    color: var(--mat-sys-on-surface-variant) !important;
-    opacity: 0.5 !important;
+    color: var(--mat-sys-on-surface-variant);
+    opacity: 0.5;
   }
 
   :-ms-input-placeholder {
-    color: var(--mat-sys-on-surface-variant) !important;
-    opacity: 0.5 !important;
+    color: var(--mat-sys-on-surface-variant);
+    opacity: 0.5;
   }
 }
 
@@ -59,4 +68,8 @@ body {
 
 .rx-virtual-scroll-element {
   scrollbar-width: thin;
+}
+
+html.cdk-global-scrollblock body {
+  overflow: hidden !important;
 }

@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 
 use anyhow::Result;
 use redb::{ReadableDatabase, ReadableTable, TableDefinition};
@@ -8,14 +8,12 @@ use crate::database::get_db;
 
 const CACHE_TABLE: TableDefinition<&str, &str> = TableDefinition::new("track_cache");
 
+use crate::types::TrackMetadata;
+
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct CachedMusicTrack {
-    pub id: i64,
-    pub artist: String,
-    pub title: String,
-    pub artwork_url: Option<String>,
-    pub source_url: Option<String>,
-    pub position: Option<u32>,
+    #[serde(flatten)]
+    pub metadata: TrackMetadata,
     pub created_at: u64,
     pub size: u64,
     pub mtime: u64,
@@ -42,7 +40,7 @@ pub fn get_cached_music_tracks() -> Result<HashMap<String, CachedMusicTrack>> {
 
 pub fn update_cached_tracks_batch(
     to_update: &HashMap<String, CachedMusicTrack>,
-    to_remove: &std::collections::HashSet<String>,
+    to_remove: &HashSet<String>,
 ) -> Result<()> {
     if to_update.is_empty() && to_remove.is_empty() {
         return Ok(());

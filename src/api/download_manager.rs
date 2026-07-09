@@ -5,9 +5,10 @@ use std::{
 
 use serde::{Deserialize, Serialize};
 use tokio::sync::broadcast;
+use url::Url;
 use utoipa::ToSchema;
 
-use crate::api::types::AudioFormat;
+use crate::{api::types::AudioFormat, types::DiscoveredMusicTrack};
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, ToSchema)]
 #[serde(rename_all = "lowercase")]
@@ -25,14 +26,15 @@ pub struct DownloadItem {
     pub title: String,
     pub artist: String,
     pub status: DownloadStatus,
-    pub artwork_url: Option<String>,
+    #[schema(value_type = Option<String>)]
+    pub artwork_url: Option<Url>,
     pub format: Option<AudioFormat>,
     pub created_at: Option<u64>,
-    pub source_url: Option<String>,
+    #[schema(value_type = Option<String>)]
+    pub source_url: Option<Url>,
     pub progress: Option<f64>,
     pub size: Option<u64>,
     pub error: Option<String>,
-    pub position: Option<u32>,
 }
 
 impl DownloadItem {
@@ -44,11 +46,30 @@ impl DownloadItem {
     }
 }
 
+impl From<DiscoveredMusicTrack> for DownloadItem {
+    fn from(task: DiscoveredMusicTrack) -> Self {
+        Self {
+            id: task.id,
+            title: task.title,
+            artist: task.artist,
+            status: DownloadStatus::Queued,
+            artwork_url: task.artwork_url,
+            format: None,
+            created_at: None,
+            source_url: task.permalink_url,
+            progress: None,
+            size: None,
+            error: None,
+        }
+    }
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(tag = "type", rename_all = "lowercase")]
 pub enum ServerEvent {
     TrackUpdate { item: DownloadItem },
-    SyncFinished,
+    SyncFinished { url: Option<String> },
+    SyncStarted { url: String },
     Error { message: String },
     Message { message: String, level: String },
 }
@@ -56,15 +77,6 @@ pub enum ServerEvent {
 struct ManagerState {
     tasks: HashMap<i64, DownloadItem>,
     reserved_urls: HashSet<String>,
-}
-
-#[derive(Debug, Clone)]
-pub struct NewTask {
-    pub id: i64,
-    pub title: String,
-    pub artist: String,
-    pub artwork_url: Option<String>,
-    pub position: Option<u32>,
 }
 
 pub struct DownloadManager {
@@ -92,35 +104,22 @@ impl DownloadManager {
 
     fn maybe_sync_finished(&self) {
         if !self.lock_state().tasks.values().any(|t| t.is_active()) {
-            let _ = self.tx.send(ServerEvent::SyncFinished);
+            let _ = self.tx.send(ServerEvent::SyncFinished { url: None });
         }
     }
 
-    pub fn reserve_url(&self, url: &str) -> bool {
+    pub fn reserve_url(&self, url: &Url) -> bool {
         self.lock_state().reserved_urls.insert(url.to_string())
     }
 
-    pub fn release_url(&self, url: &str) {
-        self.lock_state().reserved_urls.remove(url);
+    pub fn release_url(&self, url: &Url) {
+        self.lock_state().reserved_urls.remove(url.as_str());
     }
 
-    pub fn add_task(&self, task: NewTask) {
-        let item = DownloadItem {
-            id: task.id,
-            title: task.title,
-            artist: task.artist,
-            status: DownloadStatus::Queued,
-            artwork_url: task.artwork_url,
-            format: None,
-            created_at: None,
-            source_url: None,
-            progress: None,
-            size: None,
-            error: None,
-            position: task.position,
-        };
+    pub fn add_task(&self, task: DiscoveredMusicTrack) {
+        let item = DownloadItem::from(task);
         let mut state = self.lock_state();
-        state.tasks.insert(task.id, item.clone());
+        state.tasks.insert(item.id, item.clone());
         self.notify_update(item);
     }
 
@@ -137,14 +136,13 @@ impl DownloadManager {
         self.notify_update(updated);
     }
 
-    pub fn update_failed(&self, id: i64, error_message: String) {
+    fn finalize_task(&self, id: i64, mutator: impl FnOnce(&mut DownloadItem)) {
         let updated = {
             let mut state = self.lock_state();
             let Some(item) = state.tasks.get_mut(&id) else {
                 return;
             };
-            item.status = DownloadStatus::Failed;
-            item.error = Some(error_message);
+            mutator(item);
             let updated = item.clone();
             state.tasks.remove(&id);
             updated
@@ -153,31 +151,29 @@ impl DownloadManager {
         self.maybe_sync_finished();
     }
 
+    pub fn update_failed(&self, id: i64, error_message: &str) {
+        self.finalize_task(id, |item| {
+            item.status = DownloadStatus::Failed;
+            item.error = Some(error_message.to_string());
+        });
+    }
+
     pub fn update_finished(
         &self,
         id: i64,
         format: AudioFormat,
         created_at: u64,
-        source_url: Option<String>,
+        source_url: Option<&Url>,
         size: u64,
     ) {
-        let updated = {
-            let mut state = self.lock_state();
-            let Some(item) = state.tasks.get_mut(&id) else {
-                return;
-            };
+        self.finalize_task(id, |item| {
             item.status = DownloadStatus::Finished;
             item.format = Some(format);
             item.created_at = Some(created_at);
-            item.source_url = source_url;
+            item.source_url = source_url.cloned();
             item.progress = Some(100.0);
             item.size = Some(size);
-            let updated = item.clone();
-            state.tasks.remove(&id);
-            updated
-        };
-        self.notify_update(updated);
-        self.maybe_sync_finished();
+        });
     }
 
     pub fn update_progress(&self, id: i64, current: u64, total: u64) {
@@ -226,6 +222,10 @@ impl DownloadManager {
             .filter(|t| t.is_active())
             .cloned()
             .collect()
+    }
+
+    pub fn get_reserved_urls(&self) -> Vec<String> {
+        self.lock_state().reserved_urls.iter().cloned().collect()
     }
 
     pub fn subscribe(&self) -> broadcast::Receiver<ServerEvent> {

@@ -17,14 +17,11 @@ soundcloud-rs = { path = "libs/soundcloud-rs" }
 colored = "3.1.1"
 indicatif = "0.18.4"
 id3 = "1.16.4"
-axum = { version = "0.8", features = ["macros"] }
-tower-http = { version = "0.6", features = ["cors", "trace"] }
+axum = { version = "0.8", features = ["macros", "ws"] }
+tower-http = { version = "0.6", features = ["cors", "trace", "fs"] }
+tower = { version = "0.5", features = ["util"] }
 tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
-async-stream = "0.3"
-futures-util = "0.3"
-tokio-stream = { version = "0.1", features = ["sync"] }
-tokio-util = { version = "0.7", features = ["io"] }
 reqwest = { version = "0.13", default-features = false, features = ["json", "stream", "rustls", "query", "socks"] }
 anyhow = "1.0.102"
 rust-embed = "8.11.0"

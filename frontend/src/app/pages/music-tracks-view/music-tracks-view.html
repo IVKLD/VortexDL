@@ -1,18 +1,28 @@
 <div class="music-container">
     @defer (on idle) {
         @if (tracks().length > 0) {
-            <rx-virtual-scroll-viewport [itemSize]="82">
-                <app-music-card
-                        (deleteTrack)="deleteTrack(track)"
-                        (playTrack)="playTrack(track)"
-                        (clickTrack)="handleCardClick(track)"
-                        (toggleSelect)="state.toggleSelect(track)"
-                        *rxVirtualFor="let track of tracks(); trackBy: 'id'"
-                        [isActive]="activeTrackId() === track.id"
-                        [isPlaying]="player.isPlaying() && activeTrackId() === track.id"
-                        [isSelected]="state.selectedIds().has(track.id)"
-                        [track]="track"
-                />
+            <rx-virtual-scroll-viewport [itemSize]="82" scrollWindow>
+                <app-music-card *rxVirtualFor="let track of tracks(); trackBy: 'id'"
+                                [isActive]="activeTrackId() === track.id"
+                                [isPlaying]="player.isTrackPlaying(track.id)"
+                                [isSelected]="state.selectedIds().has(track.id)"
+                                [track]="track" (playTrack)="playTrack(track)" (click)="handleCardClick(track)"
+                                [cdkContextMenuTriggerFor]="cardMenu"
+                                [cdkContextMenuTriggerData]="{ $implicit: track }">
+                    <aside meta>
+                        <span>{{ track.size | fileSize }}</span>
+                        <strong [attr.data-format]="track.format">{{ track.format }}</strong>
+                    </aside>
+
+                    <div actions class="actions-wrapper">
+                        <menu role="presentation">
+                            <button [cdkMenuTriggerFor]="cardMenu" [cdkMenuTriggerData]="{ $implicit: track }"
+                                    (click)="$event.stopPropagation()" mat-icon-button>
+                                <mat-icon>more_vert</mat-icon>
+                            </button>
+                        </menu>
+                    </div>
+                </app-music-card>
             </rx-virtual-scroll-viewport>
         } @else {
             <div class="empty-state">
@@ -30,9 +40,30 @@
 </div>
 
 @if (state.hasSelection()) {
-    <app-selection-bar
-        [count]="state.selectedIds().size"
-        (deleteSelected)="deleteSelected()"
-        (clearSelection)="state.clearSelection()"
-    />
+    <app-selection-bar [count]="state.selectedIds().size" (deleteSelected)="deleteSelected()"
+                       (clearSelection)="state.clearSelection()"/>
 }
+
+<ng-template #cardMenu let-trackData>
+    @let isPlaying = player.isTrackPlaying(trackData.id);
+    @let isSelected = state.selectedIds().has(trackData.id);
+
+    <div cdkMenu>
+        <button cdkMenuItem (click)="playTrack(trackData)">
+            <mat-icon>{{ isPlaying ? 'pause' : 'play_arrow' }}</mat-icon>
+            <span>{{ isPlaying ? 'Pause' : 'Play' }}</span>
+        </button>
+        <button cdkMenuItem (click)="state.toggleSelect(trackData)">
+            <mat-icon>{{ isSelected ? 'check_box' : 'check_box_outline_blank' }}</mat-icon>
+            <span>{{ isSelected ? 'Deselect' : 'Select' }}</span>
+        </button>
+        <button cdkMenuItem (click)="downloadTrack(trackData)">
+            <mat-icon>download</mat-icon>
+            <span>Download</span>
+        </button>
+        <button cdkMenuItem class="delete" (click)="deleteTrack(trackData)">
+            <mat-icon>delete</mat-icon>
+            <span>Delete</span>
+        </button>
+    </div>
+</ng-template>

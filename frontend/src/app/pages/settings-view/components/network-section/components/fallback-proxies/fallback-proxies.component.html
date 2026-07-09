@@ -5,25 +5,23 @@
     </div>
 
     <div class="actions-list">
-        <button mat-stroked-button type="button" (click)="testAllProxies()"
-                [disabled]="isTestingAll()">
+        <button class="solid-btn" mat-icon-button type="button" (click)="testAllProxies()"
+                [disabled]="isTestingAll() || form().fallbackProxies().value().length === 0" matTooltip="Test all proxies">
             <mat-icon>play_circle</mat-icon>
-            Test All
         </button>
-        <button mat-stroked-button type="button" (click)="pruneFailedActive()"
-                [disabled]="isTestingAll()">
+        <button class="solid-btn" mat-icon-button type="button" (click)="pruneFailedActive()"
+                [disabled]="isTestingAll() || !hasFailedProxies" matTooltip="Remove failed proxies">
             <mat-icon>cleaning_services</mat-icon>
-            Prune Failed
         </button>
-        <button mat-stroked-button type="button" (click)="clearAllActive()"
-                [disabled]="isTestingAll()">
+        <button class="solid-btn" mat-icon-button type="button" (click)="clearAllActive()"
+                [disabled]="isTestingAll() || form().fallbackProxies().value().length === 0" matTooltip="Remove all proxies">
             <mat-icon>delete_sweep</mat-icon>
-            Clear All
         </button>
 
         <mat-divider vertical/>
 
-        <button mat-icon-button type="button" (click)="openProxyChecker()">
+        <button mat-icon-button type="button" (click)="openProxyChecker()"
+                matTooltip="Open proxy checker">
             <mat-icon>analytics</mat-icon>
         </button>
     </div>

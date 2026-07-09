@@ -35,14 +35,14 @@ Powered by [redb](https://github.com/cberner/redb), a pure-Rust embedded key-val
 Iterates over the configured output directory, extracts metadata from filenames (`Artist - Title`), and maps them in the database. Serves as the source of truth for the local track list, preventing redownloading of existing tracks.
 
 ### C. Downloader Pipeline (`src/downloader/`)
-Async download routines are handled inside `src/downloader/core/pipeline/` through a staged pipeline:
+Async download routines are handled inside `src/downloader/` through a staged pipeline:
 1.  **Prepare (`prepare.rs`)**: Initializes CLI progress bars and adds the task to `DownloadManager` with status `Downloading`.
 2.  **Resolve (`resolve.rs`)**: Uses `soundcloud-rs` to fetch progressive MP3 or HLS streams from SoundCloud API.
 3.  **Download (`download.rs`)**: Reads the stream asynchronously, writes chunks to disk, and pushes real-time progress to `DownloadManager`.
 4.  **Complete (`complete.rs`)**: blocking task injecting ID3 tags (artist, title, cover art) into the MP3 file, transitioning the state to `Finished` and indexing it in `MusicStorage`.
 
 ### D. ADB Android Sync (`src/adb_device/`)
-Runs an async timer every 3 seconds checking for connected ADB devices. On match:
+Subscribes to the ADB server via TCP (port 5037) using `host:track-devices` to listen for device connection events in real-time. Upon connection:
 1.  Fetches file list from target device directory.
 2.  Deletes **orphaned tracks** that were deleted locally.
 3.  Pushes **new tracks** sorted into `Artist/Track.mp3` directories.

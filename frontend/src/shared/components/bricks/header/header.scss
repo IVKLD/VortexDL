@@ -10,23 +10,123 @@ header {
   background: var(--mat-sys-surface);
   height: 72px;
 
-  app-header-left,
-  app-header-right {
+  .left,
+  .right {
     flex: 1;
     display: flex;
     align-items: center;
     min-width: 0;
   }
 
-  app-header-right {
-    justify-content: flex-end;
+  .left {
+    gap: 16px;
+
+    div {
+      display: flex;
+      flex-direction: column;
+
+      .label-text {
+        font-size: 0.65rem;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        color: var(--mat-sys-primary);
+        font-weight: 700;
+        opacity: 0.6;
+      }
+
+      span {
+        font-size: 0.95rem;
+        font-weight: 600;
+        color: var(--mat-sys-on-surface);
+      }
+    }
+
+    .tracks-count span:last-child {
+      font-family: monospace;
+      color: var(--mat-sys-primary);
+    }
+
+    .separator {
+      color: var(--mat-sys-outline-variant);
+      font-size: 1.2rem;
+      font-weight: 300;
+    }
   }
 
-  app-header-center {
+  .center {
     flex: 1;
     display: flex;
     justify-content: center;
     align-items: center;
     min-width: 0;
+    width: 100%;
+    max-width: 400px;
+    margin: 0 32px;
+
+    &:empty {
+      display: none;
+      margin: 0;
+    }
+
+    mat-form-field {
+      width: 100%;
+
+      input {
+        font-size: 0.85rem;
+      }
+    }
+  }
+
+  .right {
+    justify-content: flex-end;
+    gap: 8px;
+
+    .context-actions {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .sync-download-block {
+      display: flex;
+
+      button {
+        mat-icon {
+          margin: 0;
+        }
+
+        --mat-button-filled-horizontal-padding: 0px;
+
+        &:first-child {
+          --mat-button-filled-container-shape: 10em 0 0 10em;
+        }
+
+        &:last-child {
+          --mat-button-filled-container-shape: 0 10em 10em 0;
+        }
+      }
+    }
+
+    button {
+      --mat-button-filled-label-text-weight: 600;
+    }
+  }
+}
+
+mat-divider {
+  height: 2rem;
+}
+
+.rotating {
+  animation: rotate 1.5s linear infinite;
+  display: inline-block;
+}
+
+@keyframes rotate {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
   }
 }

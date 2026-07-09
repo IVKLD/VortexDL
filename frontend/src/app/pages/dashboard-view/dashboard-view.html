@@ -9,21 +9,6 @@
 </div>
 
 <main>
-    @defer (on idle) {
-        <app-activity-chart [data]="activityData()"/>
-    } @placeholder {
-        <div class="section-placeholder"></div>
-    }
-
-    @defer (on idle) {
-        <app-format-breakdown [data]="formatBreakdown()"/>
-    } @placeholder {
-        <div class="section-placeholder"></div>
-    }
-
-    @defer (on idle) {
-        <app-recent-tracks [tracks]="recentTracks()"/>
-    } @placeholder {
-        <div class="section-placeholder"></div>
-    }
+    <app-activity-chart [data]="activityData()"/>
+    <app-format-breakdown [data]="formatBreakdown()"/>
 </main>

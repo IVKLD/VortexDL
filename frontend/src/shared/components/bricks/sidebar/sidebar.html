@@ -1,36 +1,36 @@
 <mat-sidenav-container>
     <mat-sidenav disableClose mode="side" opened>
-        <app-logo/>
+        <app-logo />
 
         <div class="routers-block">
             @for (item of navItems; track item.path) {
-                <a [routerLinkActiveOptions]="{ exact: item.exact || false }" [routerLink]="item.path" mat-button
-                   routerLinkActive="active">
-                    <mat-icon>{{ item.icon }}</mat-icon>
-                    {{ item.label }}
-                </a>
+            <a [routerLinkActiveOptions]="{ exact: item.exact || false }" [routerLink]="item.path" mat-button
+                routerLinkActive="active">
+                <mat-icon>{{ item.icon }}</mat-icon>
+                {{ item.label }}
+            </a>
             }
         </div>
 
-
         <div class="support-block">
             @if (player.currentTrack(); as track) {
-                <app-player [track]="track"/>
+            <app-player [track]="track" />
             }
 
             @if (tracking.errors().length > 0) {
-                <app-active-download-errors (clear)="tracking.clearError()" (openViewErrorsDialog)="openErrorsDialog()" [errors]="tracking.errors()"/>
+            <app-active-download-errors (clear)="tracking.clearError()" (openViewErrorsDialog)="openErrorsDialog()"
+                [errors]="tracking.errors()" />
             }
 
             @if (tracking.activeDownloads().length > 0) {
-                <app-active-downloads [items]="tracking.activeDownloads()" (remove)="tracking.removeFromQueue($event)"/>
+            <app-active-downloads [items]="tracking.activeDownloads()" (remove)="tracking.removeFromQueue($event)" />
             }
         </div>
     </mat-sidenav>
 
     <mat-sidenav-content>
-        <app-header/>
+        <app-header />
 
-        <ng-content/>
+        <ng-content />
     </mat-sidenav-content>
 </mat-sidenav-container>

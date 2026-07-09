@@ -3,32 +3,41 @@
 @if (fields.length === 0) {
     <div class="empty">
         <mat-icon>cable</mat-icon>
-        <p>No devices configured. Add a device ID to enable ADB sync.</p>
+        <p>No devices configured. Connect an ADB device to your PC to automatically list it here.</p>
     </div>
 } @else {
     <div class="list">
         @for (field of fields; track field().value().deviceId; let i = $index) {
             @let device = field().value();
-            <div [class.disabled]="!device.enabled" class="row">
-                <mat-icon>phone_android</mat-icon>
-                <div class="info">
-                    <span class="id">{{ device.deviceId }}</span>
-                    <mat-form-field>
-                        <mat-select [formField]="field.remoteMusicDir" (openedChange)="$event && loadStorages(device.deviceId)" placeholder="Storage Location">
-                            @for (storage of getStorageOptions(device.deviceId, device.remoteMusicDir); track storage.path) {
-                                <mat-option [value]="storage.path">
-                                    {{ storage.name }} ({{ storage.path }})
-                                </mat-option>
-                            }
-                        </mat-select>
-                    </mat-form-field>
-                </div>
-                <mat-slide-toggle
-                    [formField]="field.enabled"
-                />
-                <button (click)="remove.emit(i)" mat-icon-button type="button">
-                    <mat-icon>delete</mat-icon>
-                </button>
+            @let isConnected = isDeviceConnected(device.deviceId);
+            <div [class.disabled]="!device.enabled" class="card">
+                <header>
+                    <div>
+                        <mat-icon>phone_android</mat-icon>
+                        <span>{{ device.deviceId }}</span>
+                        <span [class]="'badge ' + (isConnected ? 'connected' : 'disconnected')">
+                            <span></span>
+                            {{ isConnected ? 'active' : 'disconnected' }}
+                        </span>
+                    </div>
+                    <div>
+                        <mat-slide-toggle [formField]="field.enabled" />
+                        <button (click)="remove.emit(i)" mat-icon-button type="button">
+                            <mat-icon>delete</mat-icon>
+                        </button>
+                    </div>
+                </header>
+
+                <mat-form-field>
+                    <mat-label>Storage Location</mat-label>
+                    <mat-select [formField]="field.remoteMusicDir" placeholder="Select storage">
+                        @for (storage of getStorageOptions(deviceStorages()[device.deviceId], device.remoteMusicDir); track storage.path) {
+                            <mat-option [value]="storage.path">
+                                {{ storage.name }} ({{ storage.path }})
+                            </mat-option>
+                        }
+                    </mat-select>
+                </mat-form-field>
             </div>
         }
     </div>

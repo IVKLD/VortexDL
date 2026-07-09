@@ -1,12 +1,12 @@
 use anyhow::Result;
 use clap::Parser;
+use url::Url;
 
 use crate::{
     adb_device,
     api::{self, state::AppState},
     downloader::{self, Context},
     settings::UserSettings,
-    types::SyncMode,
 };
 
 #[derive(Parser, Debug)]
@@ -23,13 +23,10 @@ pub struct Args {
     )]
     pub version: (),
     #[arg(help = "The SoundCloud URL to download (track, playlist, or user likes)")]
-    pub url: Option<String>,
+    pub url: Option<Url>,
 
     #[arg(short, long, help = "Directory where the music will be saved")]
     pub output: Option<String>,
-
-    #[arg(long, default_value_t = SyncMode::Silent, help = "Sync behavior: silent (accumulate), archive (move removed to Archive), or full (delete removed)")]
-    pub sync_mode: SyncMode,
 
     #[arg(
         long,
@@ -83,7 +80,7 @@ pub async fn execute_app(state: AppState, args: Args) -> Result<()> {
     } else if args.sync_player {
         run_cli_sync(state).await
     } else if let Some(ref url) = args.url {
-        run_cli_download(state, url, &args).await
+        run_cli_download(state, url.clone(), &args).await
     } else {
         Ok(())
     }
@@ -137,16 +134,15 @@ async fn run_cli_sync(state: AppState) -> Result<()> {
     Ok(())
 }
 
-async fn run_cli_download(state: AppState, url: &str, args: &Args) -> Result<()> {
+async fn run_cli_download(state: AppState, url: Url, args: &Args) -> Result<()> {
     let ctx = Context::from_state(&state);
 
     let mut current_settings = ctx.settings.read().await.clone();
-    current_settings.downloads.sync_mode = args.sync_mode;
     if !args.proxies.is_empty() {
         current_settings.network.fallback_proxies = args.proxies.clone();
     }
     ctx.settings.update_in_memory(current_settings).await;
 
-    downloader::run_download_pipeline(&ctx, url).await?;
+    downloader::run_download_pipeline(&ctx, &url).await?;
     Ok(())
 }

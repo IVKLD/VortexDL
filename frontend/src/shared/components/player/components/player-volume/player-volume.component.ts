@@ -14,9 +14,11 @@ import {PlayerService} from '@app/services/player.service';
     ],
     templateUrl: './player-volume.component.html',
     styleUrl: './player-volume.component.scss',
-    })
+})
 export class PlayerVolumeComponent {
     protected readonly player = inject(PlayerService);
+
+    private prevVolume = this.player.volume();
 
     protected readonly volumeIcon = computed(() => {
         const vol = this.player.volume();
@@ -28,8 +30,6 @@ export class PlayerVolumeComponent {
     protected onVolumeInput(value: string): void {
         this.player.setVolume(+value);
     }
-
-    private prevVolume = this.player.volume();
 
     protected mute(): void {
         const currentVol = this.player.volume();

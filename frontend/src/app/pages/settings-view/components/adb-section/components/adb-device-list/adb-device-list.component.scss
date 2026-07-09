@@ -1,87 +1,142 @@
+:host {
+  display: block;
+}
+
 .empty {
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 20px 16px;
-  border-radius: 10px;
-  background: rgba(255, 255, 255, 0.03);
-  border: 1px dashed rgba(255, 255, 255, 0.1);
-  color: rgba(255, 255, 255, 0.4);
+  gap: 16px;
+  padding: 24px;
+  border-radius: 12px;
+  background: var(--vortex-card-bg);
+  border: 1px dashed var(--vortex-device-border);
+  color: var(--vortex-text-secondary);
 
-  p { margin: 0; font-size: 0.875rem; }
+  mat-icon {
+    font-size: 28px;
+    width: 28px;
+    height: 28px;
+  }
+
+  p {
+    margin: 0;
+    font-size: 0.85rem;
+    line-height: 1.4;
+  }
 }
 
 .list {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 16px;
 }
 
-.row {
+.card {
   display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 12px 16px;
-  border-radius: 10px;
-  background: rgba(255, 255, 255, 0.04);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  transition: background 0.2s, opacity 0.2s;
+  flex-direction: column;
+  background: var(--vortex-device-bg);
+  border: 1px solid var(--vortex-device-border);
+  border-radius: 12px;
+  padding: 16px;
+  gap: 14px;
+  transition: all 0.2s ease-in-out;
 
-  &.disabled { opacity: 0.45; }
+  &:hover {
+    border-color: var(--vortex-device-hover-border);
+    background: var(--vortex-device-hover-bg);
+  }
 
-  > mat-icon { color: var(--mat-sys-primary); }
+  &.disabled {
+    opacity: 0.55;
+  }
 
-  .info {
-    flex: 1;
+  header {
     display: flex;
-    flex-direction: column;
-    gap: 2px;
-    min-width: 0;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
 
-    .id {
-      font-size: 0.9rem;
-      font-weight: 600;
-      color: rgba(255, 255, 255, 0.9);
-      font-variant-numeric: tabular-nums;
-      letter-spacing: 0.05em;
+    > div:first-child {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      min-width: 0;
+
+      mat-icon {
+        color: var(--mat-sys-primary);
+        font-size: 20px;
+        width: 20px;
+        height: 20px;
+      }
+
+      > span:first-of-type {
+        font-size: 0.9rem;
+        font-weight: 600;
+        color: var(--vortex-text-primary);
+        font-variant-numeric: tabular-nums;
+        letter-spacing: 0.02em;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+    }
+
+    > div:last-child {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+
+      button {
+        color: var(--vortex-text-secondary);
+        transition: color 0.2s;
+
+        &:hover {
+          color: var(--vortex-error);
+        }
+      }
     }
   }
 
   mat-form-field {
     width: 100%;
-    margin-top: 4px;
-    font-size: 0.8rem;
-    --mdc-filled-text-field-container-height: 32px;
-    --mdc-filled-text-field-container-color: rgba(255, 255, 255, 0.02);
-    --mdc-filled-text-field-active-indicator-height: 0px;
-    --mdc-filled-text-field-focus-active-indicator-height: 0px;
-    --mdc-filled-text-field-input-text-color: rgba(255, 255, 255, 0.5);
-    --mat-form-field-container-height: 32px;
+  }
+}
 
-    mat-icon[matSuffix] {
-      cursor: pointer;
-      opacity: 0.7;
-      transition: opacity 0.2s;
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 20px;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
 
-      &:hover {
-        opacity: 1;
-      }
+  span {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+  }
+
+  &.connected {
+    color: var(--vortex-success);
+    background: var(--vortex-success-bg);
+    border: 1px solid var(--vortex-success-border);
+
+    span {
+      background: var(--vortex-success);
+      box-shadow: 0 0 8px var(--vortex-success);
     }
   }
 
-  button {
-    color: rgba(255, 255, 255, 0.3);
-    &:hover { color: #ef5350; }
+  &.disconnected {
+    color: var(--vortex-error);
+    background: var(--vortex-error-bg);
+    border: 1px solid var(--vortex-error-border);
+
+    span {
+      background: var(--vortex-error);
+    }
   }
 }
-
-@keyframes spin {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
-}
-
-.spinning {
-  animation: spin 1.5s linear infinite;
-  display: inline-block;
-}
-

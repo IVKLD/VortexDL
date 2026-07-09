@@ -1,0 +1,49 @@
+.mat-mdc-dialog-container {
+  --mat-dialog-with-actions-content-padding: 1em;
+  --mdc-dialog-container-color: var(--mat-sys-surface-container-high);
+  --mdc-dialog-container-shape: 20px;
+  --mdc-dialog-container-elevation-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+
+  .mat-mdc-dialog-surface {
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    backdrop-filter: blur(20px);
+    padding: 0;
+    overflow: hidden;
+  }
+}
+
+.mat-mdc-dialog-title {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20px 24px;
+  background: linear-gradient(to bottom, rgba(255, 255, 255, 0.02), transparent);
+  font-size: 1.3rem;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  margin: 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  color: var(--mat-sys-on-surface);
+
+  button[mat-icon-button] {
+    color: var(--mat-sys-on-surface-variant);
+    margin-right: -8px;
+  }
+}
+
+.mat-mdc-dialog-content {
+  padding-top: 1em !important;
+  max-height: 70vh;
+}
+
+.mat-mdc-dialog-actions {
+  padding: 16px 24px;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 12px;
+  border-top: 1px solid rgba(255, 255, 255, 0.05);
+  background: rgba(255, 255, 255, 0.01);
+  margin: 0;
+  min-height: auto;
+}

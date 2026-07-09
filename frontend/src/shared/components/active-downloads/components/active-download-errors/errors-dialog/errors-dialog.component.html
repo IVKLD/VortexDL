@@ -2,16 +2,14 @@
 
 <mat-dialog-content>
     @if (errors.length > 0) {
-        <mat-list>
+        <div class="list">
             @for (err of errors; track err) {
-                <mat-list-item>
-                    <div class="error-item">
-                        <mat-icon>error_outline</mat-icon>
-                        <span class="error-text">{{ err }}</span>
-                    </div>
-                </mat-list-item>
+                <div class="item">
+                    <mat-icon>error_outline</mat-icon>
+                    <span class="text">{{ err }}</span>
+                </div>
             }
-        </mat-list>
+        </div>
     } @else {
         <p>No errors found.</p>
     }
@@ -19,6 +17,6 @@
 
 <mat-dialog-actions align="end">
     @if (errors.length > 0) {
-        <button mat-button color="warn" [mat-dialog-close]="'clear'">Clear All</button>
+        <button mat-button [mat-dialog-close]="ErrorsDialogResult.Clear">Clear All</button>
     }
 </mat-dialog-actions>

@@ -1,16 +1,18 @@
+use std::time::Duration;
+
 use anyhow::Result;
 use soundcloud_rs::{Identifier, StreamType};
 use tokio::task::JoinHandle;
+use url::Url;
 
 use crate::{
     downloader::{
         Context, DiscoveredMusicTrack,
         discovery::{discover_liked_tracks, discover_playlist_tracks, init_progress_spinner},
     },
-    types::core::ResolvedResource,
     utils::{
         proxy::race_proxies,
-        soundcloud::{fetch_artwork, init_client_with_settings, resolve_url},
+        soundcloud::{ResolvedResource, SoundCloudClientBuilder, resolve_url},
     },
 };
 
@@ -36,7 +38,7 @@ impl StreamSource {
 
 pub async fn resolve_tracks_from_url(
     ctx: &Context,
-    url: &str,
+    url: &Url,
 ) -> Result<Vec<DiscoveredMusicTrack>> {
     match discover_tracks_from_url(ctx, url, &ctx.client).await {
         Ok(tracks) => Ok(tracks),
@@ -44,14 +46,14 @@ pub async fn resolve_tracks_from_url(
             let settings = ctx.settings.read().await.clone();
             tracing::debug!("Direct discovery failed: {e}. Trying fallback proxies...");
 
-            let ctx = ctx.clone();
-            let url = url.to_string();
-
             race_proxies(&settings, |s, proxy| {
                 let ctx = ctx.clone();
                 let url = url.clone();
                 async move {
-                    let proxied_client = init_client_with_settings(&s, Some(&proxy)).await?;
+                    let proxied_client = SoundCloudClientBuilder::new(&s)
+                        .with_proxy(Some(&proxy))
+                        .build()
+                        .await?;
                     discover_tracks_from_url(&ctx, &url, &proxied_client).await
                 }
             })
@@ -63,13 +65,13 @@ pub async fn resolve_tracks_from_url(
 
 async fn discover_tracks_from_url(
     ctx: &Context,
-    url: &str,
+    url: &Url,
     client: &soundcloud_rs::Client,
 ) -> Result<Vec<DiscoveredMusicTrack>> {
     let pb = init_progress_spinner(ctx, "Resolving URL...");
-    pb.finish_and_clear();
 
-    let all_tracks = match resolve_url(client, url).await? {
+    let res = resolve_url(client, url).await?;
+    let all_tracks = match res {
         ResolvedResource::User(user) => {
             let id = user
                 .id
@@ -89,11 +91,12 @@ async fn discover_tracks_from_url(
         }
     };
 
+    pb.finish_and_clear();
     Ok(all_tracks)
 }
 
 pub async fn resolve_stream_source(ctx: &Context, id: i64) -> Result<StreamSource> {
-    match resolve_with_client(&ctx.client, id, None).await {
+    match resolve_with_client(&ctx.client, id, ctx.client.proxy_url.as_deref()).await {
         Ok(proto) => Ok(proto),
         Err(direct_err) => {
             tracing::debug!("Direct stream resolution failed for track {id}: {direct_err}");
@@ -104,7 +107,10 @@ pub async fn resolve_stream_source(ctx: &Context, id: i64) -> Result<StreamSourc
             }
 
             race_proxies(&settings, move |s, proxy| async move {
-                let client = init_client_with_settings(&s, Some(&proxy)).await?;
+                let client = SoundCloudClientBuilder::new(&s)
+                    .with_proxy(Some(&proxy))
+                    .build()
+                    .await?;
                 resolve_with_client(&client, id, Some(&proxy)).await
             })
             .await
@@ -147,11 +153,27 @@ async fn resolve_with_client(
 
 pub fn spawn_artwork_fetch(
     ctx: &Context,
-    artwork_url: Option<&str>,
+    artwork_url: Option<&Url>,
 ) -> Option<JoinHandle<Option<Vec<u8>>>> {
-    let url = artwork_url?.to_string();
-    let http = ctx.http.clone();
-    Some(tokio::spawn(
-        async move { fetch_artwork(&http, &url).await },
-    ))
+    let url = artwork_url?.clone();
+    let ctx = ctx.clone();
+    Some(tokio::spawn(async move {
+        let settings = ctx.settings.read().await;
+        let mut builder = reqwest::Client::builder()
+            .connect_timeout(Duration::from_secs(5))
+            .timeout(Duration::from_secs(10));
+
+        if let Some(proxy) = settings.network.get_proxy_url().and_then(|p| reqwest::Proxy::all(p).ok()) {
+            builder = builder.proxy(proxy);
+        }
+
+        let client = builder.build().unwrap_or_else(|_| ctx.http.clone());
+        let resp = client
+            .get(url)
+            .timeout(Duration::from_secs(5))
+            .send()
+            .await
+            .ok()?;
+        resp.bytes().await.ok().map(|b| b.to_vec())
+    }))
 }

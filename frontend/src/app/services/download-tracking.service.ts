@@ -3,6 +3,8 @@ import { HttpClient } from '@angular/common/http';
 import { MusicTracksViewState } from '../pages/music-tracks-view/music-tracks-view.state';
 import { PlayerService } from '@app/services/player.service';
 import { AudioFormat, MusicTrack } from '@shared/models/music-track.model';
+import { Subscription } from 'rxjs';
+import { WebSocketService } from './websocket.service';
 
 export enum DownloadStatus {
     Queued = 'queued',
@@ -19,6 +21,7 @@ export interface DownloadItem extends MusicTrack {
 
 export enum ServerEventType {
     TrackUpdate = 'trackupdate',
+    SyncStarted = 'syncstarted',
     SyncFinished = 'syncfinished',
     Error = 'error',
     Message = 'message',
@@ -26,7 +29,8 @@ export enum ServerEventType {
 
 export type ServerEvent =
     | { type: ServerEventType.TrackUpdate; item: DownloadItem }
-    | { type: ServerEventType.SyncFinished }
+    | { type: ServerEventType.SyncStarted; url: string }
+    | { type: ServerEventType.SyncFinished; url: string | null }
     | { type: ServerEventType.Error; message: string }
     | { type: ServerEventType.Message; message: string; level: string };
 
@@ -34,33 +38,21 @@ export type ServerEvent =
     providedIn: 'root',
 })
 export class DownloadTrackingService {
-    public readonly activeDownloads = signal<DownloadItem[]>([]);
-    public readonly errors = signal<string[]>([]);
     private readonly _http = inject(HttpClient);
     private readonly _musicState = inject(MusicTracksViewState);
     private readonly _player = inject(PlayerService);
     private readonly _zone = inject(NgZone);
+    private readonly _wsService = inject(WebSocketService);
 
-    private eventSource?: EventSource;
-    private reconnectTimeout?: ReturnType<typeof setTimeout>;
+    private _wsSubscription?: Subscription;
+    public readonly activeDownloads = signal<DownloadItem[]>([]);
+    public readonly errors = signal<string[]>([]);
+    public readonly syncingUrls = signal<string[]>([]);
 
     constructor() {
         this.syncActiveDownloads();
-        this.initializeEventSource();
-    }
-
-    public removeFromQueue(id: number): void {
-        this._http.delete(`/download/queue/${id}`).subscribe({
-            next: () => this.activeDownloads.update(items => items.filter(i => i.id !== id)),
-            error: err => {
-                console.error('Failed to remove from queue:', err);
-                this.addError('Failed to remove track from queue.');
-            },
-        });
-    }
-
-    public clearError(): void {
-        this.errors.set([]);
+        this.fetchSyncingUrls();
+        this.initializeWebSocket();
     }
 
     private syncActiveDownloads(): void {
@@ -70,44 +62,30 @@ export class DownloadTrackingService {
         });
     }
 
-    private initializeEventSource(): void {
-        this.cleanupEventSource();
-
-        const es = new EventSource('/api/download/events');
-        this.eventSource = es;
-
-        es.onopen = () => {
-            console.info('SSE connection established');
-        };
-
-        es.onmessage = event => {
-            this._zone.run(() => {
-                try {
-                    const serverEvent: ServerEvent = JSON.parse(event.data);
-                    this.handleServerEvent(serverEvent);
-                } catch (e) {
-                    console.error('Failed to parse SSE event:', e, event.data);
-                }
-            });
-        };
-
-        es.onerror = error => {
-            this._zone.run(() => {
-                console.error('SSE Error, attempting to reconnect:', error);
-                this.cleanupEventSource();
-                this.reconnectTimeout = setTimeout(() => this.initializeEventSource(), 3000);
-            });
-        };
+    private fetchSyncingUrls(): void {
+        this._http.get<string[]>('/download/syncing').subscribe({
+            next: urls => this.updateSyncingUrls(urls),
+            error: err => console.error('Failed to sync active sync processes:', err)
+        });
     }
 
-    private cleanupEventSource(): void {
-        if (this.reconnectTimeout) {
-            clearTimeout(this.reconnectTimeout);
-            this.reconnectTimeout = undefined;
-        }
-        if (this.eventSource) {
-            this.eventSource.close();
-            this.eventSource = undefined;
+    private updateSyncingUrls(urls: string[]): void {
+        this.syncingUrls.set(urls);
+    }
+
+    private initializeWebSocket(): void {
+        this.cleanupWebSocket();
+
+        this._wsSubscription = this._wsService.connect<ServerEvent>('/api/download/events').subscribe({
+            next: (serverEvent) => this.handleServerEvent(serverEvent),
+            error: (err) => console.error('Download tracking WebSocket error:', err),
+        });
+    }
+
+    private cleanupWebSocket(): void {
+        if (this._wsSubscription) {
+            this._wsSubscription.unsubscribe();
+            this._wsSubscription = undefined;
         }
     }
 
@@ -116,7 +94,15 @@ export class DownloadTrackingService {
             case ServerEventType.TrackUpdate:
                 this.handleTrackUpdate(event.item);
                 break;
+            case ServerEventType.SyncStarted:
+                this.updateSyncingUrls([...this.syncingUrls().filter(u => u !== event.url), event.url]);
+                break;
             case ServerEventType.SyncFinished:
+                if (event.url) {
+                    this.updateSyncingUrls(this.syncingUrls().filter(u => u !== event.url));
+                } else {
+                    this.fetchSyncingUrls();
+                }
                 this._musicState.refresh().subscribe({
                     next: () => this.syncPlayerQueue()
                 });
@@ -143,7 +129,6 @@ export class DownloadTrackingService {
                 sourceUrl: item.sourceUrl || null,
                 createdAt: item.createdAt || 0,
                 size: item.size || 0,
-                position: item.position ?? 4294967295,
             });
         } else if (item.status === DownloadStatus.Failed) {
             this.addError(`Failed to download "${item.artist} - ${item.title}": ${item.error || 'Unknown error'}`);
@@ -171,6 +156,20 @@ export class DownloadTrackingService {
             }
             return [...filtered, item];
         });
+    }
+
+    public removeFromQueue(id: number): void {
+        this._http.delete(`/download/queue/${id}`).subscribe({
+            next: () => this.activeDownloads.update(items => items.filter(i => i.id !== id)),
+            error: err => {
+                console.error('Failed to remove from queue:', err);
+                this.addError('Failed to remove track from queue.');
+            },
+        });
+    }
+
+    public clearError(): void {
+        this.errors.set([]);
     }
 }
 

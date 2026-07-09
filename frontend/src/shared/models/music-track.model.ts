@@ -5,16 +5,18 @@ export enum AudioFormat {
     UNKNOWN = 'unknown',
 }
 
-export interface MusicTrack {
+export interface PlayableTrack {
     id: number;
     artist: string;
     title: string;
-    format: AudioFormat;
     artworkUrl: string | null;
     sourceUrl: string | null;
+}
+
+export interface MusicTrack extends PlayableTrack {
+    format: AudioFormat;
     createdAt: number;
     size: number;
-    position: number;
 }
 
 export type MusicTracks = MusicTrack[];

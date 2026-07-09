@@ -5,17 +5,10 @@ export type SoundcloudSettings = {
     cachedClientId?: string;
 }
 
-export enum SyncMode {
-    Silent = 'silent',
-    Full = 'full',
-    Archive = 'archive'
-}
-
 export type DownloadSettings = {
     outputPath: string;
     maxConcurrent: number;
     namingTemplate: string;
-    syncMode: SyncMode;
 }
 
 export type SystemSettings = {

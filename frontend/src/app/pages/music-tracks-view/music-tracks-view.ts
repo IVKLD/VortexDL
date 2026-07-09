@@ -4,17 +4,21 @@ import { MusicCard } from '@shared/components/music-card/music-card';
 import { MusicTracksViewState } from './music-tracks-view.state';
 import { MusicTracksViewService } from './music-tracks-view.service';
 import { PlayerService } from '@app/services/player.service';
-import { FixedSizeVirtualScrollStrategy, RxVirtualFor, RxVirtualScrollViewportComponent } from '@rx-angular/template/virtual-scrolling';
+import { FixedSizeVirtualScrollStrategy, RxVirtualFor, RxVirtualScrollViewportComponent, RxVirtualScrollWindowDirective } from '@rx-angular/template/virtual-scrolling';
 import { MatDialog } from '@angular/material/dialog';
 import { MusicDetailModal } from './music-detail-modal/music-detail-modal';
 import { MatIcon } from '@angular/material/icon';
 import { SelectionBar } from '@shared/components/selection-bar/selection-bar';
 import { CdkMenuModule } from '@angular/cdk/menu';
 import { OverlayContainer } from '@angular/cdk/overlay';
+import { FileSizePipe } from '@shared/pipes/file-size.pipe';
+import { MatIconButton } from '@angular/material/button';
+import { HeaderService } from '@shared/components/bricks/header/header.service';
+import { form, debounce } from '@angular/forms/signals';
 
 @Component({
     selector: 'app-music-tracks-view',
-    imports: [MusicCard, RxVirtualScrollViewportComponent, RxVirtualFor, FixedSizeVirtualScrollStrategy, MatIcon, SelectionBar, CdkMenuModule],
+    imports: [MusicCard, RxVirtualScrollViewportComponent, RxVirtualFor, FixedSizeVirtualScrollStrategy, RxVirtualScrollWindowDirective, MatIcon, SelectionBar, CdkMenuModule, FileSizePipe, MatIconButton],
     templateUrl: './music-tracks-view.html',
     styleUrl: './music-tracks-view.scss',
 })
@@ -22,15 +26,29 @@ export class MusicTracksView {
     private readonly _api = inject(MusicTracksViewService);
     private readonly _dialog = inject(MatDialog);
     private readonly _overlayContainer = inject(OverlayContainer);
+    private readonly _headerService = inject(HeaderService);
 
     protected readonly state = inject(MusicTracksViewState);
     protected readonly player = inject(PlayerService);
     protected readonly tracks = this.state.sortedTracks;
 
+    protected readonly searchForm = form(this.state.searchQuery, (p) => {
+        debounce(p, 200);
+    });
+
     protected readonly activeTrackId = computed(() => this.player.currentTrack()?.id);
 
     constructor() {
         this._api.indexing().subscribe();
+
+        this._headerService.bindSearch({
+            formField: this.searchForm
+        });
+
+        this._headerService.bindSort({
+            value: this.state.sortOption,
+            onSortChange: (sort) => this.state.setSortOption(sort)
+        });
     }
 
     protected playTrack(track: MusicTrack): void {
@@ -53,10 +71,17 @@ export class MusicTracksView {
     protected deleteTrack(track: MusicTrack): void {
         this._api.delete(track.id).subscribe({
             next: () => {
-                this.state.removeTrack(track);
+                this.state.removeTrack(track.id);
                 this.player.removeFromQueue(track.id);
             },
         });
+    }
+
+    protected downloadTrack(track: MusicTrack): void {
+        const link = document.createElement('a');
+        link.href = `/api/downloads/${track.id}/stream`;
+        link.download = `${track.artist} - ${track.title}.${track.format}`;
+        link.click();
     }
 
     protected deleteSelected(): void {

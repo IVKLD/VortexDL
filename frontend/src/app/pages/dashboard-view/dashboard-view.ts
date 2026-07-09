@@ -4,11 +4,9 @@ import {MusicTracksViewState} from '@app/pages/music-tracks-view/music-tracks-vi
 import {DownloadTrackingService} from '@app/services/download-tracking.service';
 import {ActivityChartComponent} from './components/activity-chart/activity-chart.component';
 import {FormatBreakdownComponent} from './components/format-breakdown/format-breakdown.component';
-import {RecentTracksComponent} from './components/recent-tracks/recent-tracks.component';
 import {StatCardComponent} from './components/stat-card/stat-card.component';
 import {FileSizePipe} from '@shared/pipes/file-size.pipe';
-import {AudioFormat, MusicTrack} from '@shared/models/music-track.model';
-import {PlayerService} from '@app/services/player.service';
+import {AudioFormat} from '@shared/models/music-track.model';
 
 const FORMATS_CONFIG: { format: AudioFormat, color: string }[] = [
     {format: AudioFormat.MP3, color: '#818cf8'},
@@ -22,7 +20,6 @@ const FORMATS_CONFIG: { format: AudioFormat, color: string }[] = [
     imports: [
         ActivityChartComponent,
         FormatBreakdownComponent,
-        RecentTracksComponent,
         StatCardComponent,
         FileSizePipe
     ],
@@ -30,9 +27,8 @@ const FORMATS_CONFIG: { format: AudioFormat, color: string }[] = [
     styleUrl: './dashboard-view.scss',
     })
 export class DashboardView {
-    public readonly tracking = inject(DownloadTrackingService);
-    protected readonly player = inject(PlayerService);
     private readonly _state = inject(MusicTracksViewState);
+    public readonly tracking = inject(DownloadTrackingService);
 
     public readonly stats = computed<DashboardStat[]>(() => [
         {
@@ -55,11 +51,6 @@ export class DashboardView {
             iconClass: 'active-icon'
         }
     ]);
-    public readonly recentTracks = computed<MusicTrack[]>(() =>
-        [...this._state.sortedTracks()]
-            .sort((a, b) => b.createdAt - a.createdAt)
-            .slice(0, 5)
-    );
     public readonly formatBreakdown = computed<FormatItem[]>(() => {
         const tracks = this._state.sortedTracks();
         if (tracks.length === 0) return [];

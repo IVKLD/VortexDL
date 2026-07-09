@@ -1,12 +1,12 @@
-import {HttpClient} from '@angular/common/http';
-import {inject, Injectable} from '@angular/core';
-import {MatSnackBar} from '@angular/material/snack-bar';
-import {catchError, tap, throwError} from 'rxjs';
-import {UserSettingsRdo} from './models/user-settings.rdo';
-import {UserSettingsDto} from './models/user-settings.dto';
-import {ProxyTestResponseRdo} from './models/proxy-test.rdo';
-import {parseErrorMessage} from '@shared/error-utils';
-import {StorageInfo} from './models/settings-form.model';
+import { HttpClient } from '@angular/common/http';
+import { inject, Injectable, NgZone } from '@angular/core';
+import { MatSnackBar } from '@angular/material/snack-bar';
+import { catchError, Observable, tap, throwError } from 'rxjs';
+import { UserSettingsRdo } from './models/user-settings.rdo';
+import { UserSettingsDto } from './models/user-settings.dto';
+import { ProxyTestResultRdo } from './models/proxy-test.rdo';
+import { parseErrorMessage } from '@shared/error-utils';
+import { StorageInfo } from './models/settings-form.model';
 
 @Injectable({providedIn: 'root'})
 export class SettingsService {
@@ -40,6 +40,7 @@ export class SettingsService {
 export class SettingsTestingService {
     private readonly _http = inject(HttpClient);
     private readonly _snack = inject(MatSnackBar);
+    private readonly _zone = inject(NgZone);
 
     public testSoundCloud(url: string) {
         return this._http.post<string>('/settings/test/soundcloud', {url}).pipe(
@@ -51,7 +52,49 @@ export class SettingsTestingService {
         );
     }
 
-    public testProxy(proxyUrls: string[]) {
-        return this._http.post<ProxyTestResponseRdo>('/settings/test/proxy', {proxyUrls});
+    public testProxy(proxyUrls: string[]): Observable<ProxyTestResultRdo> {
+        return new Observable<ProxyTestResultRdo>(sub => {
+            const ws = new WebSocket(`ws://${window.location.host}/api/settings/test/proxy/ws`);
+            let receivedCount = 0;
+
+            ws.onopen = () => {
+                ws.send(JSON.stringify(proxyUrls));
+            };
+
+            ws.onmessage = (event) => {
+                this._zone.run(() => {
+                    try {
+                        const result = JSON.parse(event.data) as ProxyTestResultRdo;
+                        sub.next(result);
+                        receivedCount++;
+                        if (receivedCount === proxyUrls.length) {
+                            ws.close();
+                            sub.complete();
+                        }
+                    } catch (e) {
+                        sub.error(e);
+                        ws.close();
+                    }
+                });
+            };
+
+            ws.onerror = (err) => {
+                this._zone.run(() => sub.error(err));
+            };
+
+            ws.onclose = () => {
+                this._zone.run(() => {
+                    if (receivedCount < proxyUrls.length) {
+                        sub.error(new Error('Connection closed prematurely'));
+                    } else {
+                        sub.complete();
+                    }
+                });
+            };
+
+            return () => {
+                ws.close();
+            };
+        });
     }
 }

@@ -5,7 +5,6 @@ import Fuse from 'fuse.js';
 import { MusicTracksViewService } from '@app/pages/music-tracks-view/music-tracks-view.service';
 
 export enum MusicSortOption {
-    POSITION_ASC = 'position-asc',
     NAME_ASC = 'name-asc',
     NAME_DESC = 'name-desc',
     DATE_DESC = 'date-desc',
@@ -14,34 +13,17 @@ export enum MusicSortOption {
 
 @Injectable({ providedIn: 'root' })
 export class MusicTracksViewState {
-    constructor() {
-        this.loadTracks();
-    }
-
-    private loadTracks(): void {
-        this.startLoading();
-        this._api.getAll().subscribe({ next: tracks => this.setTracks = tracks });
-    }
 
     private readonly _api = inject(MusicTracksViewService);
 
     private readonly _isLoading = signal<boolean>(true);
-    public readonly isLoading = this._isLoading.asReadonly();
 
     private readonly _tracks = signal<MusicTrack[]>([]);
-    public readonly countMusicTracks = computed(() => this._tracks().length);
 
-    private readonly _sortOption = signal<MusicSortOption>(MusicSortOption.POSITION_ASC);
-    public readonly sortOption = this._sortOption.asReadonly();
 
-    private readonly _searchQuery = signal<string>('');
-    public readonly searchQuery = this._searchQuery.asReadonly();
+    private readonly _sortOption = signal<MusicSortOption>(MusicSortOption.DATE_DESC);
 
     private readonly _selectedIds = signal<Set<number>>(new Set());
-    public readonly selectedIds = this._selectedIds.asReadonly();
-
-    public readonly hasSelection = computed(() => this._selectedIds().size > 0);
-    public readonly selectedTracks = computed(() => this._tracks().filter(t => this._selectedIds().has(t.id)));
 
     private readonly _fuse = computed(() =>
         new Fuse(this._tracks(), {
@@ -54,21 +36,38 @@ export class MusicTracksViewState {
             ignoreLocation: true,
         })
     );
+    public readonly isLoading = this._isLoading.asReadonly();
+    public readonly tracks = this._tracks.asReadonly();
+    public readonly sortOption = this._sortOption.asReadonly();
+
+    public readonly searchQuery = signal<string>('');
+    public readonly selectedIds = this._selectedIds.asReadonly();
+
+    public readonly hasSelection = computed(() => this._selectedIds().size > 0);
+    public readonly selectedTracks = computed(() => this._tracks().filter(t => this._selectedIds().has(t.id)));
 
     public readonly sortedTracks = computed(() => {
-        const query = this._searchQuery().trim();
+        const query = this.searchQuery().trim();
         if (query) {
             return this._fuse().search(query).map(r => r.item);
         }
 
         const [sort, order] = this._sortOption().split('-');
         return [...this._tracks()].sort((a, b) => {
-            const valA = sort === 'name' ? a.title.toLowerCase() : sort === 'date' ? a.createdAt : (a.position ?? 4294967295);
-            const valB = sort === 'name' ? b.title.toLowerCase() : sort === 'date' ? b.createdAt : (b.position ?? 4294967295);
+            const valA = sort === 'name' ? a.title.toLowerCase() : a.createdAt;
+            const valB = sort === 'name' ? b.title.toLowerCase() : b.createdAt;
             const cmp = typeof valA === 'string' ? valA.localeCompare(valB as string) : (valA as number) - (valB as number);
             return order === 'desc' ? -cmp : cmp;
         });
     });
+    constructor() {
+        this.loadTracks();
+    }
+
+    private loadTracks(): void {
+        this.startLoading();
+        this._api.getAll().subscribe({ next: tracks => this.setTracks = tracks });
+    }
 
     public set setTracks(value: MusicTrack[]) {
         this._tracks.set(value);
@@ -79,12 +78,9 @@ export class MusicTracksViewState {
         this._tracks.update(data => [...data, track]);
     }
 
-    public removeTrack(track: MusicTrack): void {
-        this._tracks.update(data => data.filter(t => t.id !== track.id));
-        this._selectedIds.update(ids => {
-            ids.delete(track.id);
-            return new Set(ids);
-        });
+    public removeTrack(id: number): void {
+        this._tracks.update(data => data.filter(t => t.id !== id));
+        this._selectedIds.update(ids => (ids.delete(id), new Set(ids)));
     }
 
     public toggleSelect(track: MusicTrack): void {
@@ -117,6 +113,6 @@ export class MusicTracksViewState {
     }
 
     public setSearchQuery(query: string): void {
-        this._searchQuery.set(query);
+        this.searchQuery.set(query);
     }
 }
