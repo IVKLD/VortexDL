@@ -66,11 +66,7 @@ impl DownloadTask {
             .unwrap_or(&self.track.title)
     }
 
-    pub fn new(
-        track: &DiscoveredMusicTrack,
-        naming_template: &str,
-        output_dir: &Path,
-    ) -> Self {
+    pub fn new(track: &DiscoveredMusicTrack, naming_template: &str, output_dir: &Path) -> Self {
         let formatted = naming_template
             .replace("{artist}", &track.artist)
             .replace("{title}", &track.title);

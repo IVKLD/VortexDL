@@ -27,9 +27,6 @@ static ALLOC: mimalloc::MiMalloc = mimalloc::MiMalloc;
 
 #[tokio::main]
 async fn main() -> Result<()> {
-    utils::tracing::setup();
-    database::init()?;
-
     let args = Args::parse();
     if args.url.is_none() && !args.serve && !args.sync_player {
         use clap::CommandFactory;
@@ -37,6 +34,9 @@ async fn main() -> Result<()> {
         println!();
         return Ok(());
     }
+
+    utils::tracing::setup();
+    database::init()?;
 
     let settings = database::get_settings()?;
     let output_dir = args.resolve_output_dir(&settings);

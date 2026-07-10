@@ -20,15 +20,11 @@ fn setup_spinner(pb: ProgressBar) -> ProgressBar {
     pb
 }
 
-
-
 pub fn create_standalone_spinner(msg: &str) -> ProgressBar {
     let pb = setup_spinner(ProgressBar::new_spinner());
     pb.set_message(msg.to_string());
     pb
 }
-
-
 
 fn get_spinner_style() -> ProgressStyle {
     ProgressStyle::default_spinner()

@@ -1,5 +1,6 @@
 :host {
   z-index: 10;
+  display: block;
 }
 
 header {
@@ -62,11 +63,6 @@ header {
     width: 100%;
     max-width: 400px;
     margin: 0 32px;
-
-    &:empty {
-      display: none;
-      margin: 0;
-    }
 
     mat-form-field {
       width: 100%;

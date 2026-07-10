@@ -16,16 +16,16 @@
     </div>
 
 
+    @if (headerService.hasFeature(Feature.Search) && headerService.searchBind(); as searchBind) {
     <div class="center">
-        @if (headerService.hasFeature(Feature.Search) && headerService.searchBind(); as searchBind) {
         <mat-form-field subscriptSizing="dynamic">
             <mat-icon matPrefix>search</mat-icon>
             <input [formField]="searchBind.formField" matInput
                 [placeholder]="headerService.config()?.searchPlaceholder || 'Search...'"
                 (keydown)="onSearchKeydown($event)" />
         </mat-form-field>
-        }
     </div>
+    }
 
 
     <div class="right">

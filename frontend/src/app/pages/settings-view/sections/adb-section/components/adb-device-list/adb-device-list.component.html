@@ -7,7 +7,7 @@
     </div>
 } @else {
     <div class="list">
-        @for (field of fields; track field().value().deviceId; let i = $index) {
+        @for (field of fields; track $index; let i = $index) {
             @let device = field().value();
             @let isConnected = isDeviceConnected(device.deviceId);
             <div [class.disabled]="!device.enabled" class="card">
