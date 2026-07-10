@@ -21,7 +21,7 @@
                         </span>
                     </div>
                     <div>
-                        <mat-slide-toggle [formField]="field.enabled" />
+                        <mat-slide-toggle [formField]="field.enabled" (change)="triggerSave(field.enabled)" />
                         <button (click)="remove.emit(i)" mat-icon-button type="button">
                             <mat-icon>delete</mat-icon>
                         </button>
@@ -30,7 +30,7 @@
 
                 <mat-form-field>
                     <mat-label>Storage Location</mat-label>
-                    <mat-select [formField]="field.remoteMusicDir" placeholder="Select storage">
+                    <mat-select [formField]="field.remoteMusicDir" placeholder="Select storage" (selectionChange)="triggerSave(field.remoteMusicDir)">
                         @for (storage of getStorageOptions(deviceStorages()[device.deviceId], device.remoteMusicDir); track storage.path) {
                             <mat-option [value]="storage.path">
                                 {{ storage.name }} ({{ storage.path }})

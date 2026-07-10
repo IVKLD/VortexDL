@@ -1,0 +1,36 @@
+<h2>
+    <mat-icon>language</mat-icon>
+    Network & Proxy
+</h2>
+
+<div class="fields">
+    <app-settings-switch-card title="Enable Proxy"
+        description="Route all network traffic (SoundCloud, download streams) through a proxy server"
+        [control]="form().useProxy" />
+
+    <div class="row">
+        <mat-form-field class="grow">
+            <mat-label>
+                <mat-icon>vpn_lock</mat-icon>
+                Proxy URL (SOCKS5/HTTP)
+            </mat-label>
+            <input [formField]="form().proxyUrl" matInput placeholder="socks5://127.0.0.1:1080">
+
+            @if (form().proxyUrl().invalid()) {
+            <mat-error>{{ form().proxyUrl().errors()[0]?.message }}</mat-error>
+            }
+        </mat-form-field>
+
+        <button (click)="testProxy.emit()"
+            [disabled]="!form().proxyUrl().value() || hasFormatError(form().proxyUrl) || isTesting()" mat-flat-button
+            type="button">
+            <mat-icon [class.rotating]="isTesting()">{{
+                isTesting() ? 'sync' : 'check_circle'
+                }}
+            </mat-icon>
+            Test
+        </button>
+    </div>
+
+    <app-fallback-proxies [form]="form()" />
+</div>

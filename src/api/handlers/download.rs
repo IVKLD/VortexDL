@@ -8,6 +8,7 @@ use axum::{
     response::IntoResponse,
 };
 use tokio::spawn;
+
 use crate::{
     api::{
         download_manager::{DownloadItem, MessageLevel, ServerEvent},
@@ -41,7 +42,9 @@ pub async fn start_download(
 
     state
         .download_manager
-        .broadcast_event(ServerEvent::SyncStarted { url: url.to_string() });
+        .broadcast_event(ServerEvent::SyncStarted {
+            url: url.to_string(),
+        });
 
     let status = DownloadStartResponse {
         status: ApiStatus::Queued,
@@ -144,7 +147,9 @@ async fn handle_download_events(mut socket: WebSocket, state: AppState) {
     }
 
     for item in queue {
-        let update = ServerEvent::TrackUpdate { item: Box::new(item) };
+        let update = ServerEvent::TrackUpdate {
+            item: Box::new(item),
+        };
         if !send_event(&mut socket, &update).await {
             return;
         }
@@ -157,7 +162,18 @@ async fn handle_download_events(mut socket: WebSocket, state: AppState) {
                     break;
                 }
             }
-            Err(tokio::sync::broadcast::error::RecvError::Lagged(_)) => continue,
+            Err(tokio::sync::broadcast::error::RecvError::Lagged(_)) => {
+                let queue = state.download_manager.get_queue();
+                for item in queue {
+                    let update = ServerEvent::TrackUpdate {
+                        item: Box::new(item),
+                    };
+                    if !send_event(&mut socket, &update).await {
+                        return;
+                    }
+                }
+                continue;
+            }
             Err(_) => break,
         }
     }

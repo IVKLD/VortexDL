@@ -39,7 +39,9 @@ pub async fn discover_playlist_tracks(
             if let Ok(fetched_tracks) = client.get_tracks(chunk).await {
                 for track in fetched_tracks {
                     let Some(track_id) = track.id else { continue };
-                    let Some(updated) = DiscoveredMusicTrack::from_track(track) else { continue };
+                    let Some(updated) = DiscoveredMusicTrack::from_track(track) else {
+                        continue;
+                    };
                     if let Some(&idx) = index.get(&track_id) {
                         tracks[idx] = updated;
                     }

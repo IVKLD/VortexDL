@@ -7,12 +7,7 @@ use tokio::{fs, io::AsyncWriteExt, time::sleep};
 use super::{DownloadTask, resolve::StreamSource};
 use crate::{
     downloader::Context,
-    ui,
-    utils::{
-        http::build_http_client,
-        soundcloud::SoundCloudClientBuilder,
-        verification::verify,
-    },
+    utils::{http::build_http_client, soundcloud::SoundCloudClientBuilder, verification::verify},
 };
 
 pub async fn download_single_track(
@@ -46,10 +41,6 @@ pub async fn download_single_track(
                     return Err(err);
                 }
 
-                task.pb.set_message(format!(
-                    "Retrying ({attempts_left} left): {}",
-                    task.display_name()
-                ));
                 sleep(Duration::from_secs(1)).await;
             }
         }
@@ -68,21 +59,18 @@ async fn download_progressive(
     let response = client.get(url).send().await?.error_for_status()?;
     let total = response.content_length().unwrap_or(0);
 
-    task.pb
-        .set_message(format!("Downloading: {}", task.display_name()));
-    ui::upgrade_to_download_bar(&task.pb, total);
-
     let tmp_path = task.file_path.with_extension("mp3.tmp");
     let mut file = fs::File::create(&tmp_path).await?;
     let mut stream = response.bytes_stream();
+    let mut position = 0;
 
     while let Some(chunk) = stream.next().await {
         let chunk = chunk.map_err(|err| anyhow!("Stream error: {err}"))?;
         file.write_all(&chunk).await?;
-        task.pb.inc(chunk.len() as u64);
+        position += chunk.len() as u64;
 
         if let Some(manager) = &context.dm {
-            manager.update_progress(task.track.id, task.pb.position(), total);
+            manager.update_progress(task.track.id, position, total);
         }
     }
 
@@ -97,9 +85,6 @@ async fn download_hls(
     stream_url: &str,
     proxy_url: Option<&str>,
 ) -> Result<()> {
-    task.pb
-        .set_message(format!("Downloading (HLS): {}", task.display_name()));
-
     let settings = context.settings.read().await;
     let active_proxy = proxy_url.or_else(|| settings.network.get_proxy_url());
 

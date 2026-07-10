@@ -1,17 +1,16 @@
-<app-list-view-shell [loading]="state.isLoading() || state.isSearching()" 
-                     [hasResults]="tracks().length > 0">
+<app-list-view-shell [loading]="state.isLoading() || state.isSearching()" [hasResults]="tracks().length > 0"
+    [empty]="state.searchQuery().length > 0 && tracks().length === 0"
+    [initial]="state.searchQuery().length === 0 && tracks().length === 0">
 
-    <app-search-skeleton skeleton/>
+    <app-search-skeleton skeleton />
 
     <ng-container results>
         <rx-virtual-scroll-viewport [itemSize]="82" scrollWindow>
             <app-music-card *rxVirtualFor="let track of tracks(); trackBy: 'id'"
-                            [isActive]="activeTrackId() === track.id"
-                            [isPlaying]="player.isTrackPlaying(track.id)"
-                            [isSelected]="state.selectedIds().has(track.id)"
-                            [track]="track" (playTrack)="playTrack(track)" (click)="handleCardClick(track)"
-                            [cdkContextMenuTriggerFor]="cardMenu"
-                            [cdkContextMenuTriggerData]="{ $implicit: track }">
+                [isActive]="activeTrackId() === track.id" [isPlaying]="player.isTrackPlaying(track.id)"
+                [isSelected]="state.selectedIds().has(track.id)" [track]="track" (playTrack)="playTrack(track)"
+                (click)="handleCardClick(track)" [cdkContextMenuTriggerFor]="cardMenu"
+                [cdkContextMenuTriggerData]="{ $implicit: track }">
                 <aside meta>
                     <span>{{ track.size | fileSize }}</span>
                     <strong [attr.data-format]="track.format">{{ track.format }}</strong>
@@ -20,7 +19,7 @@
                 <div actions class="actions-wrapper">
                     <menu role="presentation">
                         <button [cdkMenuTriggerFor]="cardMenu" [cdkMenuTriggerData]="{ $implicit: track }"
-                                (click)="$event.stopPropagation()" mat-icon-button>
+                            (click)="$event.stopPropagation()" mat-icon-button>
                             <mat-icon>more_vert</mat-icon>
                         </button>
                     </menu>
@@ -29,13 +28,15 @@
         </rx-virtual-scroll-viewport>
     </ng-container>
 
-    <app-empty-pane empty icon="library_music" heading="No tracks yet"
-                    description="Your library is empty. Go to Dashboard to start downloading music."/>
+    <app-empty-pane empty icon="search_off" heading="No results found" description="Try a different search query" />
+
+    <app-empty-pane initial icon="library_music" heading="No tracks yet"
+        description="Your library is empty. Go to Dashboard to start downloading music." [accent]="true" />
 </app-list-view-shell>
 
 @if (state.hasSelection()) {
-    <app-selection-bar [count]="state.selectedIds().size" (deleteSelected)="deleteSelected()"
-                       (clearSelection)="state.clearSelection()"/>
+<app-selection-bar [count]="state.selectedIds().size" (deleteSelected)="deleteSelected()"
+    (clearSelection)="state.clearSelection()" />
 }
 
 <ng-template #cardMenu let-trackData>

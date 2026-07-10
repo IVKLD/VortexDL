@@ -172,4 +172,3 @@ export class DownloadTrackingService {
         this.errors.set([]);
     }
 }
-

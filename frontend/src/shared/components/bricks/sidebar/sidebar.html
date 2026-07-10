@@ -24,6 +24,10 @@
                                                 [errors]="tracking.errors()"/>
                 }
 
+                <!-- @if (tracking.activeProxyOperation(); as op) {
+                    <app-proxy-resolver [activeOperation]="op" [attempts]="tracking.proxyAttempts()"/>
+                } -->
+
                 @if (tracking.activeDownloads().length > 0) {
                     <app-active-downloads [items]="tracking.activeDownloads()"
                                           (remove)="tracking.removeFromQueue($event)"/>

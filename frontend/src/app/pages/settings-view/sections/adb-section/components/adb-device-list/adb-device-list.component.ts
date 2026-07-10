@@ -4,7 +4,7 @@ import {MatIconButton} from '@angular/material/button';
 import {MatSlideToggle} from '@angular/material/slide-toggle';
 import {MatFormField, MatLabel} from '@angular/material/form-field';
 import {MatSelect, MatOption} from '@angular/material/select';
-import {FieldTree, FormField} from '@angular/forms/signals';
+import {FieldTree, FormField, submit} from '@angular/forms/signals';
 import {AdbDeviceSettings, StorageInfo, StorageType} from '@app/pages/settings-view/models/settings-form.model';
 import {SettingsService} from '@app/pages/settings-view/settings.service';
 
@@ -36,6 +36,10 @@ export class AdbDeviceListComponent {
 
     protected isDeviceConnected(deviceId: string): boolean {
         return this.connectedDevices().includes(deviceId);
+    }
+
+    protected triggerSave<T>(field: FieldTree<T>) {
+        submit(field);
     }
 
     protected loadStorages(deviceId: string) {

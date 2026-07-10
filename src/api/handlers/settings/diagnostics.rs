@@ -67,21 +67,37 @@ pub struct ProxyTestResult {
         (status = 101, description = "WebSocket upgrade to test multiple proxies concurrently with real-time feedback")
     )
 )]
-pub async fn test_proxy_ws(ws: WebSocketUpgrade) -> impl IntoResponse {
-    ws.on_upgrade(handle_proxy_ws)
+pub async fn test_proxy_ws(
+    ws: WebSocketUpgrade,
+    State(state): State<AppState>,
+) -> impl IntoResponse {
+    ws.on_upgrade(move |socket| handle_proxy_ws(socket, state))
 }
 
-async fn handle_proxy_ws(mut socket: WebSocket) {
+async fn handle_proxy_ws(mut socket: WebSocket, state: AppState) {
     let proxies = match socket.recv().await {
         Some(Ok(Message::Text(text))) => serde_json::from_str::<Vec<String>>(&text).ok(),
         _ => None,
     };
     if let Some(proxies) = proxies {
+        let cached_client_id = state
+            .settings
+            .read()
+            .await
+            .soundcloud
+            .cached_client_id
+            .clone();
+
         let mut tasks = tokio::task::JoinSet::new();
 
         for url in proxies {
+            let cached_id = cached_client_id.clone();
             tasks.spawn(async move {
-                match ClientBuilder::new().with_proxy(url.clone()).build().await {
+                let mut builder = ClientBuilder::new().with_proxy(url.clone());
+                if let Some(id) = cached_id {
+                    builder = builder.with_client_id(id);
+                }
+                match builder.build().await {
                     Ok(client) if client.health_check().await => ProxyTestResult {
                         url,
                         valid: true,

@@ -32,4 +32,3 @@ pub fn save_sync_ids(url: &str, ids: &HashSet<i64>) -> Result<(), Error> {
     write_txn.commit()?;
     Ok(())
 }
-

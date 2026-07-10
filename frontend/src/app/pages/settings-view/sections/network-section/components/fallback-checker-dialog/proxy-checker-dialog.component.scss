@@ -257,3 +257,24 @@ mat-dialog-content {
     transform: rotate(360deg);
   }
 }
+
+.error-message {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--mat-sys-error, #ef4444);
+  font-size: 12px;
+  background: var(--mat-sys-error-container, #fef2f2);
+  border: 1px solid rgba(239, 68, 68, 0.2);
+  padding: 8px 12px;
+  border-radius: 8px;
+  margin-top: 6px;
+  font-family: inherit;
+
+  mat-icon {
+    font-size: 16px;
+    width: 16px;
+    height: 16px;
+    flex-shrink: 0;
+  }
+}

@@ -1,8 +1,13 @@
-use std::future::Future;
+use std::{future::Future, sync::Arc};
 
 use anyhow::Result;
+use tokio::sync::Semaphore;
 
 use crate::settings::UserSettings;
+
+/// Maximum number of proxy connections to attempt simultaneously.
+/// Keeps file descriptor usage bounded (each attempt opens sockets + reads TLS certs).
+const MAX_CONCURRENT_PROXIES: usize = 10;
 
 pub async fn race_proxies<T, F, Fut>(settings: &UserSettings, op: F) -> Result<T>
 where
@@ -15,12 +20,22 @@ where
         anyhow::bail!("No fallback proxies configured");
     }
 
-    tracing::debug!("Racing {} proxies concurrently...", proxies.len());
+    let total = proxies.len();
+    tracing::debug!("Racing {total} proxies (max {MAX_CONCURRENT_PROXIES} concurrent)...");
+
+    let semaphore = Arc::new(Semaphore::new(MAX_CONCURRENT_PROXIES));
     let mut tasks = tokio::task::JoinSet::new();
 
     for proxy in proxies {
+        let permit = semaphore.clone();
         let fut = op(settings.clone(), proxy.clone());
-        tasks.spawn(fut);
+        tasks.spawn(async move {
+            let _permit = permit
+                .acquire()
+                .await
+                .map_err(|_| anyhow::anyhow!("Semaphore closed"))?;
+            fut.await
+        });
     }
 
     let mut last_err = None;

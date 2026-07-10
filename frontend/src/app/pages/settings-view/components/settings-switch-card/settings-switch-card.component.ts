@@ -1,6 +1,6 @@
-import {Component, input} from '@angular/core';
-import {MatSlideToggle} from '@angular/material/slide-toggle';
-import {FieldTree, FormField} from '@angular/forms/signals';
+import { Component, input } from '@angular/core';
+import { MatSlideToggle } from '@angular/material/slide-toggle';
+import { FieldTree, FormField, submit } from '@angular/forms/signals';
 
 @Component({
     selector: 'app-settings-switch-card',
@@ -16,5 +16,7 @@ export class SettingsSwitchCardComponent {
     protected toggle(): void {
         this.control()().value.set(!this.control()().value());
         this.control()().markAsDirty();
+
+        submit(this.control());
     }
 }

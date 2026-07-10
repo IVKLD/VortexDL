@@ -42,6 +42,13 @@ export class ProxyCheckerDialogComponent {
 
     public readonly parsedProxies = computed(() => parseProxies(this.pastedText()));
 
+    public readonly invalidProxies = computed(() => {
+        const text = this.pastedText();
+        if (!text) return [];
+        const lines = text.split(/[\n,;]+/).map(l => l.trim()).filter(l => l.length > 0);
+        return lines.filter(l => !/^(http|https|socks4|socks4a|socks5|socks5h):\/\/[^/\s]+\/?$/i.test(l));
+    });
+
     public readonly checkingCount = computed(() => this.importStatuses().filter(s => s.loading).length);
 
     protected onTextChange(event: Event): void {
@@ -83,6 +90,6 @@ export class ProxyCheckerDialogComponent {
 const parseProxies = (text: string): string[] => {
     if (!text) return [];
     const lines = text.split(/[\n,;]+/).map(l => l.trim()).filter(l => l.length > 0);
-    const valid = lines.filter(l => /^(http|https|socks4|socks4a|socks5|socks5h):\/\//i.test(l));
+    const valid = lines.filter(l => /^(http|https|socks4|socks4a|socks5|socks5h):\/\/[^/\s]+\/?$/i.test(l));
     return Array.from(new Set(valid));
 }

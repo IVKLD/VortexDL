@@ -1,6 +1,10 @@
 use std::time::Duration;
 
-pub fn build_http_client(proxy_url: Option<&str>, connect_timeout_secs: u64, request_timeout_secs: u64) -> reqwest::Client {
+pub fn build_http_client(
+    proxy_url: Option<&str>,
+    connect_timeout_secs: u64,
+    request_timeout_secs: u64,
+) -> reqwest::Client {
     let mut builder = reqwest::Client::builder()
         .connect_timeout(Duration::from_secs(connect_timeout_secs))
         .timeout(Duration::from_secs(request_timeout_secs));

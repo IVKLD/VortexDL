@@ -10,7 +10,7 @@ import {filter} from "rxjs";
 import { HttpErrorResponse } from '@angular/common/http';
 import {
     ProxyCheckerDialogComponent
-} from "@app/pages/settings-view/components/network-section/components/fallback-checker-dialog/proxy-checker-dialog.component";
+} from "@app/pages/settings-view/sections/network-section/components/fallback-checker-dialog/proxy-checker-dialog.component";
 import {NetworkSettings} from "@app/pages/settings-view/models/settings-form.model";
 import {SettingsTestingService} from "@app/pages/settings-view/settings.service";
 import {parseErrorMessage} from '@shared/error-utils';
@@ -40,6 +40,7 @@ export class FallbackProxiesComponent {
     remove(proxy: string): void {
         const current = this.form().fallbackProxies().value() || [];
         this.form().fallbackProxies().value.set(current.filter((p: string) => p !== proxy));
+        this.form().fallbackProxies().markAsDirty();
 
         this.proxyStatuses.update(prev => {
             const next = {...prev};
@@ -60,6 +61,7 @@ export class FallbackProxiesComponent {
                 const current = this.form().fallbackProxies().value() || [];
                 const next = Array.from(new Set([...current, ...workingProxies]));
                 this.form().fallbackProxies().value.set(next);
+                this.form().fallbackProxies().markAsDirty();
 
                 this.proxyStatuses.update(prev => {
                     const updated = {...prev};
@@ -143,10 +145,12 @@ export class FallbackProxiesComponent {
             return !status || status.valid !== false;
         });
         this.form().fallbackProxies().value.set(next);
+        this.form().fallbackProxies().markAsDirty();
     }
 
     clearAllActive(): void {
         this.form().fallbackProxies().value.set([]);
+        this.form().fallbackProxies().markAsDirty();
         this.proxyStatuses.set({});
     }
 }

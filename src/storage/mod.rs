@@ -3,13 +3,16 @@ mod model;
 mod scanner;
 pub mod sync;
 
-use std::collections::{HashMap, HashSet};
-use std::io;
-use std::path::Path;
+use std::{
+    collections::{HashMap, HashSet},
+    io,
+    path::Path,
+};
+
 use anyhow::Result;
+pub use model::LocalMusicTrack;
 use tokio::task::spawn_blocking;
 
-pub use model::LocalMusicTrack;
 use crate::database::cache::{remove_cached_track, update_cached_tracks_batch};
 
 #[derive(Default)]

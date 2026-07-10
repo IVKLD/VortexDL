@@ -65,7 +65,10 @@ impl<'a> SoundCloudClientBuilder<'a> {
             builder = builder.with_client_id(cached_id.clone());
         }
 
-        if let Some(proxy) = self.proxy_url.or_else(|| self.settings.network.get_proxy_url()) {
+        if let Some(proxy) = self
+            .proxy_url
+            .or_else(|| self.settings.network.get_proxy_url())
+        {
             builder = builder.with_proxy(proxy.to_string());
         }
 

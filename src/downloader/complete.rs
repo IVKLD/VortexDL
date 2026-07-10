@@ -1,7 +1,4 @@
-use std::{
-    collections::HashSet,
-    time::SystemTime,
-};
+use std::{collections::HashSet, time::SystemTime};
 
 use colored::Colorize;
 use tokio::task::JoinHandle;
@@ -13,7 +10,11 @@ use crate::{
     api::types::AudioFormat,
     database::cache::{CachedMusicTrack, update_cached_tracks_batch},
     downloader::Context,
-    storage::{LocalMusicTrack, metadata::{SaveTrackArgs, save_track_info}, sync::sync_url_ids},
+    storage::{
+        LocalMusicTrack,
+        metadata::{SaveTrackArgs, save_track_info},
+        sync::sync_url_ids,
+    },
     utils::soundcloud,
 };
 
@@ -35,10 +36,9 @@ pub async fn finalize_single_track(
     context: Context,
     task: DownloadTask,
     artwork_handle: Option<JoinHandle<Option<Vec<u8>>>>,
+    pb: indicatif::ProgressBar,
 ) {
-    task.pb
-        .println(format!("{} {}", "[OK]".green().bold(), task.display_name()));
-    task.pb.finish_and_clear();
+    pb.println(format!("{} {}", "[OK]".green().bold(), task.display_name()));
 
     let artwork_data = match artwork_handle {
         Some(handle) => handle.await.unwrap_or_default(),
@@ -122,7 +122,12 @@ pub async fn finalize_single_track(
     }
 }
 
-pub async fn handle_track_failure(context: &Context, task: &DownloadTask, err: anyhow::Error) {
+pub async fn handle_track_failure(
+    context: &Context,
+    task: &DownloadTask,
+    err: anyhow::Error,
+    pb: &indicatif::ProgressBar,
+) {
     let full_err_msg = format!("{:#}", err);
     if let Some(manager) = &context.dm {
         manager.update_failed(task.track.id, &full_err_msg);
@@ -137,11 +142,10 @@ pub async fn handle_track_failure(context: &Context, task: &DownloadTask, err: a
         short_err.push_str(" (...)");
     }
 
-    task.pb.println(format!(
+    pb.println(format!(
         "{} {} — {}",
         "[ERROR]".red().bold(),
         task.display_name(),
         short_err
     ));
-    task.pb.finish_and_clear();
 }

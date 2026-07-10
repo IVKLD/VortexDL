@@ -20,9 +20,7 @@ fn setup_spinner(pb: ProgressBar) -> ProgressBar {
     pb
 }
 
-pub fn create_spinner(mp: &MultiProgress) -> ProgressBar {
-    setup_spinner(mp.add(ProgressBar::new_spinner()))
-}
+
 
 pub fn create_standalone_spinner(msg: &str) -> ProgressBar {
     let pb = setup_spinner(ProgressBar::new_spinner());
@@ -30,15 +28,7 @@ pub fn create_standalone_spinner(msg: &str) -> ProgressBar {
     pb
 }
 
-pub fn upgrade_to_download_bar(pb: &ProgressBar, total_bytes: u64) {
-    pb.set_length(total_bytes);
-    pb.set_style(
-        ProgressStyle::default_bar()
-            .template("{spinner:.cyan} [{elapsed_precise}] [{bar:20.cyan/blue}] {bytes}/{total_bytes} ({bytes_per_sec}, {eta}) {msg}")
-            .unwrap_or_else(|_| ProgressStyle::default_bar())
-            .progress_chars("#>-"),
-    );
-}
+
 
 fn get_spinner_style() -> ProgressStyle {
     ProgressStyle::default_spinner()

@@ -8,7 +8,7 @@
             <h3>Raw Proxy Input</h3>
 
             <button type="button" mat-flat-button (click)="testAll()"
-                    [disabled]="isTesting() || parsedProxies().length === 0"
+                    [disabled]="isTesting() || parsedProxies().length === 0 || invalidProxies().length > 0"
             >
                 @if (isTesting()) {
                     <mat-icon class="rotating">sync</mat-icon>
@@ -21,6 +21,13 @@
             <textarea class="simple-textarea" placeholder="Example:&#10;socks5://84.47.150.125:1080&#10;socks4://192.111.137.35:4145"
                       rows="10" [value]="pastedText()" (input)="onTextChange($event)"></textarea>
             <span class="textarea-hint">Supports SOCKS4, SOCKS5, and HTTP proxy URLs (e.g. socks5://user:pass@host:port)</span>
+            
+            @if (invalidProxies().length > 0) {
+                <div class="error-message">
+                    <mat-icon>error_outline</mat-icon>
+                    <span>Found {{ invalidProxies().length }} invalid proxy URL(s) (e.g. "{{ invalidProxies()[0] }}"). Format: scheme://host:port</span>
+                </div>
+            }
         </div>
 
         @if (parsedProxies().length > 0) {

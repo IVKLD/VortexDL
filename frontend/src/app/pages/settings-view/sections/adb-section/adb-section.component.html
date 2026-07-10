@@ -1,0 +1,27 @@
+<header class="section-header">
+    <h2>
+        <mat-icon>android</mat-icon>
+        Android Debug Bridge (ADB)
+    </h2>
+    <button (click)="refresh.emit()" [disabled]="isRefreshing()" mat-icon-button type="button">
+        <mat-icon [class.spinning]="isRefreshing()">sync</mat-icon>
+    </button>
+</header>
+
+<div class="switches">
+    <app-settings-switch-card title="Enable ADB Sync"
+        description="Allow syncing downloaded tracks directly to connected Android devices"
+        [control]="form().enabled" />
+
+    <app-settings-switch-card title="Auto-Sync on Connect"
+        description="Automatically start synchronization when a configured device is detected"
+        [control]="form().autoSync" />
+</div>
+
+<mat-divider />
+
+<section [class.disabled]="!form().enabled().value()" class="devices-list">
+    <h3>Connected & Configured Devices</h3>
+    <app-adb-device-list [form]="form().devices" [connectedDevices]="connectedDevices()"
+        (remove)="removeDevice.emit($event)" />
+</section>

@@ -41,10 +41,18 @@ pub async fn resolve_tracks_from_url(
     ctx: &Context,
     url: &Url,
 ) -> Result<Vec<DiscoveredMusicTrack>> {
-    match discover_tracks_from_url(ctx, url, &ctx.client).await {
+    let pb = init_progress_spinner(ctx, "Resolving URL...");
+
+    let result = match discover_tracks_from_url(ctx, url, &ctx.client).await {
         Ok(tracks) => Ok(tracks),
         Err(e) => {
+            println!("Direct discovery failed: {e}");
             let settings = ctx.settings.read().await.clone();
+
+            if !settings.network.use_proxy || settings.network.fallback_proxies.is_empty() {
+                return Err(e);
+            }
+
             tracing::debug!("Direct discovery failed: {e}. Trying fallback proxies...");
 
             race_proxies(&settings, |s, proxy| {
@@ -61,7 +69,10 @@ pub async fn resolve_tracks_from_url(
             .await
             .map_err(|proxy_err| anyhow::anyhow!("Discovery failed: {e} (proxies: {proxy_err})"))
         }
-    }
+    };
+
+    pb.finish_and_clear();
+    result
 }
 
 async fn discover_tracks_from_url(
@@ -69,9 +80,8 @@ async fn discover_tracks_from_url(
     url: &Url,
     client: &soundcloud_rs::Client,
 ) -> Result<Vec<DiscoveredMusicTrack>> {
-    let pb = init_progress_spinner(ctx, "Resolving URL...");
-
     let res = resolve_url(client, url).await?;
+
     let all_tracks = match res {
         ResolvedResource::User(user) => {
             let id = user
@@ -92,7 +102,6 @@ async fn discover_tracks_from_url(
         }
     };
 
-    pb.finish_and_clear();
     Ok(all_tracks)
 }
 
@@ -103,7 +112,7 @@ pub async fn resolve_stream_source(ctx: &Context, id: i64) -> Result<StreamSourc
             tracing::debug!("Direct stream resolution failed for track {id}: {direct_err}");
 
             let settings = ctx.settings.read().await.clone();
-            if settings.network.fallback_proxies.is_empty() {
+            if !settings.network.use_proxy || settings.network.fallback_proxies.is_empty() {
                 return Err(direct_err);
             }
 
@@ -159,7 +168,13 @@ pub fn spawn_artwork_fetch(
     let url = artwork_url?.clone();
     let ctx = ctx.clone();
     Some(tokio::spawn(async move {
-        let proxy_url = ctx.settings.read().await.network.get_proxy_url().map(String::from);
+        let proxy_url = ctx
+            .settings
+            .read()
+            .await
+            .network
+            .get_proxy_url()
+            .map(String::from);
         let client = build_http_client(proxy_url.as_deref(), 5, 10);
         let resp = client
             .get(url)

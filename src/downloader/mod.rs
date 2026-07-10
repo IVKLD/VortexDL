@@ -11,20 +11,20 @@ use std::{
 };
 
 use anyhow::Result;
-use url::Url;
 use futures::{
     future::join_all,
     stream::{self, StreamExt},
 };
 use indicatif::MultiProgress;
 use tokio::{sync::RwLock, task::JoinHandle};
+use url::Url;
 
 use crate::{
     api::{download_manager::DownloadManager, state::AppState},
     settings::SettingsManager,
     storage::MusicStorage,
     types::DiscoveredMusicTrack,
-    ui::{create_spinner, create_total_progress_bar},
+    ui::create_total_progress_bar,
     utils::filename::clean_filename,
 };
 
@@ -55,7 +55,6 @@ impl Context {
 #[derive(Clone)]
 pub(crate) struct DownloadTask {
     pub track: DiscoveredMusicTrack,
-    pub pb: indicatif::ProgressBar,
     pub file_path: PathBuf,
 }
 
@@ -71,7 +70,6 @@ impl DownloadTask {
         track: &DiscoveredMusicTrack,
         naming_template: &str,
         output_dir: &Path,
-        pb: indicatif::ProgressBar,
     ) -> Self {
         let formatted = naming_template
             .replace("{artist}", &track.artist)
@@ -80,7 +78,6 @@ impl DownloadTask {
 
         Self {
             track: track.clone(),
-            pb,
             file_path: output_dir.join(filename),
         }
     }
@@ -113,20 +110,18 @@ pub async fn run_download_pipeline(ctx: &Context, url: &Url) -> Result<()> {
 async fn run_track_download_pipeline(
     context: Context,
     mut task: DownloadTask,
+    pb: indicatif::ProgressBar,
 ) -> Option<JoinHandle<()>> {
     if let Some(manager) = &context.dm {
         manager.update_downloading(task.track.id);
     }
-    let display_name = task.display_name().to_string();
-    task.pb.set_message(format!("Downloading: {display_name}"));
 
-    let artwork_handle =
-        resolve::spawn_artwork_fetch(&context, task.track.artwork_url.as_ref());
+    let artwork_handle = resolve::spawn_artwork_fetch(&context, task.track.artwork_url.as_ref());
 
     let stream = match resolve::resolve_stream_source(&context, task.track.id).await {
         Ok(s) => s,
         Err(err) => {
-            complete::handle_track_failure(&context, &task, err).await;
+            complete::handle_track_failure(&context, &task, err, &pb).await;
             return None;
         }
     };
@@ -136,7 +131,7 @@ async fn run_track_download_pipeline(
     }
 
     if let Err(err) = download::download_single_track(&context, &task, stream).await {
-        complete::handle_track_failure(&context, &task, err).await;
+        complete::handle_track_failure(&context, &task, err, &pb).await;
         return None;
     }
 
@@ -144,6 +139,7 @@ async fn run_track_download_pipeline(
         context,
         task,
         artwork_handle,
+        pb,
     )))
 }
 
@@ -164,16 +160,15 @@ async fn run_parallel_downloads(ctx: &Context, tracks: Vec<DiscoveredMusicTrack>
     let results: Vec<_> = stream::iter(tracks)
         .map(|track| {
             let ctx = ctx.clone();
-            let mp = mp.clone();
             let total_pb = total_pb.clone();
             let output_dir = output_dir.clone();
             let naming_template = naming_template.clone();
 
             async move {
-                let pb = create_spinner(&mp);
-                let task = DownloadTask::new(&track, &naming_template, &output_dir, pb.clone());
+                let task = DownloadTask::new(&track, &naming_template, &output_dir);
 
-                let result = run_track_download_pipeline(ctx, task).await;
+                let pb_clone = total_pb.clone();
+                let result = run_track_download_pipeline(ctx, task, pb_clone).await;
                 total_pb.inc(1);
                 result
             }

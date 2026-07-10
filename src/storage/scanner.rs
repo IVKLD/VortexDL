@@ -1,13 +1,16 @@
-use std::collections::{HashMap, HashSet};
-use std::fs;
-use std::path::PathBuf;
+use std::{
+    collections::{HashMap, HashSet},
+    fs,
+    path::PathBuf,
+};
+
 use tokio::task::spawn_blocking;
 
+use super::{MusicStorage, metadata::extract_track_metadata, model::LocalMusicTrack};
 use crate::{
     api::types::AudioFormat,
     database::cache::{CachedMusicTrack, get_cached_music_tracks, update_cached_tracks_batch},
 };
-use super::{metadata::extract_track_metadata, model::LocalMusicTrack, MusicStorage};
 
 impl MusicStorage {
     pub async fn scan_library(base_path: &str) -> HashMap<i64, LocalMusicTrack> {

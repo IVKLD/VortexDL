@@ -1,0 +1,102 @@
+:host {
+  background: var(--mat-sys-surface-container-low);
+  padding: 24px;
+  border-radius: 1em;
+  border: 1px solid var(--mat-sys-outline-variant);
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+
+  h2 {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin: 0;
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: var(--mat-sys-primary);
+
+    mat-icon {
+      font-size: 24px;
+      width: 24px;
+      height: 24px;
+    }
+  }
+}
+
+.section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  h2 {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin: 0;
+    font-size: 1.2rem;
+    font-weight: 600;
+    color: var(--mat-sys-primary);
+  }
+
+  button {
+    color: var(--vortex-text-secondary);
+
+    &:hover:not(:disabled) {
+      color: var(--mat-sys-primary);
+    }
+  }
+}
+
+.switches {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+
+  @media (min-width: 600px) {
+    flex-direction: row;
+    > app-settings-switch-card {
+      flex: 1;
+    }
+  }
+}
+
+mat-divider {
+  border-top-color: var(--vortex-divider);
+}
+
+.devices-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  transition: opacity 0.3s, filter 0.3s;
+
+  &.disabled {
+    opacity: 0.35;
+    pointer-events: none;
+    filter: grayscale(0.5);
+  }
+
+  h3 {
+    margin: 0;
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--vortex-text-primary);
+    opacity: 0.8;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+}
+
+.spinning {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
