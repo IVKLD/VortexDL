@@ -1,10 +1,12 @@
 import {Component, input, output} from '@angular/core';
 import {MatButton} from '@angular/material/button';
 import {MatIcon} from '@angular/material/icon';
+import {MatDivider} from "@angular/material/list";
+import {MatTooltip} from "@angular/material/tooltip";
 
 @Component({
     selector: 'app-selection-bar',
-    imports: [MatButton, MatIcon],
+    imports: [MatButton, MatIcon, MatDivider, MatTooltip],
     templateUrl: './selection-bar.html',
     styleUrl: './selection-bar.scss'
 })

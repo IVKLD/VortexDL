@@ -186,12 +186,10 @@
 
 @keyframes pulse-glow {
   0%, 100% {
-    transform: scale(1);
     opacity: 0.8;
     box-shadow: 0 0 4px var(--mat-sys-primary, #64b5f6);
   }
   50% {
-    transform: scale(1.15);
     opacity: 1;
     box-shadow: 0 0 14px var(--mat-sys-primary, #64b5f6);
   }

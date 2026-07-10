@@ -22,8 +22,13 @@ struct SyncDiff {
 }
 
 fn diff_local_and_remote(storage: &MusicStorage, remote_files: &HashSet<String>) -> SyncDiff {
-    let mut local_paths = HashSet::new();
+    let mut local_paths_lower = HashSet::new();
     let mut to_push = Vec::new();
+
+    let mut remote_lower = HashSet::new();
+    for rf in remote_files {
+        remote_lower.insert(rf.to_lowercase());
+    }
 
     for track in storage.tracks.values() {
         if track.is_archived() {
@@ -34,9 +39,9 @@ fn diff_local_and_remote(storage: &MusicStorage, remote_files: &HashSet<String>)
         };
         let artist_dir = clean_filename(&track.metadata.artist);
         let rel = format!("{artist_dir}/{name}");
-        local_paths.insert(rel.clone());
+        local_paths_lower.insert(rel.to_lowercase());
 
-        if !remote_files.contains(&rel) {
+        if !remote_lower.contains(&rel.to_lowercase()) {
             to_push.push(PushTask {
                 rel_path: rel,
                 artist_dir,
@@ -47,7 +52,7 @@ fn diff_local_and_remote(storage: &MusicStorage, remote_files: &HashSet<String>)
 
     let to_delete = remote_files
         .iter()
-        .filter(|f| !local_paths.contains(*f))
+        .filter(|f| !local_paths_lower.contains(&f.to_lowercase()))
         .cloned()
         .collect();
 
