@@ -63,8 +63,9 @@ pub async fn sync_device(
     device: &str,
     remote_dir: &str,
     storage: Arc<RwLock<MusicStorage>>,
+    force: bool,
 ) -> Result<()> {
-    if get_last_sync_time(device)
+    if !force && get_last_sync_time(device)
         .is_some_and(|last_sync| last_sync.elapsed() < Duration::from_secs(10))
     {
         return Ok(());
@@ -72,7 +73,12 @@ pub async fn sync_device(
 
     let _guard = match SyncGuard::try_acquire(device) {
         Some(g) => g,
-        None => return Ok(()),
+        None => {
+            if force {
+                return Err(commands::AdbError::AlreadyInProgress.into());
+            }
+            return Ok(());
+        }
     };
 
     if let Err(e) = commands::ensure_dir(device, remote_dir).await {

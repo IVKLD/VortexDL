@@ -220,7 +220,7 @@ pub async fn sync_connected(storage: Arc<RwLock<MusicStorage>>, settings: Settin
 
 fn spawn_sync(device_id: String, remote_music_dir: String, storage: Arc<RwLock<MusicStorage>>) {
     tokio::spawn(async move {
-        if let Err(e) = sync_device(&device_id, &remote_music_dir, storage).await {
+        if let Err(e) = sync_device(&device_id, &remote_music_dir, storage, false).await {
             tracing::error!(device = %device_id, error = %e, "sync failed");
         }
     });

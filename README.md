@@ -15,11 +15,6 @@
   <img src="https://img.shields.io/badge/Angular-v21-DD0031?style=flat-square&logo=angular&logoColor=white" alt="Angular">
 </p>
 
-<!-- screenshot-start -->
-<p align="center">
-  <img src="./website-screenshot.png" alt="Website Screenshot" width="800">
-</p>
-<!-- screenshot-end -->
 
 ## Motivation
 Streaming services are a piece of shit with subscriptions and censorship, and modern phones without a 3.5mm jack are a technological failure. This project was written to download music in one click and listen to it like a human being on a proper player (e.g., **Cayin N3 Ultra**).
@@ -32,6 +27,33 @@ Read the full thoughts on this — [at the bottom of the page](#manifesto).
 *   **Progress Display:** You can see the download progress everywhere: both in the console (CLI) and in the web panel. You'll always know exactly how much is left.
 *   **Web Panel:** Angular-based web interface for those who don't want to mess with the console. Just paste the link and manage your downloads visually.
 *   **Single Binary:** Everything is packed into one file, so there's no need to fuck around with installing dozens of libraries and dependencies.
+
+## Features
+
+*   **Multi-threaded Concurrent Downloading:** Instantly downloads tracks from SoundCloud using multiple threads (configurable limits).
+*   **ADB Synchronization for Android Devices:**
+    *   Tracks connected devices via USB/ADB in real time.
+    *   Computes library diffs: pushes newly downloaded tracks and deletes files on the device that were removed from the local library.
+    *   Structures target directories by artist: `[Music_Folder]/[Artist]/[Track_Name].mp3`.
+    *   Cleans up empty artist folders on the remote device when no tracks are left.
+    *   Sync locking (`SyncGuard`) prevents concurrent synchronization runs on the same device.
+*   **Background Watchdog & Auto-Indexing:** Monitors the downloads folder. Any manual changes (adding/deleting files) trigger an immediate library rescan, memory/DB update, and ADB synchronization.
+*   **Proxy Resilience & Fallbacks:** Bypasses regional blocks (SoundCloud geoblocks) by configuring primary and fallback proxies (`fallback_proxies`).
+*   **Feature-rich Angular Web Panel:**
+    *   **Dashboard:** Displays detailed statistics (total tracks, total size, active downloads), a 7-day activity graph, and a format breakdown chart (MP3, FLAC, WAV).
+    *   **SoundCloud Search:** Search tracks, preview audio streaming, and download them with a single click.
+    *   **Library Management:**
+        *   High-performance virtual scrolling (`Virtual Scrolling`) for smooth rendering of thousands of tracks.
+        *   Local fuzzy search (`Fuse.js`) matching titles and artists.
+        *   Sorting options by name or date added.
+        *   Batch selection and bulk deletion of tracks.
+        *   Direct HTTP downloads from the server to your browser.
+*   **Built-in Web Audio Player:**
+    *   Listen to downloaded tracks or search previews.
+    *   System integration via the Media Session API (shows media controls, track title, artist, and artwork in notifications and lock screen).
+    *   Global hotkey: spacebar toggles playback (ignores when typing in input fields).
+    *   Fisher-Yates shuffle mode and logarithmic volume control, both persisting in local storage.
+*   **Embedded redb Database:** Light-weight key-value store database written in Rust. Stores settings, sync states, and cached metadata without external dependencies.
 
 ## Quick Start
 
@@ -122,8 +144,18 @@ To build only the backend (without the frontend embedded):
 just build
 ```
 
-## Roadmap
-Future plans can be found in [ROADMAP.md](ROADMAP.md).
+## Futures & Roadmap (What can be implemented)
+
+*   [ ] **YouTube Support:** Downloading audio and video from YouTube tracks, playlists, or channels.
+*   [ ] **Native Android Client:** A dedicated lightweight music player app that fetches music from your VortexDL server automatically.
+*   [ ] **Global Web App:** A hosted version of the app to download tracks directly in the browser without installing a local server.
+*   [ ] **User Account System:** User authentication, personal settings, and custom sync profiles.
+*   [ ] **Metadata (ID3 Tag) Editor:** Editing track titles, artists, genre, and artwork directly from the track detail modal.
+*   [ ] **Audio Transcoding:** Automatically convert downloaded files to lighter formats (like Opus or AAC) to save storage space on portable devices.
+*   [ ] **Wi-Fi Synchronization:** Sync tracks wirelessly using ADB-over-Wi-Fi or a custom local networking protocol.
+*   [ ] **Web Panel Customization:** Custom skins, layout options, and light/dark mode switcher.
+
+For more details on future development plans, refer to [ROADMAP.md](ROADMAP.md).
 
 ## Manifesto
 

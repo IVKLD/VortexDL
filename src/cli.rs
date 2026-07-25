@@ -117,7 +117,7 @@ async fn run_cli_sync(state: AppState) -> Result<()> {
             .find(|d| d.enabled && d.device_id == *id)
         {
             println!("Syncing with device: {} -> {}", id, cfg.remote_music_dir);
-            adb_device::sync_device(id, &cfg.remote_music_dir, state.storage.clone()).await?;
+            adb_device::sync_device(id, &cfg.remote_music_dir, state.storage.clone(), true).await?;
             synced_any = true;
         } else {
             println!(

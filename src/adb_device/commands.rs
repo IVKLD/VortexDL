@@ -7,6 +7,7 @@ use tokio::process::Command;
 #[derive(Debug)]
 pub enum AdbError {
     NotAvailable,
+    AlreadyInProgress,
     Other(anyhow::Error),
 }
 
@@ -14,6 +15,7 @@ impl std::fmt::Display for AdbError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             Self::NotAvailable => write!(f, "adb binary not found in PATH"),
+            Self::AlreadyInProgress => write!(f, "Sync already in progress"),
             Self::Other(e) => write!(f, "{e}"),
         }
     }

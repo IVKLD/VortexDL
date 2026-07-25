@@ -8,7 +8,7 @@ import { ProxyTestResultRdo } from './models/proxy-test.rdo';
 import { parseErrorMessage } from '@shared/error-utils';
 import { StorageInfo } from './models/settings-form.model';
 
-@Injectable({providedIn: 'root'})
+@Injectable({ providedIn: 'root' })
 export class SettingsService {
     private readonly _http = inject(HttpClient);
     private readonly _notification = inject(NotificationService);
@@ -34,16 +34,20 @@ export class SettingsService {
     public getDeviceStorages(deviceId: string) {
         return this._http.get<StorageInfo[]>(`/devices/${deviceId}/storage`);
     }
+
+    public syncDevice(deviceId: string) {
+        return this._http.post(`/devices/${deviceId}/sync`, {});
+    }
 }
 
-@Injectable({providedIn: 'root'})
+@Injectable({ providedIn: 'root' })
 export class SettingsTestingService {
     private readonly _http = inject(HttpClient);
     private readonly _notification = inject(NotificationService);
     private readonly _zone = inject(NgZone);
 
     public testSoundCloud(url: string) {
-        return this._http.post<string>('/settings/test/soundcloud', {url}).pipe(
+        return this._http.post<string>('/settings/test/soundcloud', { url }).pipe(
             tap(() => this._notification.success('SoundCloud URL is valid')),
             catchError((error) => {
                 this._notification.error(parseErrorMessage(error, 'Invalid configuration'));

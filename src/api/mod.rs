@@ -13,7 +13,7 @@ use utoipa_swagger_ui::SwaggerUi;
 use crate::{
     api::{
         handlers::{
-            devices::{devices_ws, get_device_storage_info, list_adb_devices},
+            devices::{devices_ws, get_device_storage_info, list_adb_devices, sync_adb_device},
             download::{
                 download_events, get_download_queue, get_syncing_urls, remove_from_queue,
                 start_download,
@@ -57,6 +57,7 @@ pub mod types;
         crate::api::handlers::devices::list_adb_devices,
         crate::api::handlers::devices::devices_ws,
         crate::api::handlers::devices::get_device_storage_info,
+        crate::api::handlers::devices::sync_adb_device,
         crate::api::handlers::settings::get_settings,
         crate::api::handlers::settings::update_settings,
         crate::api::handlers::settings::diagnostics::test_soundcloud,
@@ -116,6 +117,7 @@ pub async fn build_router(state: AppState, embed_frontend: bool) -> Router {
         .route("/devices", get(list_adb_devices))
         .route("/devices/ws", get(devices_ws))
         .route("/devices/{device_id}/storage", get(get_device_storage_info))
+        .route("/devices/{device_id}/sync", post(sync_adb_device))
         .nest("/settings", settings_routes());
 
     let router = Router::new()

@@ -1,11 +1,14 @@
 :host {
-  width: 50em;
   display: block;
   margin: 0 auto;
 }
 
 form {
   display: flex;
-  flex-direction: column;
+  flex-wrap: wrap;
   gap: 1.2em;
+
+  > * {
+    flex: 1 45%;
+  }
 }

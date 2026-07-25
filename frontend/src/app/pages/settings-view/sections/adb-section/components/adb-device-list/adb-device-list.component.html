@@ -1,44 +1,55 @@
 @let fields = form();
 
 @if (fields.length === 0) {
-    <div class="empty">
-        <mat-icon>cable</mat-icon>
-        <p>No devices configured. Connect an ADB device to your PC to automatically list it here.</p>
-    </div>
+<div class="empty">
+    <mat-icon>cable</mat-icon>
+    <p>No devices configured. Connect an ADB device to your PC to automatically list it here.</p>
+</div>
 } @else {
-    <div class="list">
-        @for (field of fields; track $index; let i = $index) {
-            @let device = field().value();
-            @let isConnected = isDeviceConnected(device.deviceId);
-            <div [class.disabled]="!device.enabled" class="card">
-                <header>
-                    <div>
-                        <mat-icon>phone_android</mat-icon>
-                        <span>{{ device.deviceId }}</span>
-                        <span [class]="'badge ' + (isConnected ? 'connected' : 'disconnected')">
-                            <span></span>
-                            {{ isConnected ? 'active' : 'disconnected' }}
-                        </span>
-                    </div>
-                    <div>
-                        <mat-slide-toggle [formField]="field.enabled" (change)="triggerSave(field.enabled)" />
-                        <button (click)="remove.emit(i)" mat-icon-button type="button">
-                            <mat-icon>delete</mat-icon>
-                        </button>
-                    </div>
-                </header>
+<div class="list">
+    @for (field of fields; track $index) {
+    @let device = field().value();
+    @let isConnected = isDeviceConnected(device.deviceId);
 
-                <mat-form-field>
-                    <mat-label>Storage Location</mat-label>
-                    <mat-select [formField]="field.remoteMusicDir" placeholder="Select storage" (selectionChange)="triggerSave(field.remoteMusicDir)">
-                        @for (storage of getStorageOptions(deviceStorages()[device.deviceId], device.remoteMusicDir); track storage.path) {
-                            <mat-option [value]="storage.path">
-                                {{ storage.name }} ({{ storage.path }})
-                            </mat-option>
-                        }
-                    </mat-select>
-                </mat-form-field>
+    <div [class.disabled]="!device.enabled" class="card">
+        <header>
+            <div>
+                <mat-icon>phone_android</mat-icon>
+                <span>{{ device.deviceId }}</span>
+                <span [class]="'badge ' + (isConnected ? 'connected' : 'disconnected')">
+                    <span></span>
+                    {{ isConnected ? 'active' : 'disconnected' }}
+                </span>
             </div>
-        }
+
+            <div>
+                @if (isConnected) {
+                <button [disabled]="isSyncing(device.deviceId) || !device.remoteMusicDir"
+                    (click)="syncDevice(device.deviceId)" class="sync-btn" mat-icon-button type="button"
+                    title="Sync music to device">
+                    <mat-icon [class.rotating]="isSyncing(device.deviceId)">sync</mat-icon>
+                </button>
+                }
+                <mat-slide-toggle [formField]="field.enabled" (change)="triggerSave(field.enabled)" />
+                <button (click)="remove.emit($index)" class="delete-btn" mat-icon-button type="button"
+                    title="Delete device configuration">
+                    <mat-icon>delete</mat-icon>
+                </button>
+            </div>
+        </header>
+
+        <mat-form-field>
+            <mat-label>Storage Location</mat-label>
+            <mat-select [formField]="field.remoteMusicDir" placeholder="Select storage"
+                (selectionChange)="triggerSave(field.remoteMusicDir)" (focusout)="$event.stopPropagation()">
+                @for (storage of getDeviceStorages(device.deviceId) | async; track storage.path) {
+                <mat-option [value]="storage.path">
+                    {{ storage.path }} ({{ storage.storageType }})
+                </mat-option>
+                }
+            </mat-select>
+        </mat-form-field>
     </div>
+    }
+</div>
 }

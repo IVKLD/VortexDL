@@ -1,19 +1,19 @@
-import { Component, inject, OnInit, signal, ChangeDetectionStrategy } from '@angular/core';
-import { form, FormRoot, max, min, required, validate } from '@angular/forms/signals';
-import { SettingsService, SettingsTestingService } from './settings.service';
-import { NotificationService } from '@app/services/notification.service';
-import { finalize, firstValueFrom } from 'rxjs';
-import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { parseErrorMessage } from '@shared/error-utils';
-import { englishOnly, soundCloudUrl } from '@shared/validators/form.validators';
-import { SettingsFormModel } from '@app/pages/settings-view/models/settings-form.model';
-import { WebSocketService } from '@app/services/websocket.service';
-import { soundcloudUrlTestValidator, proxyUrlValidator, namingTemplateValidator } from './settings.validators';
+import {ChangeDetectionStrategy, Component, inject, OnInit, signal} from '@angular/core';
+import {form, FormRoot, max, min, required, validate} from '@angular/forms/signals';
+import {SettingsService, SettingsTestingService} from './settings.service';
+import {NotificationService} from '@app/services/notification.service';
+import {finalize, firstValueFrom} from 'rxjs';
+import {takeUntilDestroyed} from '@angular/core/rxjs-interop';
+import {parseErrorMessage} from '@shared/error-utils';
+import {englishOnly, soundCloudUrl} from '@shared/validators/form.validators';
+import {SettingsFormModel} from '@app/pages/settings-view/models/settings-form.model';
+import {WebSocketService} from '@app/services/websocket.service';
+import {namingTemplateValidator, proxyUrlValidator, soundcloudUrlTestValidator} from './settings.validators';
 
-import { SoundcloudSectionComponent } from './sections/soundcloud-section/soundcloud-section.component';
-import { DownloadsSectionComponent } from './sections/downloads-section/downloads-section.component';
-import { NetworkSectionComponent } from './sections/network-section/network-section.component';
-import { AdbSectionComponent } from './sections/adb-section/adb-section.component';
+import {SoundcloudSectionComponent} from './sections/soundcloud-section/soundcloud-section.component';
+import {DownloadsSectionComponent} from './sections/downloads-section/downloads-section.component';
+import {NetworkSectionComponent} from './sections/network-section/network-section.component';
+import {AdbSectionComponent} from './sections/adb-section/adb-section.component';
 
 @Component({
     selector: 'app-settings-view',
@@ -121,6 +121,7 @@ export class SettingsView implements OnInit {
 
         const current = [...this.settingsForm.adb.devices().value()];
         let changed = false;
+
         for (const id of devices) {
             if (!current.some(d => d.deviceId === id)) {
                 current.push({
@@ -131,6 +132,7 @@ export class SettingsView implements OnInit {
                 changed = true;
             }
         }
+
         if (changed) {
             this.settingsForm.adb.devices().value.set(current);
             this.settingsForm.adb.devices().markAsDirty();

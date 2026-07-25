@@ -43,8 +43,8 @@ export type SettingsFormModel = {
 }
 
 export enum StorageType {
-    Internal = 'internal',
-    SdCard = 'sdCard',
+    Internal = 'Internal',
+    SdCard = 'SDCard',
 }
 
 export type StorageInfo = {

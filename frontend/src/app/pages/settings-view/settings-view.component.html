@@ -1,5 +1,4 @@
 <form id="settings-form" [formRoot]="settingsForm" (focusout)="submitBtn.click()">
-
     <app-soundcloud-section [form]="settingsForm.soundcloud" [isTesting]="isTesting()"
         (testSoundcloud)="testSoundcloud()" />
 

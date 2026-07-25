@@ -113,7 +113,7 @@
             networking.firewall.allowedTCPPorts = lib.mkIf cfg.openFirewall [ cfg.port ];
 
             environment.systemPackages = [
-              self.packages.${pkgs.system}.default
+              self.packages.${pkgs.stdenv.hostPlatform.system}.default
             ];
 
             users.users = lib.optionalAttrs (cfg.user == "vortexdl") {
@@ -149,7 +149,7 @@
                 WorkingDirectory = cfg.dataDir;
                 Environment = [ "HOME=${cfg.dataDir}" ];
                 
-                ExecStart = "${self.packages.${pkgs.system}.default}/bin/vortexdl --serve --port ${toString cfg.port} --host ${cfg.host}";
+                ExecStart = "${self.packages.${pkgs.stdenv.hostPlatform.system}.default}/bin/vortexdl --serve --port ${toString cfg.port} --host ${cfg.host}";
               };
             };
           };
