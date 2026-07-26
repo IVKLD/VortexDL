@@ -34,6 +34,13 @@ pub enum AudioFormat {
     Mp3,
     Flac,
     Wav,
+    M4a,
+    Aac,
+    Ogg,
+    Opus,
+    Wma,
+    Alac,
+    Aiff,
     Unknown,
 }
 
@@ -46,11 +53,19 @@ impl AudioFormat {
                 "mp3" => Self::Mp3,
                 "flac" => Self::Flac,
                 "wav" => Self::Wav,
+                "m4a" => Self::M4a,
+                "aac" => Self::Aac,
+                "ogg" => Self::Ogg,
+                "opus" => Self::Opus,
+                "wma" => Self::Wma,
+                "alac" => Self::Alac,
+                "aiff" | "aif" => Self::Aiff,
                 _ => Self::Unknown,
             })
             .unwrap_or(Self::Unknown)
     }
 }
+
 
 #[derive(Debug, Serialize, ToSchema)]
 #[serde(rename_all = "camelCase")]

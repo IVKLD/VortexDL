@@ -1,10 +1,10 @@
-import {Component, computed, input, output} from '@angular/core';
+import {Component, input, output} from '@angular/core';
 import {
     FixedSizeVirtualScrollStrategy,
     RxVirtualFor,
     RxVirtualScrollViewportComponent,
 } from '@rx-angular/template/virtual-scrolling';
-import {DownloadItem, DownloadStatus} from '@app/services/download-tracking.service';
+import {DownloadItem} from '@app/services/download-tracking.service';
 import {ActiveDownloadItemComponent} from './components/active-download-item/active-download-item.component';
 
 @Component({
@@ -19,15 +19,6 @@ import {ActiveDownloadItemComponent} from './components/active-download-item/act
     ],
     })
 export class ActiveDownloadsComponent {
-
-    protected readonly sortedActiveDownloads = computed(() => {
-        return [...this.items()]
-            .sort((a, b) => {
-                if (a.status === DownloadStatus.Downloading && b.status !== DownloadStatus.Downloading) return -1;
-                if (a.status !== DownloadStatus.Downloading && b.status === DownloadStatus.Downloading) return 1;
-                return 0;
-            });
-    });
     public readonly items = input.required<DownloadItem[]>();
     public readonly remove = output<number>();
 }

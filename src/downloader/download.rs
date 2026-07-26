@@ -17,7 +17,6 @@ pub async fn download_single_track(
 ) -> Result<()> {
     let max_retries = context.settings.read().await.system.max_retries;
     let mut attempts_left = max_retries.max(1);
-    let tmp_path = task.file_path.with_extension("mp3.tmp");
 
     loop {
         let result = match &stream_source {
@@ -30,17 +29,12 @@ pub async fn download_single_track(
         };
 
         match result {
-            Ok(()) => {
-                fs::rename(&tmp_path, &task.file_path).await?;
-                return Ok(());
-            }
+            Ok(()) => return Ok(()),
             Err(err) => {
                 attempts_left -= 1;
-                fs::remove_file(&tmp_path).await.ok();
                 if attempts_left == 0 {
                     return Err(err);
                 }
-
                 sleep(Duration::from_secs(1)).await;
             }
         }
@@ -57,26 +51,35 @@ async fn download_progressive(
     let active_proxy = proxy_url.or_else(|| settings.network.get_proxy_url());
     let client = build_http_client(active_proxy, 5, 30);
     let response = client.get(url).send().await?.error_for_status()?;
-    let total = response.content_length().unwrap_or(0);
+    let total = response.content_length().unwrap_or_else(|| task.track.estimated_bytes());
 
     let tmp_path = task.file_path.with_extension("mp3.tmp");
-    let mut file = fs::File::create(&tmp_path).await?;
-    let mut stream = response.bytes_stream();
-    let mut position = 0;
+    let res = async {
+        let mut file = fs::File::create(&tmp_path).await?;
+        let mut stream = response.bytes_stream();
+        let mut position = 0;
 
-    while let Some(chunk) = stream.next().await {
-        let chunk = chunk.map_err(|err| anyhow!("Stream error: {err}"))?;
-        file.write_all(&chunk).await?;
-        position += chunk.len() as u64;
+        while let Some(chunk) = stream.next().await {
+            let chunk = chunk.map_err(|err| anyhow!("Stream error: {err}"))?;
+            file.write_all(&chunk).await?;
+            position += chunk.len() as u64;
 
-        if let Some(manager) = &context.dm {
-            manager.update_progress(task.track.id, position, total);
+            if let Some(manager) = &context.dm {
+                manager.update_progress(task.track.id, position, total);
+            }
         }
-    }
 
-    drop(file);
-    verify(&tmp_path, total).await?;
-    Ok(())
+        drop(file);
+        verify(&tmp_path, total).await?;
+        fs::rename(&tmp_path, &task.file_path).await?;
+        Ok::<(), anyhow::Error>(())
+    }
+    .await;
+
+    if res.is_err() {
+        fs::remove_file(&tmp_path).await.ok();
+    }
+    res
 }
 
 async fn download_hls(
@@ -101,11 +104,42 @@ async fn download_hls(
     };
 
     let tmp_path = task.file_path.with_extension("mp3.tmp");
+    let estimated_total = task.track.estimated_bytes();
 
-    client
-        .download_hls_to_file(stream_url, &tmp_path)
-        .await
-        .map_err(|err| anyhow!("HLS download failed: {err}"))?;
+    let res = async {
+        let monitor = context.dm.clone().map(|dm| {
+            let tmp_path = tmp_path.clone();
+            let track_id = task.track.id;
+            tokio::spawn(async move {
+                loop {
+                    sleep(Duration::from_millis(200)).await;
+                    if let Ok(meta) = fs::metadata(&tmp_path).await {
+                        if meta.len() > 0 {
+                            dm.update_progress(track_id, meta.len(), estimated_total);
+                        }
+                    }
+                }
+            })
+        });
 
-    verify(&tmp_path, 0).await
+        let download_res = client
+            .download_hls_to_file(stream_url, &tmp_path)
+            .await
+            .map_err(|err| anyhow!("HLS download failed: {err}"));
+
+        if let Some(handle) = monitor {
+            handle.abort();
+        }
+
+        download_res?;
+        verify(&tmp_path, 0).await?;
+        fs::rename(&tmp_path, &task.file_path).await?;
+        Ok::<(), anyhow::Error>(())
+    }
+    .await;
+
+    if res.is_err() {
+        fs::remove_file(&tmp_path).await.ok();
+    }
+    res
 }

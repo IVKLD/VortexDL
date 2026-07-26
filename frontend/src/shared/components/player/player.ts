@@ -1,8 +1,8 @@
 import {Component, input} from '@angular/core';
-import {PlayableTrack} from '@shared/models/music-track.model';
-import { PlayerInfoComponent } from './components/player-info/player-info.component';
-import { PlayerControlsComponent } from './components/player-controls/player-controls.component';
-import { PlayerVolumeComponent } from './components/player-volume/player-volume.component';
+import {PlayerInfoComponent} from './components/player-info/player-info.component';
+import {PlayerControlsComponent} from './components/player-controls/player-controls.component';
+import {PlayerVolumeComponent} from './components/player-volume/player-volume.component';
+import {PlayableTrack} from "@shared/models/music-track.model";
 
 @Component({
     selector: 'app-player',

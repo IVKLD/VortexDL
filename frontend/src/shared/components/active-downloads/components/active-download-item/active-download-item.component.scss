@@ -4,6 +4,7 @@
 }
 
 .item {
+  position: relative;
   flex: 1;
 
   display: flex;
@@ -14,6 +15,26 @@
   border: 1px solid transparent;
   transition: all 0.2s;
   overflow: hidden;
+  z-index: 1;
+
+  .progress-fill {
+    position: absolute;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    width: var(--progress-width, 0%);
+    background: linear-gradient(90deg, rgba(168, 85, 247, 0.15) 0%, rgba(99, 102, 241, 0.25) 100%);
+    transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .img-container,
+  .info,
+  .item-remove-btn {
+    position: relative;
+    z-index: 1;
+  }
 
   &:hover {
     background: rgba(255, 255, 255, 0.06);
@@ -86,10 +107,25 @@
       }
     }
 
-    mat-progress-bar {
-      height: 4px;
-      margin-top: 8%;
-      border-radius: 1em;
+    .download-status-row {
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+      margin-top: 4px;
+
+      .progress-text {
+        font-size: 0.72rem;
+        font-weight: 600;
+        color: #c084fc;
+        min-width: 2.2rem;
+        line-height: 1;
+      }
+
+      mat-progress-bar {
+        flex: 1;
+        height: 4px;
+        border-radius: 1em;
+      }
     }
   }
 }

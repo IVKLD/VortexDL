@@ -1,16 +1,16 @@
 <app-list-view-shell [loading]="state.isLoading() || state.isSearching()" [hasResults]="tracks().length > 0"
-    [empty]="state.searchQuery().length > 0 && tracks().length === 0"
-    [initial]="state.searchQuery().length === 0 && tracks().length === 0">
+    [empty]="state.searchQuery().trim().length > 0 && tracks().length === 0"
+    [initial]="state.searchQuery().trim().length === 0 && tracks().length === 0">
 
     <app-search-skeleton skeleton />
 
     <ng-container results>
         <rx-virtual-scroll-viewport [itemSize]="82" scrollWindow>
             <app-music-card *rxVirtualFor="let track of tracks(); trackBy: 'id'"
+                [appDragSelect]="track" (itemClick)="handleCardClick($event)"
                 [isActive]="activeTrackId() === track.id" [isPlaying]="player.isTrackPlaying(track.id)"
                 [isSelected]="state.selectedIds().has(track.id)" [track]="track" (playTrack)="playTrack(track)"
-                (click)="handleCardClick(track)" [cdkContextMenuTriggerFor]="cardMenu"
-                [cdkContextMenuTriggerData]="{ $implicit: track }">
+                [cdkContextMenuTriggerFor]="cardMenu" [cdkContextMenuTriggerData]="{ $implicit: track }">
                 <aside meta>
                     <span>{{ track.size | fileSize }}</span>
                     <strong [attr.data-format]="track.format">{{ track.format }}</strong>

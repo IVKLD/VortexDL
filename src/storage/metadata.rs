@@ -91,14 +91,63 @@ fn get_txxx(tag: &Tag, key: &str) -> Option<String> {
 }
 
 pub fn extract_track_metadata(path: impl AsRef<Path>) -> Option<TrackMetadata> {
-    let tag = Tag::read_from_path(path).ok()?;
+    let path = path.as_ref();
+    let tag = Tag::read_from_path(path).ok();
 
-    let id = get_txxx(&tag, SC_IDENTIFIER)?.parse().ok()?;
-    let artwork_url = get_txxx(&tag, SC_ARTWORK_URL);
-    let source_url = get_txxx(&tag, SC_SOURCE_URL);
+    let id = tag
+        .as_ref()
+        .and_then(|t| get_txxx(t, SC_IDENTIFIER))
+        .and_then(|s| s.parse::<i64>().ok())
+        .unwrap_or_else(|| {
+            use std::{
+                collections::hash_map::DefaultHasher,
+                hash::{Hash, Hasher},
+            };
 
-    let artist = tag.artist().unwrap_or("Unknown").to_string();
-    let title = tag.title().unwrap_or("Unknown").to_string();
+            let mut hasher = DefaultHasher::new();
+            path.to_string_lossy().hash(&mut hasher);
+            let hash = hasher.finish();
+
+            let safe_53_bit = (hash & 0x001F_FFFF_FFFF_FFFF) as i64;
+            if safe_53_bit == 0 {
+                -1
+            } else {
+                -safe_53_bit
+            }
+        });
+
+    let artwork_url = tag.as_ref().and_then(|t| get_txxx(t, SC_ARTWORK_URL));
+    let source_url = tag.as_ref().and_then(|t| get_txxx(t, SC_SOURCE_URL));
+
+    let tag_artist = tag
+        .as_ref()
+        .and_then(|t| t.artist())
+        .map(str::trim)
+        .filter(|s| !s.is_empty());
+    let tag_title = tag
+        .as_ref()
+        .and_then(|t| t.title())
+        .map(str::trim)
+        .filter(|s| !s.is_empty());
+
+    let (artist, title) = match (tag_artist, tag_title) {
+        (Some(a), Some(t)) => (a.to_string(), t.to_string()),
+        (Some(a), None) => {
+            let stem = path
+                .file_stem()
+                .and_then(|s| s.to_str())
+                .unwrap_or("Unknown");
+            (a.to_string(), stem.to_string())
+        }
+        (None, Some(t)) => ("Unknown".to_string(), t.to_string()),
+        (None, None) => {
+            let stem = path
+                .file_stem()
+                .and_then(|s| s.to_str())
+                .unwrap_or("Unknown");
+            crate::utils::filename::parse_track_metadata(stem, "Unknown")
+        }
+    };
 
     Some(TrackMetadata {
         id,
@@ -108,3 +157,28 @@ pub fn extract_track_metadata(path: impl AsRef<Path>) -> Option<TrackMetadata> {
         source_url,
     })
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::path::PathBuf;
+
+    #[test]
+    fn test_extract_track_metadata_without_tags() {
+        let path1 = PathBuf::from("/var/lib/vortex-dl/Beauty in the Pain - Rebouz (192k).mp3");
+        let path2 = PathBuf::from("/var/lib/vortex-dl/Beauty in the Pain - Rebouz (192k).mp3");
+        let path3 = PathBuf::from("/var/lib/vortex-dl/Other Track.flac");
+
+        let meta1 = extract_track_metadata(&path1).unwrap();
+        let meta2 = extract_track_metadata(&path2).unwrap();
+        let meta3 = extract_track_metadata(&path3).unwrap();
+
+        assert_eq!(meta1.id, meta2.id, "Same path should yield same deterministic ID");
+        assert_ne!(meta1.id, meta3.id, "Different paths should yield different IDs");
+        assert!(meta1.id < 0, "Generated ID for local tracks should be negative");
+        assert_eq!(meta1.artist, "Beauty in the Pain");
+        assert_eq!(meta1.title, "Rebouz (192k)");
+    }
+}
+
+

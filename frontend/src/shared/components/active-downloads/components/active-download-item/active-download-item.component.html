@@ -1,6 +1,10 @@
 @let data = item();
 
-<div [class.failed]="data.status === DownloadStatus.Failed" class="item">
+<div [class.failed]="data.status === DownloadStatus.Failed" class="item" [style.--progress-width.%]="progressPercent">
+    @if (hasProgress) {
+    <div class="progress-fill"></div>
+    }
+
     <div class="img-container">
         @if (data.artworkUrl) {
         <img [alt]="data.title" [ngSrc]="data.artworkUrl" height="40" width="40" />
@@ -12,18 +16,17 @@
     <div class="info">
         <strong>{{ data.title }}</strong>
 
-        @if (data.status !== DownloadStatus.Downloading) {
-        <small [class.error-text]="data.status === DownloadStatus.Failed">
-            {{ data.status }}
-        </small>
-        }
-
-        @if (data.status === DownloadStatus.Downloading) {
-        @if (data.progress) {
-        <mat-progress-bar mode="determinate" [value]="data.progress" />
+        @if (data.status === DownloadStatus.Failed) {
+        <small class="error-text">Failed</small>
         } @else {
-        <mat-progress-bar mode="indeterminate" />
-        }
+        <div class="download-status-row">
+            @if (hasProgress) {
+            <small class="progress-text">{{ progressPercent }}%</small>
+            <mat-progress-bar mode="determinate" [value]="progressPercent" />
+            } @else {
+            <mat-progress-bar mode="indeterminate" />
+            }
+        </div>
         }
     </div>
 

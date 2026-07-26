@@ -15,9 +15,7 @@
         </div>
     }
 
-    @if (showInitial()) {
-        <div class="pane initial-pane">
-            <ng-content select="[initial]"/>
-        </div>
-    }
+    <div class="pane initial-pane" [class.visible]="showInitial()">
+        <ng-content select="[initial]"/>
+    </div>
 </div>

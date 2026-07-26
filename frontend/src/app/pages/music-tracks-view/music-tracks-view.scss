@@ -12,6 +12,7 @@ app-list-view-shell {
 app-music-card {
   width: 100%;
   margin: 0 auto;
+  user-select: none;
 
   &:hover {
     .actions-wrapper {

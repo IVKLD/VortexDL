@@ -1,17 +1,17 @@
-@let items = sortedActiveDownloads();
+@let itemList = items();
 
 <div class="downloads-container">
-    @if (items.length > 0) {
+    @if (itemList.length > 0) {
     <div class="active-downloads">
         <header>
             <span>Active Downloads</span>
-            @if (items.length > 0) {
-            <mark>{{ items.length }}</mark>
+            @if (itemList.length > 0) {
+            <mark>{{ itemList.length }}</mark>
             }
         </header>
 
         <rx-virtual-scroll-viewport [itemSize]="52">
-            <app-active-download-item *rxVirtualFor="let item of items; trackBy: 'id'" (remove)="remove.emit($event)"
+            <app-active-download-item *rxVirtualFor="let item of itemList; trackBy: 'id'" (remove)="remove.emit($event)"
                 [item]="item" />
         </rx-virtual-scroll-viewport>
     </div>

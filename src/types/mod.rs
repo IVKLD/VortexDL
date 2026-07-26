@@ -21,6 +21,7 @@ pub struct DiscoveredMusicTrack {
     pub artwork_url: Option<Url>,
     #[schema(value_type = Option<String>)]
     pub permalink_url: Option<Url>,
+    pub duration_ms: Option<u64>,
 }
 
 impl DiscoveredMusicTrack {
@@ -30,6 +31,7 @@ impl DiscoveredMusicTrack {
         artist: Option<&soundcloud_rs::UserSummary>,
         artwork_url: Option<Url>,
         permalink_url: Option<Url>,
+        duration_ms: Option<u64>,
     ) -> Self {
         let uploader = artist
             .and_then(|u| u.username.as_deref())
@@ -46,6 +48,7 @@ impl DiscoveredMusicTrack {
             artist,
             artwork_url,
             permalink_url,
+            duration_ms,
         }
     }
 
@@ -53,13 +56,25 @@ impl DiscoveredMusicTrack {
         let id = track.id?;
         let artwork_url = track.artwork_url.and_then(|s| Url::parse(&s).ok());
         let permalink_url = track.permalink_url.and_then(|s| Url::parse(&s).ok());
+        let duration_ms = track.duration.map(|d| d as u64);
         Some(Self::new(
             id,
             track.title.as_deref(),
             track.user.as_ref(),
             artwork_url,
             permalink_url,
+            duration_ms,
         ))
+    }
+
+    pub fn estimated_bytes(&self) -> u64 {
+        match self.duration_ms {
+            Some(ms) => {
+                let secs = (ms as f64 / 1000.0).max(1.0);
+                (secs * 24_000.0) as u64
+            }
+            None => 3_500_000,
+        }
     }
 
     pub fn to_metadata(&self, source_url: Option<String>) -> TrackMetadata {

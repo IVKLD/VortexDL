@@ -1,10 +1,21 @@
-import { effect, Injectable, inject, NgZone, signal } from '@angular/core';
+import { effect, inject, Injectable, NgZone, signal } from '@angular/core';
+import { HttpClient } from '@angular/common/http';
+import { firstValueFrom } from 'rxjs';
 import { PlayableTrack } from '@shared/models/music-track.model';
+import { MusicTracksViewState } from '@app/pages/music-tracks-view/music-tracks-view.state';
+import { shuffleArray } from '@shared/utils/array.utils';
+import {
+    setMediaSessionPlaybackState,
+    setupMediaSessionHandlers,
+    updateMediaSessionMetadata,
+} from '@shared/utils/media-session.utils';
 
 @Injectable({
     providedIn: 'root'
 })
 export class PlayerService {
+    private readonly _http = inject(HttpClient);
+    private readonly _musicState = inject(MusicTracksViewState);
     private readonly zone = inject(NgZone);
     private readonly _audio = new Audio();
     private readonly _queue = signal<PlayableTrack[]>([]);
@@ -44,7 +55,7 @@ export class PlayerService {
         effect(() => {
             const track = this.currentTrack();
             if (track) {
-                this.updateMediaSessionMetadata(track);
+                updateMediaSessionMetadata(track);
             }
         });
     }
@@ -54,19 +65,19 @@ export class PlayerService {
             this.audio.addEventListener('timeupdate', () => {
                 this.progress.set(this.audio.currentTime);
             });
-            
+
             this.audio.addEventListener('loadedmetadata', () => {
                 this.duration.set(this.audio.duration);
             });
-            
+
             this.audio.addEventListener('play', () => {
                 this.setPlaybackState(true);
             });
-            
+
             this.audio.addEventListener('pause', () => {
                 this.setPlaybackState(false);
             });
-            
+
             this.audio.addEventListener('ended', () => {
                 this.zone.run(() => {
                     this.next();
@@ -77,18 +88,16 @@ export class PlayerService {
 
     private setPlaybackState(playing: boolean): void {
         this.isPlaying.set(playing);
-        if ('mediaSession' in navigator) {
-            navigator.mediaSession.playbackState = playing ? 'playing' : 'paused';
-        }
+        setMediaSessionPlaybackState(playing);
     }
 
     private setupMediaSession(): void {
-        if (!('mediaSession' in navigator)) return;
-
-        navigator.mediaSession.setActionHandler('play', () => this.togglePlay());
-        navigator.mediaSession.setActionHandler('pause', () => this.togglePlay());
-        navigator.mediaSession.setActionHandler('previoustrack', () => this.previous());
-        navigator.mediaSession.setActionHandler('nexttrack', () => this.next());
+        setupMediaSessionHandlers({
+            onPlay: () => this.togglePlay(),
+            onPause: () => this.togglePlay(),
+            onPreviousTrack: () => this.previous(),
+            onNextTrack: () => this.next(),
+        });
     }
 
     private setupKeyboardShortcuts(): void {
@@ -110,31 +119,12 @@ export class PlayerService {
         });
     }
 
-    private updateMediaSessionMetadata(track: PlayableTrack): void {
-        if (!('mediaSession' in navigator)) return;
-
-        navigator.mediaSession.metadata = new MediaMetadata({
-            title: track.title,
-            artist: track.artist,
-            album: 'VortexDL',
-            artwork: track.artworkUrl ? [{ src: track.artworkUrl }] : []
-        });
-    }
-
     private generateShuffleQueue(current: PlayableTrack | null): void {
-        const q = [...this._queue()];
+        const q = shuffleArray(this._queue());
         if (q.length === 0) {
             this.shuffleQueue = [];
             this.shuffleIndex = -1;
             return;
-        }
-        
-        // Shuffle the tracks using Fisher-Yates algorithm
-        for (let i = q.length - 1; i > 0; i--) {
-            const j = Math.floor(Math.random() * (i + 1));
-            const temp = q[i]!;
-            q[i] = q[j]!;
-            q[j] = temp;
         }
 
         if (current) {
@@ -194,16 +184,13 @@ export class PlayerService {
         }
     }
 
-    public play(track: PlayableTrack, streamUrl?: string): void {
+    public async play(track: PlayableTrack): Promise<void> {
         if (this.currentTrack()?.id === track.id) {
             this.togglePlay();
             return;
         }
 
         this.currentTrack.set(track);
-        this.audio.src = streamUrl || `/api/downloads/${track.id}/stream`;
-        this.audio.load();
-        this.audio.play();
 
         if (this._shuffle()) {
             const idx = this.shuffleQueue.findIndex(t => t.id === track.id);
@@ -213,13 +200,40 @@ export class PlayerService {
                 this.generateShuffleQueue(track);
             }
         }
+
+        if (track.streamUrl) {
+            this.audio.src = track.streamUrl;
+            this.audio.load();
+            this.audio.play().catch(() => {});
+            return;
+        }
+
+        const isLocal = this._musicState.tracks().some(t => t.id === track.id);
+        if (isLocal) {
+            this.audio.src = `/api/downloads/${track.id}/stream`;
+            this.audio.load();
+            this.audio.play().catch(() => {});
+            return;
+        }
+
+        try {
+            const res = await firstValueFrom(this._http.get<{ url: string }>(`/search/tracks/${track.id}/stream`));
+            track.streamUrl = res.url;
+            if (this.currentTrack()?.id === track.id) {
+                this.audio.src = res.url;
+                this.audio.load();
+                this.audio.play().catch(() => {});
+            }
+        } catch (err) {
+            console.error('Failed to stream track:', err);
+        }
     }
 
     public togglePlay(): void {
         if (this.isPlaying()) {
             this.audio.pause();
         } else if (this.audio.src) {
-            this.audio.play();
+            this.audio.play().catch(() => {});
         }
     }
 
@@ -240,7 +254,7 @@ export class PlayerService {
     public next(): void {
         const queue = this.queue();
         const current = this.currentTrack();
-        
+
         if (queue.length === 0 || !current) return;
 
         if (this._shuffle()) {
@@ -256,14 +270,14 @@ export class PlayerService {
             const currentIndex = queue.findIndex(t => t.id === current.id);
             const nextIndex = (currentIndex + 1) % queue.length;
             const nextTrack = queue[nextIndex];
-            
+
             if (nextTrack) this.play(nextTrack);
         }
     }
 
     public previous(): void {
         const current = this.currentTrack();
-        
+
         if (!current) return;
 
         if (this.audio.currentTime > 3) {
@@ -287,7 +301,7 @@ export class PlayerService {
             const currentIndex = queue.findIndex(t => t.id === current.id);
             const prevIndex = (currentIndex - 1 + queue.length) % queue.length;
             const prevTrack = queue[prevIndex];
-            
+
             if (prevTrack) this.play(prevTrack);
         }
     }

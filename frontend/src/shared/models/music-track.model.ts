@@ -2,6 +2,13 @@ export enum AudioFormat {
     MP3 = 'mp3',
     FLAC = 'flac',
     WAV = 'wav',
+    M4A = 'm4a',
+    AAC = 'aac',
+    OGG = 'ogg',
+    OPUS = 'opus',
+    WMA = 'wma',
+    ALAC = 'alac',
+    AIFF = 'aiff',
     UNKNOWN = 'unknown',
 }
 
@@ -10,7 +17,9 @@ export interface PlayableTrack {
     artist: string;
     title: string;
     artworkUrl: string | null;
-    sourceUrl: string | null;
+    sourceUrl?: string | null;
+    permalinkUrl?: string | null;
+    streamUrl?: string;
 }
 
 export interface MusicTrack extends PlayableTrack {
@@ -20,17 +29,3 @@ export interface MusicTrack extends PlayableTrack {
 }
 
 export type MusicTracks = MusicTrack[];
-
-export interface UiMusicTrack {
-    data: MusicTrack;
-    isActive: boolean;
-    isPlaying: boolean;
-    isSelected: boolean;
-}
-
-export enum MusicCardAction {
-    PLAY = 'play',
-    DELETE = 'delete',
-    CLICK = 'click',
-    TOGGLE_SELECT = 'toggleSelect',
-}

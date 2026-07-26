@@ -1,4 +1,4 @@
-import { Signal } from '@angular/core';
+import { Signal, WritableSignal } from '@angular/core';
 import { FieldTree } from '@angular/forms/signals';
 
 export enum HeaderFeature {
@@ -16,6 +16,7 @@ export interface HeaderConfig {
 
 export interface HeaderSearchBind {
     formField: FieldTree<string>;
+    focused?: WritableSignal<boolean>;
     onSubmit?: (query: string) => void;
     onClear?: () => void;
 }

@@ -16,7 +16,7 @@ use futures::{
     stream::{self, StreamExt},
 };
 use indicatif::MultiProgress;
-use tokio::{sync::RwLock, task::JoinHandle};
+use tokio::sync::RwLock;
 use url::Url;
 
 use crate::{
@@ -25,7 +25,7 @@ use crate::{
     storage::MusicStorage,
     types::DiscoveredMusicTrack,
     ui::create_total_progress_bar,
-    utils::filename::clean_filename,
+    utils::{cancellation::run_with_cancellation, filename::clean_filename},
 };
 
 #[derive(Clone)]
@@ -41,7 +41,7 @@ impl Context {
         Self {
             storage: state.storage.clone(),
             client: state.client.clone(),
-            dm: None,
+            dm: Some(state.download_manager.clone()),
             settings: state.settings.clone(),
         }
     }
@@ -52,18 +52,14 @@ impl Context {
     }
 }
 
-#[derive(Clone)]
-pub(crate) struct DownloadTask {
+pub struct DownloadTask {
     pub track: DiscoveredMusicTrack,
     pub file_path: PathBuf,
 }
 
 impl DownloadTask {
-    pub fn display_name(&self) -> &str {
-        self.file_path
-            .file_stem()
-            .and_then(|s| s.to_str())
-            .unwrap_or(&self.track.title)
+    pub fn display_name(&self) -> String {
+        format!("{} - {}", self.track.artist, self.track.title)
     }
 
     pub fn new(track: &DiscoveredMusicTrack, naming_template: &str, output_dir: &Path) -> Self {
@@ -102,43 +98,6 @@ pub async fn run_download_pipeline(ctx: &Context, url: &Url) -> Result<()> {
     Ok(())
 }
 
-/// Runs resolution, downloading and tagging steps sequentially for a single track.
-async fn run_track_download_pipeline(
-    context: Context,
-    mut task: DownloadTask,
-    pb: indicatif::ProgressBar,
-) -> Option<JoinHandle<()>> {
-    if let Some(manager) = &context.dm {
-        manager.update_downloading(task.track.id);
-    }
-
-    let artwork_handle = resolve::spawn_artwork_fetch(&context, task.track.artwork_url.as_ref());
-
-    let stream = match resolve::resolve_stream_source(&context, task.track.id).await {
-        Ok(s) => s,
-        Err(err) => {
-            complete::handle_track_failure(&context, &task, err, &pb).await;
-            return None;
-        }
-    };
-
-    if task.track.permalink_url.is_none() {
-        task.track.permalink_url = Url::parse(stream.url()).ok();
-    }
-
-    if let Err(err) = download::download_single_track(&context, &task, stream).await {
-        complete::handle_track_failure(&context, &task, err, &pb).await;
-        return None;
-    }
-
-    Some(tokio::spawn(complete::finalize_single_track(
-        context,
-        task,
-        artwork_handle,
-        pb,
-    )))
-}
-
 async fn run_parallel_downloads(ctx: &Context, tracks: Vec<DiscoveredMusicTrack>) {
     let mp = MultiProgress::new();
     let total_tracks = tracks.len();
@@ -156,17 +115,44 @@ async fn run_parallel_downloads(ctx: &Context, tracks: Vec<DiscoveredMusicTrack>
     let results: Vec<_> = stream::iter(tracks)
         .map(|track| {
             let ctx = ctx.clone();
-            let total_pb = total_pb.clone();
+            let pb = total_pb.clone();
             let output_dir = output_dir.clone();
             let naming_template = naming_template.clone();
 
             async move {
-                let task = DownloadTask::new(&track, &naming_template, &output_dir);
+                let mut task = DownloadTask::new(&track, &naming_template, &output_dir);
+                let cancel_rx = ctx.dm.as_ref().and_then(|m| m.get_cancel_receiver(task.track.id));
 
-                let pb_clone = total_pb.clone();
-                let result = run_track_download_pipeline(ctx, task, pb_clone).await;
-                total_pb.inc(1);
-                result
+                if let Some(m) = &ctx.dm {
+                    m.update_downloading(task.track.id);
+                }
+
+                let artwork_handle = resolve::spawn_artwork_fetch(&ctx, task.track.artwork_url.as_ref());
+
+                let download_result = run_with_cancellation(cancel_rx, async {
+                    let stream = resolve::resolve_stream_source(&ctx, task.track.id).await?;
+                    if task.track.permalink_url.is_none() {
+                        task.track.permalink_url = Url::parse(stream.url()).ok();
+                    }
+                    download::download_single_track(&ctx, &task, stream).await
+                })
+                .await?;
+
+                let handle = match download_result {
+                    Ok(()) => Some(tokio::spawn(complete::finalize_single_track(
+                        ctx,
+                        task,
+                        artwork_handle,
+                        pb.clone(),
+                    ))),
+                    Err(err) => {
+                        complete::handle_track_failure(&ctx, &task, err, &pb).await;
+                        None
+                    }
+                };
+
+                pb.inc(1);
+                handle
             }
         })
         .buffer_unordered(max_concurrent)

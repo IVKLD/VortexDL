@@ -22,12 +22,12 @@ import { parseErrorMessage } from "@shared/error-utils";
 export class AdbDeviceListComponent {
     private readonly settingsService = inject(SettingsService);
     private readonly notificationService = inject(NotificationService);
-    private readonly _storagesCache = new Map<string, Observable<StorageInfo[]>>();
-
-    protected readonly syncingDevices = signal<Set<string>>(new Set());
 
     public readonly form = input.required<FieldTree<AdbDeviceSettings[]>>();
     public readonly connectedDevices = input<string[]>([]);
+    private readonly _storagesCache = new Map<string, Observable<StorageInfo[]>>();
+
+    protected readonly syncingDevices = signal<Set<string>>(new Set());
     public readonly remove = output<number>();
 
     private toggleSyncing(deviceId: string, isSyncing: boolean) {

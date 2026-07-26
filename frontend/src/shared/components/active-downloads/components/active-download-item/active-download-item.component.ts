@@ -12,9 +12,17 @@ import {MatIconButton} from "@angular/material/button";
     styleUrl: './active-download-item.component.scss',
     })
 export class ActiveDownloadItemComponent {
-    protected readonly DownloadStatus = DownloadStatus;
     public readonly item = input.required<DownloadItem>();
+    protected readonly DownloadStatus = DownloadStatus;
     public readonly remove = output<number>();
+
+    protected get hasProgress(): boolean {
+        return (this.item().progress ?? 0) > 0;
+    }
+
+    protected get progressPercent(): number {
+        return Math.round(this.item().progress ?? 0);
+    }
 
     protected onRemove() {
         this.remove.emit(this.item().id);

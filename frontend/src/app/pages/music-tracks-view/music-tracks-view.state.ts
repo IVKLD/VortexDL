@@ -89,15 +89,18 @@ export class MusicTracksViewState {
         this._selectedIds.update(ids => (ids.delete(id), new Set(ids)));
     }
 
+    public selectTrack(track: MusicTrack): void {
+        this._selectedIds.update(ids => ids.has(track.id) ? ids : new Set(ids).add(track.id));
+    }
+
+    public deselectTrack(track: MusicTrack): void {
+        this._selectedIds.update(ids => ids.has(track.id) ? (ids.delete(track.id), new Set(ids)) : ids);
+    }
+
     public toggleSelect(track: MusicTrack): void {
         this._selectedIds.update(ids => {
             const next = new Set(ids);
-            if (next.has(track.id)) {
-                next.delete(track.id);
-            } else {
-                next.add(track.id);
-            }
-            return next;
+            return next.delete(track.id) ? next : next.add(track.id);
         });
     }
 

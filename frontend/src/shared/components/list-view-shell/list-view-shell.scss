@@ -19,15 +19,11 @@
   grid-column: 1;
   grid-row: 1;
   opacity: 1;
-  transform: translateY(0);
-  will-change: transform, opacity;
   transition: opacity 0.28s cubic-bezier(0.25, 0.46, 0.45, 0.94),
-              transform 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94),
               filter 0.25s ease;
 
   @starting-style {
     opacity: 0;
-    transform: translateY(6px);
   }
 }
 
@@ -55,14 +51,36 @@
 
   &.dimmed {
     opacity: 0.45;
-    filter: blur(2px);
     pointer-events: none;
   }
 }
 
-.empty-pane,
-.initial-pane {
+.empty-pane {
   display: flex;
   flex-direction: column;
   flex: 1;
+}
+
+.initial-pane {
+  display: none;
+  opacity: 0;
+  height: auto;
+  align-self: start;
+  width: 100%;
+  transition: opacity 0.2s cubic-bezier(0.25, 0.46, 0.45, 0.94),
+              display 0.2s allow-discrete;
+  pointer-events: none;
+
+  &.visible {
+    display: flex;
+    flex-direction: column;
+    height: auto;
+    align-self: start;
+    opacity: 1;
+    pointer-events: auto;
+
+    @starting-style {
+      opacity: 0;
+    }
+  }
 }

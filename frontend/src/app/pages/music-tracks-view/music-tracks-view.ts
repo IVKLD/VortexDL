@@ -1,10 +1,15 @@
-import { Component, inject, computed } from '@angular/core';
+import { Component, computed, inject } from '@angular/core';
 import { MusicTrack } from '@shared/models/music-track.model';
 import { MusicCard } from '@shared/components/music-card/music-card';
 import { MusicTracksViewState } from './music-tracks-view.state';
 import { MusicTracksViewService } from './music-tracks-view.service';
 import { PlayerService } from '@app/services/player.service';
-import { FixedSizeVirtualScrollStrategy, RxVirtualFor, RxVirtualScrollViewportComponent, RxVirtualScrollWindowDirective } from '@rx-angular/template/virtual-scrolling';
+import {
+    FixedSizeVirtualScrollStrategy,
+    RxVirtualFor,
+    RxVirtualScrollViewportComponent,
+    RxVirtualScrollWindowDirective
+} from '@rx-angular/template/virtual-scrolling';
 import { MatDialog } from '@angular/material/dialog';
 import { MusicDetailModal } from './music-detail-modal/music-detail-modal';
 import { MatIcon } from '@angular/material/icon';
@@ -16,10 +21,26 @@ import { SearchSkeletonComponent } from '../search-view/components/search-skelet
 import { ListViewShellComponent } from '@shared/components/list-view-shell/list-view-shell';
 import { FileSizePipe } from '@shared/pipes/file-size.pipe';
 import { MatIconButton } from '@angular/material/button';
+import { DragSelectDirective } from './directives/drag-select.directive';
 
 @Component({
     selector: 'app-music-tracks-view',
-    imports: [MusicCard, RxVirtualScrollViewportComponent, RxVirtualFor, FixedSizeVirtualScrollStrategy, RxVirtualScrollWindowDirective, MatIcon, SelectionBar, CdkMenuModule, FileSizePipe, MatIconButton, SearchSkeletonComponent, EmptyPaneComponent, ListViewShellComponent],
+    imports: [
+        MusicCard,
+        RxVirtualScrollViewportComponent,
+        RxVirtualFor,
+        FixedSizeVirtualScrollStrategy,
+        RxVirtualScrollWindowDirective,
+        MatIcon,
+        SelectionBar,
+        CdkMenuModule,
+        FileSizePipe,
+        MatIconButton,
+        SearchSkeletonComponent,
+        EmptyPaneComponent,
+        ListViewShellComponent,
+        DragSelectDirective,
+    ],
     templateUrl: './music-tracks-view.html',
     styleUrl: './music-tracks-view.scss',
 })
@@ -47,12 +68,7 @@ export class MusicTracksView {
         if (this._overlayContainer.getContainerElement().hasChildNodes()) {
             return;
         }
-
-        if (this.state.hasSelection()) {
-            this.state.toggleSelect(track);
-        } else {
-            this._dialog.open(MusicDetailModal, { data: track, maxWidth: '500px', width: '100%' });
-        }
+        this._dialog.open(MusicDetailModal, { data: track, maxWidth: '500px', width: '100%' });
     }
 
     protected deleteTrack(track: MusicTrack): void {

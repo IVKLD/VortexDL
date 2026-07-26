@@ -1,11 +1,8 @@
-export interface SearchTrackItemRdo {
-    id: number;
-    title: string;
-    artist: string;
-    artworkUrl: string | null;
+import { PlayableTrack } from '@shared/models/music-track.model';
+
+export interface SearchTrackItemRdo extends PlayableTrack {
     duration: number | null;
     playbackCount: number | null;
-    permalinkUrl: string | null;
     genre: string | null;
 }
 

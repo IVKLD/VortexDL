@@ -3,7 +3,7 @@ import { HttpClient } from '@angular/common/http';
 import { MusicTracksViewState } from '../pages/music-tracks-view/music-tracks-view.state';
 import { PlayerService } from '@app/services/player.service';
 import { AudioFormat, MusicTrack } from '@shared/models/music-track.model';
-import { Subscription } from 'rxjs';
+import { Observable, Subscription } from 'rxjs';
 import { WebSocketService } from './websocket.service';
 
 export enum DownloadStatus {
@@ -11,6 +11,7 @@ export enum DownloadStatus {
     Downloading = 'downloading',
     Finished = 'finished',
     Failed = 'failed',
+    Canceled = 'canceled',
 }
 
 export interface DownloadItem extends MusicTrack {
@@ -37,8 +38,27 @@ export type ServerEvent =
 @Injectable({
     providedIn: 'root',
 })
-export class DownloadTrackingService {
+export class DownloadTrackingApiService {
     private readonly _http = inject(HttpClient);
+
+    public getQueue(): Observable<DownloadItem[]> {
+        return this._http.get<DownloadItem[]>('/download/queue');
+    }
+
+    public getSyncingUrls(): Observable<string[]> {
+        return this._http.get<string[]>('/download/syncing');
+    }
+
+    public removeFromQueue(id: number): Observable<void> {
+        return this._http.delete<void>(`/download/queue/${id}`);
+    }
+}
+
+@Injectable({
+    providedIn: 'root',
+})
+export class DownloadTrackingService {
+    private readonly _api = inject(DownloadTrackingApiService);
     private readonly _musicState = inject(MusicTracksViewState);
     private readonly _player = inject(PlayerService);
     private readonly _zone = inject(NgZone);
@@ -56,21 +76,17 @@ export class DownloadTrackingService {
     }
 
     private syncActiveDownloads(): void {
-        this._http.get<DownloadItem[]>('/download/queue').subscribe({
+        this._api.getQueue().subscribe({
             next: items => this.activeDownloads.set(items),
-            error: err => console.error('Failed to sync active downloads:', err)
+            error: err => console.error('Failed to sync active downloads:', err),
         });
     }
 
     private fetchSyncingUrls(): void {
-        this._http.get<string[]>('/download/syncing').subscribe({
-            next: urls => this.updateSyncingUrls(urls),
-            error: err => console.error('Failed to sync active sync processes:', err)
+        this._api.getSyncingUrls().subscribe({
+            next: urls => this.syncingUrls.set(urls),
+            error: err => console.error('Failed to sync active sync processes:', err),
         });
-    }
-
-    private updateSyncingUrls(urls: string[]): void {
-        this.syncingUrls.set(urls);
     }
 
     private initializeWebSocket(): void {
@@ -90,30 +106,38 @@ export class DownloadTrackingService {
     }
 
     private handleServerEvent(event: ServerEvent): void {
-        switch (event.type) {
-            case ServerEventType.TrackUpdate:
-                this.handleTrackUpdate(event.item);
-                break;
-            case ServerEventType.SyncStarted:
-                this.updateSyncingUrls([...this.syncingUrls().filter(u => u !== event.url), event.url]);
-                break;
-            case ServerEventType.SyncFinished:
-                if (event.url) {
-                    this.updateSyncingUrls(this.syncingUrls().filter(u => u !== event.url));
-                } else {
-                    this.fetchSyncingUrls();
-                }
-                this._musicState.refresh().subscribe({
-                    next: () => this.syncPlayerQueue()
-                });
-                break;
-            case ServerEventType.Message:
-                if (event.level === 'error') this.addError(event.message);
-                break;
-            case ServerEventType.Error:
-                this.addError(event.message);
-                break;
+        if (event.type === ServerEventType.TrackUpdate) {
+            this.handleTrackUpdate(event.item);
+            return;
         }
+
+        if (event.type === ServerEventType.SyncStarted) {
+            this.updateSyncingUrls([...this.syncingUrls().filter(u => u !== event.url), event.url]);
+            return;
+        }
+
+        if (event.type === ServerEventType.SyncFinished) {
+            if (event.url) {
+                this.updateSyncingUrls(this.syncingUrls().filter(u => u !== event.url));
+            } else {
+                this.fetchSyncingUrls();
+            }
+            return;
+        }
+
+        if (event.type === ServerEventType.Message) {
+            if (event.level === 'error') this.addError(event.message);
+            return;
+        }
+
+        if (event.type === ServerEventType.Error) {
+            this.addError(event.message);
+            return;
+        }
+    }
+
+    private updateSyncingUrls(urls: string[]): void {
+        this.syncingUrls.set(urls);
     }
 
     private handleTrackUpdate(item: DownloadItem): void {
@@ -130,6 +154,7 @@ export class DownloadTrackingService {
                 createdAt: item.createdAt || 0,
                 size: item.size || 0,
             });
+            this.syncPlayerQueue();
         } else if (item.status === DownloadStatus.Failed) {
             this.addError(`Failed to download "${item.artist} - ${item.title}": ${item.error || 'Unknown error'}`);
         }
@@ -140,9 +165,9 @@ export class DownloadTrackingService {
     }
 
     private syncPlayerQueue(): void {
-        const validIds = new Set(this._musicState.sortedTracks().map(t => t.id));
+        const localTrackIds = new Set(this._musicState.sortedTracks().map(t => t.id));
         for (const track of this._player.queue()) {
-            if (!validIds.has(track.id)) {
+            if (!track.streamUrl && !localTrackIds.has(track.id)) {
                 this._player.removeFromQueue(track.id);
             }
         }
@@ -150,16 +175,28 @@ export class DownloadTrackingService {
 
     private updateActiveDownloads(item: DownloadItem): void {
         this.activeDownloads.update(downloads => {
-            const filtered = downloads.filter(d => d.id !== item.id);
-            if (item.status === DownloadStatus.Finished || item.status === DownloadStatus.Failed) {
-                return filtered;
+            const index = downloads.findIndex(d => d.id === item.id);
+
+            if (
+                item.status === DownloadStatus.Finished ||
+                item.status === DownloadStatus.Failed ||
+                item.status === DownloadStatus.Canceled
+            ) {
+                return downloads.filter(d => d.id !== item.id);
             }
-            return [...filtered, item];
+
+            if (index !== -1) {
+                const updated = [...downloads];
+                updated[index] = { ...updated[index], ...item };
+                return updated;
+            }
+
+            return [...downloads, item];
         });
     }
 
     public removeFromQueue(id: number): void {
-        this._http.delete(`/download/queue/${id}`).subscribe({
+        this._api.removeFromQueue(id).subscribe({
             next: () => this.activeDownloads.update(items => items.filter(i => i.id !== id)),
             error: err => {
                 console.error('Failed to remove from queue:', err);

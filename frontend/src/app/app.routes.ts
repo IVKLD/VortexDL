@@ -6,7 +6,7 @@ import { SettingsView } from './pages/settings-view/settings-view.component';
 import { SearchView } from './pages/search-view/search-view';
 import { MusicSortOption, MusicTracksViewState } from './pages/music-tracks-view/music-tracks-view.state';
 import { SearchViewState } from './pages/search-view/search-view.state';
-import { inject } from '@angular/core';
+import { inject, signal } from '@angular/core';
 import { form } from '@angular/forms/signals';
 
 export interface RouteData {
@@ -72,8 +72,9 @@ export const routes: CustomRoutes = [
                 const state = inject(SearchViewState);
                 return {
                     formField: form(state.query),
+                    focused: signal(false),
                     onSubmit: (q: string) => state.search(q),
-                    onClear: () => state.clearSearch(),
+                    onClear: () => state.search(''),
                 };
             },
         },

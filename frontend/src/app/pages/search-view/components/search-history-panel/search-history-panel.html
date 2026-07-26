@@ -1,0 +1,22 @@
+<header>
+    <div>
+        <mat-icon>history</mat-icon>
+        <h3>Recent Searches</h3>
+        <span class="count">{{ history.history().length }}</span>
+    </div>
+    <button mat-icon-button matTooltip="Clear all" (click)="history.clear()" aria-label="Clear search history">
+        <mat-icon>delete_sweep</mat-icon>
+    </button>
+</header>
+<div class="chips">
+    @for (item of history.history(); track item) {
+    <div class="chip" (mousedown)="$event.preventDefault(); onSelect(item)" role="button" tabindex="0">
+        <mat-icon class="icon">search</mat-icon>
+        <span class="label">{{ item }}</span>
+        <button type="button" class="remove-btn" (click)="$event.stopPropagation(); history.remove(item)"
+            aria-label="Remove item" matTooltip="Remove">
+            <mat-icon>close</mat-icon>
+        </button>
+    </div>
+    }
+</div>

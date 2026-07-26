@@ -68,3 +68,9 @@ body {
 .rx-virtual-scroll-element {
   scrollbar-width: thin;
 }
+
+//test
+.mat-drawer-container,
+.mat-drawer-content {
+  overflow: visible !important;
+}

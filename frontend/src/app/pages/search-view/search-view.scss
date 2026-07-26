@@ -1,112 +1,11 @@
 :host {
   display: flex;
   flex-direction: column;
-  height: auto;
-  min-height: calc(100vh - 90px);
-}
-
-app-list-view-shell {
-  display: flex;
-  flex-direction: column;
-  flex: 1;
-  width: 100%;
 }
 
 rx-virtual-scroll-viewport {
   height: auto;
   width: 100%;
-
-  app-music-card {
-    width: 100%;
-
-    &:hover {
-      .download-btn,
-      .delete-btn {
-        opacity: 1;
-      }
-    }
-
-    .meta {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      margin-right: 12px;
-      flex-shrink: 0;
-
-      .genre {
-        font-size: 0.7rem;
-        font-weight: 600;
-        text-transform: uppercase;
-        letter-spacing: 0.05em;
-        padding: 2px 8px;
-        border-radius: 2em;
-        background: rgba(255, 255, 255, 0.04);
-        color: rgba(255, 255, 255, 0.6);
-        border: 1px solid rgba(255, 255, 255, 0.06);
-        max-width: 100px;
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
-      }
-
-      .duration {
-        font-size: 0.8rem;
-        color: rgba(255, 255, 255, 0.5);
-        font-variant-numeric: tabular-nums;
-        letter-spacing: 0.05em;
-      }
-
-      .plays {
-        display: flex;
-        align-items: center;
-        gap: 2px;
-        font-size: 0.75rem;
-        color: rgba(255, 255, 255, 0.35);
-
-        mat-icon {
-          font-size: 14px;
-          width: 14px;
-          height: 14px;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-        }
-      }
-    }
-
-    .search-actions {
-      display: flex;
-      align-items: center;
-    }
-
-    .download-btn {
-      flex-shrink: 0;
-      opacity: 0;
-      transition: opacity 0.2s ease, color 0.2s ease;
-      color: rgba(255, 255, 255, 0.7);
-
-      &:hover {
-        color: var(--mat-sys-primary);
-      }
-
-      &.downloaded {
-        opacity: 0.95 !important;
-        color: #4caf50;
-      }
-    }
-
-    .delete-btn {
-      flex-shrink: 0;
-      opacity: 0;
-      transition: opacity 0.2s ease, color 0.2s ease;
-      color: rgba(255, 255, 255, 0.45);
-      margin-right: 8px;
-
-      &:hover {
-        color: var(--mat-sys-error, #ff5252);
-      }
-    }
-  }
 }
 
 .list-loader {
@@ -116,3 +15,4 @@ rx-virtual-scroll-viewport {
   padding: 16px 0;
   width: 100%;
 }
+

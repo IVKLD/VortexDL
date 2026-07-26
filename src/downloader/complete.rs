@@ -15,7 +15,7 @@ use crate::{
         metadata::{SaveTrackArgs, save_track_info},
         sync::sync_url_ids,
     },
-    utils::soundcloud,
+    utils::{soundcloud, time::system_time_to_secs},
 };
 
 pub async fn finalize_pipeline_sync(
@@ -48,11 +48,11 @@ pub async fn finalize_single_track(
     let file_metadata = tokio::fs::metadata(&task.file_path).await.ok();
     let size = file_metadata.as_ref().map_or(0, |m| m.len());
 
-    let now = crate::utils::system_time_to_secs(SystemTime::now());
+    let now = system_time_to_secs(SystemTime::now());
 
     let mtime = file_metadata
         .and_then(|m| m.modified().ok())
-        .map(crate::utils::system_time_to_secs)
+        .map(system_time_to_secs)
         .unwrap_or(now);
 
     let permalink_url = task.track.permalink_url.clone();

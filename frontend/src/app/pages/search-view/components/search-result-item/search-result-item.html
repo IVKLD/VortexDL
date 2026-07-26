@@ -1,0 +1,65 @@
+<app-music-card [track]="track()" [isPlaying]="isPlaying()" (playTrack)="playTrack.emit(track())"
+    [cdkContextMenuTriggerFor]="cardMenu" [cdkContextMenuTriggerData]="{ $implicit: track() }">
+    @if (track().genre || track().duration || track().playbackCount) {
+    <div meta>
+        @if (track().genre) {
+        <span class="genre">{{ track().genre }}</span>
+        }
+        @if (track().duration) {
+        <span class="duration">{{ track().duration | duration }}</span>
+        }
+        @if (track().playbackCount) {
+        <span class="plays">
+            <mat-icon>play_arrow</mat-icon>
+            {{ track().playbackCount | compactNumber }}
+        </span>
+        }
+    </div>
+    }
+
+    <div actions>
+        @if (isDownloaded()) {
+        <button mat-icon-button class="downloaded" title="Downloaded"
+            (click)="$event.stopPropagation()">
+            <mat-icon>check_circle</mat-icon>
+        </button>
+        }
+
+        @if (isDownloading()) {
+        <mat-spinner diameter="20" />
+        }
+
+        @if (!isDownloaded() && !isDownloading()) {
+        <button mat-icon-button title="Download track"
+            (click)="$event.stopPropagation(); downloadTrack.emit(track())">
+            <mat-icon>download</mat-icon>
+        </button>
+        }
+
+        <menu role="presentation">
+            <button [cdkMenuTriggerFor]="cardMenu" [cdkMenuTriggerData]="{ $implicit: track() }"
+                (click)="$event.stopPropagation()" mat-icon-button>
+                <mat-icon>more_vert</mat-icon>
+            </button>
+        </menu>
+    </div>
+</app-music-card>
+
+<ng-template #cardMenu let-trackData>
+    <div cdkMenu>
+        <button cdkMenuItem (click)="playTrack.emit(trackData)">
+            <mat-icon>{{ isPlaying() ? 'pause' : 'play_arrow' }}</mat-icon>
+            <span>{{ isPlaying() ? 'Pause' : 'Play' }}</span>
+        </button>
+        <button cdkMenuItem [disabled]="isDownloaded() || isDownloading()" (click)="downloadTrack.emit(trackData)">
+            <mat-icon>download</mat-icon>
+            <span>{{ isDownloaded() ? 'Downloaded' : 'Download' }}</span>
+        </button>
+        @if (isDownloaded()) {
+        <button cdkMenuItem class="delete" (click)="deleteTrack.emit(trackData)">
+            <mat-icon>delete</mat-icon>
+            <span>Delete</span>
+        </button>
+        }
+    </div>
+</ng-template>

@@ -18,10 +18,12 @@
 
     @if (headerService.hasFeature(Feature.Search) && headerService.searchBind(); as searchBind) {
     <div class="center">
-        <mat-form-field subscriptSizing="dynamic">
+        <mat-form-field subscriptSizing="dynamic" (click)="searchBind.focused?.set(true)">
             <mat-icon matPrefix>search</mat-icon>
             <input [formField]="searchBind.formField" matInput
                 [placeholder]="headerService.config()?.searchPlaceholder || 'Search...'"
+                (focus)="searchBind.focused?.set(true)"
+                (blur)="searchBind.focused?.set(false)"
                 (keydown)="onSearchKeydown($event)" />
         </mat-form-field>
     </div>

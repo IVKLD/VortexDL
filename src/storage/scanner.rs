@@ -10,7 +10,17 @@ use super::{MusicStorage, metadata::extract_track_metadata, model::LocalMusicTra
 use crate::{
     api::types::AudioFormat,
     database::cache::{CachedMusicTrack, get_cached_music_tracks, update_cached_tracks_batch},
+    utils::time::system_time_to_secs,
 };
+
+fn get_file_timestamps(metadata: &fs::Metadata) -> (u64, u64) {
+    let mtime = metadata.modified().ok().map(system_time_to_secs).unwrap_or(0);
+    let mut created_at = metadata.created().ok().map(system_time_to_secs).unwrap_or(0);
+    if created_at == 0 {
+        created_at = mtime;
+    }
+    (mtime, created_at)
+}
 
 impl MusicStorage {
     pub async fn scan_library(base_path: &str) -> HashMap<i64, LocalMusicTrack> {
@@ -44,7 +54,7 @@ impl MusicStorage {
                         continue;
                     }
 
-                    if !matches!(AudioFormat::from_path(&path), AudioFormat::Mp3) {
+                    if AudioFormat::from_path(&path) == AudioFormat::Unknown {
                         continue;
                     }
 
@@ -92,22 +102,7 @@ impl MusicStorage {
     }
 }
 
-fn get_file_timestamps(metadata: &fs::Metadata) -> (u64, u64) {
-    let mtime = metadata
-        .modified()
-        .ok()
-        .map(crate::utils::system_time_to_secs)
-        .unwrap_or(0);
-    let mut created_at = metadata
-        .created()
-        .ok()
-        .map(crate::utils::system_time_to_secs)
-        .unwrap_or(0);
-    if created_at == 0 {
-        created_at = mtime;
-    }
-    (mtime, created_at)
-}
+
 
 fn parse_file_metadata(
     path: &PathBuf,

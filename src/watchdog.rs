@@ -72,6 +72,12 @@ pub async fn init(
 
                     if last_event_time.is_some_and(|t| t.elapsed() >= debounce_duration) {
                         last_event_time = None;
+
+                        if !dm.is_idle() {
+                            tracing::debug!("Watchdog: filesystem changes detected, but downloads are active. Deferring sync.");
+                            continue;
+                        }
+
                         tracing::info!("Watchdog: changes detected, reindexing library");
 
                         dm.broadcast_event(ServerEvent::Message {
@@ -106,5 +112,5 @@ fn is_relevant(event: &notify::Event) -> bool {
     event
         .paths
         .iter()
-        .any(|path| matches!(AudioFormat::from_path(path), AudioFormat::Mp3))
+        .any(|path| AudioFormat::from_path(path) != AudioFormat::Unknown)
 }
