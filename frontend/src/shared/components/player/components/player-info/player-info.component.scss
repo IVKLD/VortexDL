@@ -6,32 +6,89 @@
   gap: 12px;
   width: 100%;
 
-  img,
-  .placeholder {
+  .cover-wrapper {
+    position: relative;
     width: 160px;
     height: 160px;
     border-radius: 16px;
     overflow: hidden;
+    isolation: isolate;
+    transform: translateZ(0);
     box-shadow: 0 12px 32px rgba(0, 0, 0, 0.5);
     border: 1px solid rgba(255, 255, 255, 0.08);
     flex-shrink: 0;
-  }
+    cursor: pointer;
+    transition: border-color 0.25s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.25s cubic-bezier(0.4, 0, 0.2, 1);
 
-  img {
-    object-fit: cover;
-  }
+    img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      border-radius: inherit;
+      transition: transform 0.35s cubic-bezier(0.4, 0, 0.2, 1), filter 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+    }
 
-  .placeholder {
-    background: linear-gradient(135deg, #2a2a2a, #16161a);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: rgba(255, 255, 255, 0.25);
+    .placeholder {
+      width: 100%;
+      height: 100%;
+      border-radius: inherit;
+      background: linear-gradient(135deg, #2a2a2a, #16161a);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: rgba(255, 255, 255, 0.25);
+      transition: background 0.35s cubic-bezier(0.4, 0, 0.2, 1);
 
-    mat-icon {
-      font-size: 48px;
-      width: 48px;
-      height: 48px;
+      mat-icon {
+        font-size: 48px;
+        width: 48px;
+        height: 48px;
+      }
+    }
+
+    .overlay-hint {
+      position: absolute;
+      inset: 0;
+      border-radius: inherit;
+      background: rgba(0, 0, 0, 0.45);
+      backdrop-filter: blur(4px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      opacity: 0;
+      transition: opacity 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+      color: #fff;
+
+      mat-icon {
+        font-size: 32px;
+        width: 32px;
+        height: 32px;
+        transform: scale(0.75);
+        transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+      }
+    }
+
+    &:hover {
+      border-color: rgba(255, 255, 255, 0.2);
+      box-shadow: 0 16px 40px rgba(0, 0, 0, 0.7);
+
+      img {
+        transform: scale(1.08);
+        filter: brightness(0.85);
+      }
+
+      .overlay-hint {
+        opacity: 1;
+
+        mat-icon {
+          transform: scale(1);
+        }
+      }
+    }
+
+    &:focus-visible {
+      outline: 2px solid rgba(255, 255, 255, 0.5);
+      outline-offset: 2px;
     }
   }
 

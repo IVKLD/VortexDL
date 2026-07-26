@@ -23,18 +23,24 @@
             <span class="info-label">Artist</span>
             <span>{{ track.artist }}</span>
         </div>
-        <div>
-            <span class="info-label">Format</span>
-            <b [attr.data-format]="track.format">{{ track.format }}</b>
-        </div>
-        <div>
-            <span class="info-label">File Size</span>
-            <span>{{ track.size | fileSize }}</span>
-        </div>
-        <div>
-            <span class="info-label">Date Added</span>
-            <span>{{ track.createdAt * 1000 | date:'mediumDate' }}</span>
-        </div>
+        @if (track.format) {
+            <div>
+                <span class="info-label">Format</span>
+                <b [attr.data-format]="track.format">{{ track.format }}</b>
+            </div>
+        }
+        @if (track.size) {
+            <div>
+                <span class="info-label">File Size</span>
+                <span>{{ track.size | fileSize }}</span>
+            </div>
+        }
+        @if (track.createdAt) {
+            <div>
+                <span class="info-label">Date Added</span>
+                <span>{{ track.createdAt * 1000 | date:'mediumDate' }}</span>
+            </div>
+        }
     </section>
 </main>
 

@@ -11,7 +11,9 @@ import {FileSizePipe} from '@shared/pipes/file-size.pipe';
     imports: [MatButton, MatIconButton, MatIcon, NgOptimizedImage, MatDialogClose, FileSizePipe, DatePipe],
     templateUrl: './music-detail-modal.html',
     styleUrl: './music-detail-modal.scss',
-    })
+})
 export class MusicDetailModal {
     public readonly track: MusicTrack = inject(MAT_DIALOG_DATA);
 }
+
+
