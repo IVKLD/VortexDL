@@ -79,9 +79,20 @@ impl From<DiscoveredMusicTrack> for DownloadItem {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(tag = "type", rename_all = "lowercase")]
 pub enum ServerEvent {
-    TrackUpdate { item: Box<DownloadItem> },
-    SyncFinished { url: Option<String> },
-    SyncStarted { url: String },
-    Error { message: String },
-    Message { message: String, level: MessageLevel },
+    TrackUpdate {
+        item: Box<DownloadItem>,
+    },
+    SyncFinished {
+        url: Option<String>,
+    },
+    SyncStarted {
+        url: String,
+    },
+    Error {
+        message: String,
+    },
+    Message {
+        message: String,
+        level: MessageLevel,
+    },
 }

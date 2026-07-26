@@ -1,4 +1,5 @@
 use std::future::Future;
+
 use tokio::sync::watch;
 
 /// Races an async future against a tokio watch cancellation receiver.

@@ -24,21 +24,23 @@ impl std::fmt::Display for AdbError {
 impl std::error::Error for AdbError {}
 
 pub async fn run_adb_raw(args: &[&str]) -> Result<std::process::Output, AdbError> {
-    Command::new("adb")
-        .env("ADB_LIBUSB", "0")
-        .args(args)
-        .output()
-        .await
-        .map_err(|e| {
-            if e.kind() == ErrorKind::NotFound {
-                AdbError::NotAvailable
-            } else {
-                AdbError::Other(anyhow::anyhow!(
-                    "Failed to run adb {}: {e}",
-                    args.first().unwrap_or(&"")
-                ))
-            }
-        })
+    if let Ok(android_home) = std::env::var("ANDROID_USER_HOME") {
+        let _ = std::fs::create_dir_all(&android_home);
+    } else if let Some(home) = dirs::home_dir() {
+        let _ = std::fs::create_dir_all(home.join(".android"));
+    }
+
+    let mut cmd = Command::new("adb");
+    cmd.args(args).output().await.map_err(|e| {
+        if e.kind() == ErrorKind::NotFound {
+            AdbError::NotAvailable
+        } else {
+            AdbError::Other(anyhow::anyhow!(
+                "Failed to run adb {}: {e}",
+                args.first().unwrap_or(&"")
+            ))
+        }
+    })
 }
 
 async fn adb(device: &str, args: &[&str]) -> Result<String> {

@@ -10,7 +10,10 @@ use axum::{
 
 use crate::{
     adb_device::{AdbError, StorageInfo, get_device_storages, list_devices, sync_device},
-    api::{errors::{ApiError, ErrorCode}, state::AppState},
+    api::{
+        errors::{ApiError, ErrorCode},
+        state::AppState,
+    },
 };
 
 #[utoipa::path(
@@ -121,15 +124,21 @@ pub async fn sync_adb_device(
 
     let remote_music_dir = match device_cfg {
         Some(cfg) if !cfg.remote_music_dir.is_empty() => cfg.remote_music_dir.clone(),
-        _ => return Err(ApiError::bad_request("Device configuration or remote music directory is not set")),
+        _ => {
+            return Err(ApiError::bad_request(
+                "Device configuration or remote music directory is not set",
+            ));
+        }
     };
 
     sync_device(&device_id, &remote_music_dir, state.storage.clone(), true)
         .await
         .map_err(|e| match e.downcast_ref::<AdbError>() {
-            Some(AdbError::AlreadyInProgress) => {
-                ApiError::new(StatusCode::CONFLICT, ErrorCode::AlreadyProcessing, "Device is currently syncing")
-            }
+            Some(AdbError::AlreadyInProgress) => ApiError::new(
+                StatusCode::CONFLICT,
+                ErrorCode::AlreadyProcessing,
+                "Device is currently syncing",
+            ),
             _ => ApiError::internal(format!("Failed to sync device {device_id}: {e}"))
                 .with_code(ErrorCode::AdbError),
         })?;

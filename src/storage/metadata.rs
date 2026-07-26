@@ -109,11 +109,7 @@ pub fn extract_track_metadata(path: impl AsRef<Path>) -> Option<TrackMetadata> {
             let hash = hasher.finish();
 
             let safe_53_bit = (hash & 0x001F_FFFF_FFFF_FFFF) as i64;
-            if safe_53_bit == 0 {
-                -1
-            } else {
-                -safe_53_bit
-            }
+            if safe_53_bit == 0 { -1 } else { -safe_53_bit }
         });
 
     let artwork_url = tag.as_ref().and_then(|t| get_txxx(t, SC_ARTWORK_URL));
@@ -160,8 +156,9 @@ pub fn extract_track_metadata(path: impl AsRef<Path>) -> Option<TrackMetadata> {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     use std::path::PathBuf;
+
+    use super::*;
 
     #[test]
     fn test_extract_track_metadata_without_tags() {
@@ -173,12 +170,19 @@ mod tests {
         let meta2 = extract_track_metadata(&path2).unwrap();
         let meta3 = extract_track_metadata(&path3).unwrap();
 
-        assert_eq!(meta1.id, meta2.id, "Same path should yield same deterministic ID");
-        assert_ne!(meta1.id, meta3.id, "Different paths should yield different IDs");
-        assert!(meta1.id < 0, "Generated ID for local tracks should be negative");
+        assert_eq!(
+            meta1.id, meta2.id,
+            "Same path should yield same deterministic ID"
+        );
+        assert_ne!(
+            meta1.id, meta3.id,
+            "Different paths should yield different IDs"
+        );
+        assert!(
+            meta1.id < 0,
+            "Generated ID for local tracks should be negative"
+        );
         assert_eq!(meta1.artist, "Beauty in the Pain");
         assert_eq!(meta1.title, "Rebouz (192k)");
     }
 }
-
-

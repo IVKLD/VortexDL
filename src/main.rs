@@ -28,18 +28,13 @@ static ALLOC: mimalloc::MiMalloc = mimalloc::MiMalloc;
 #[tokio::main]
 async fn main() -> Result<()> {
     let args = Args::parse();
-    if args.url.is_none() && !args.serve && !args.sync_player {
-        use clap::CommandFactory;
-        Args::command().print_help()?;
-        println!();
-        return Ok(());
-    }
 
     utils::tracing::setup();
     database::init()?;
 
-    let settings = database::get_settings()?;
+    let mut settings = database::get_settings()?;
     let output_dir = args.resolve_output_dir(&settings);
+    settings.downloads.output_path = output_dir.to_string_lossy().to_string();
     fs::create_dir_all(&output_dir)?;
 
     let pb = create_standalone_spinner("Initializing SoundCloud...");

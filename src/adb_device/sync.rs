@@ -65,8 +65,9 @@ pub async fn sync_device(
     storage: Arc<RwLock<MusicStorage>>,
     force: bool,
 ) -> Result<()> {
-    if !force && get_last_sync_time(device)
-        .is_some_and(|last_sync| last_sync.elapsed() < Duration::from_secs(10))
+    if !force
+        && get_last_sync_time(device)
+            .is_some_and(|last_sync| last_sync.elapsed() < Duration::from_secs(10))
     {
         return Ok(());
     }

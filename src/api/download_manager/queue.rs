@@ -2,6 +2,7 @@ use std::{
     collections::{HashMap, HashSet},
     sync::Mutex,
 };
+
 use url::Url;
 
 use super::types::DownloadItem;

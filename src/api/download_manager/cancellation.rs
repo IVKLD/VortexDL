@@ -1,4 +1,5 @@
 use std::{collections::HashMap, sync::Mutex};
+
 use tokio::sync::watch;
 
 /// CancellationRegistry manages task cancellation channels using tokio watch signals.

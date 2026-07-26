@@ -1,3 +1,5 @@
+use std::{net::IpAddr, path::PathBuf};
+
 use anyhow::Result;
 use clap::Parser;
 use url::Url;
@@ -14,6 +16,7 @@ use crate::{
 #[command(version)]
 #[command(about = "VortexDL: High-performance SoundCloud downloader with intelligent sync", long_about = None)]
 #[command(disable_version_flag = true)]
+#[command(arg_required_else_help = true)]
 pub struct Args {
     #[arg(
         short = 'v',
@@ -25,8 +28,13 @@ pub struct Args {
     #[arg(help = "The SoundCloud URL to download (track, playlist, or user likes)")]
     pub url: Option<Url>,
 
-    #[arg(short, long, help = "Directory where the music will be saved")]
-    pub output: Option<String>,
+    #[arg(
+        short,
+        long,
+        env = "VORTEX_OUTPUT_DIR",
+        help = "Directory where the music will be saved"
+    )]
+    pub output: Option<PathBuf>,
 
     #[arg(
         long,
@@ -47,7 +55,7 @@ pub struct Args {
         default_value = "127.0.0.1",
         help = "Host address to bind the server to"
     )]
-    pub host: String,
+    pub host: IpAddr,
 
     #[arg(
         long,
@@ -66,11 +74,10 @@ pub struct Args {
 }
 
 impl Args {
-    pub fn resolve_output_dir(&self, settings: &UserSettings) -> String {
+    pub fn resolve_output_dir(&self, settings: &UserSettings) -> PathBuf {
         self.output
-            .as_ref()
-            .unwrap_or(&settings.downloads.output_path)
             .clone()
+            .unwrap_or_else(|| PathBuf::from(&settings.downloads.output_path))
     }
 }
 

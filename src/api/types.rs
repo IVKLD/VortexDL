@@ -66,7 +66,6 @@ impl AudioFormat {
     }
 }
 
-
 #[derive(Debug, Serialize, ToSchema)]
 #[serde(rename_all = "camelCase")]
 pub struct MusicTrackRecord {

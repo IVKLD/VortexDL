@@ -3,13 +3,12 @@ mod event_bus;
 mod queue;
 pub mod types;
 
-use tokio::sync::{broadcast, watch};
-use url::Url;
-
 pub use cancellation::CancellationRegistry;
 pub use event_bus::EventBus;
 pub use queue::TaskQueue;
+use tokio::sync::{broadcast, watch};
 pub use types::*;
+use url::Url;
 
 use crate::{api::types::AudioFormat, types::DiscoveredMusicTrack};
 
@@ -63,7 +62,8 @@ impl DownloadManager {
             } else {
                 false
             }
-        }) && should_notify {
+        }) && should_notify
+        {
             self.events.notify_track_update(item);
         }
     }

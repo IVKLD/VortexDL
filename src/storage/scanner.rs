@@ -1,7 +1,7 @@
 use std::{
     collections::{HashMap, HashSet},
     fs,
-    path::PathBuf,
+    path::{Path, PathBuf},
 };
 
 use tokio::task::spawn_blocking;
@@ -14,8 +14,16 @@ use crate::{
 };
 
 fn get_file_timestamps(metadata: &fs::Metadata) -> (u64, u64) {
-    let mtime = metadata.modified().ok().map(system_time_to_secs).unwrap_or(0);
-    let mut created_at = metadata.created().ok().map(system_time_to_secs).unwrap_or(0);
+    let mtime = metadata
+        .modified()
+        .ok()
+        .map(system_time_to_secs)
+        .unwrap_or(0);
+    let mut created_at = metadata
+        .created()
+        .ok()
+        .map(system_time_to_secs)
+        .unwrap_or(0);
     if created_at == 0 {
         created_at = mtime;
     }
@@ -23,8 +31,8 @@ fn get_file_timestamps(metadata: &fs::Metadata) -> (u64, u64) {
 }
 
 impl MusicStorage {
-    pub async fn scan_library(base_path: &str) -> HashMap<i64, LocalMusicTrack> {
-        let root = PathBuf::from(base_path);
+    pub async fn scan_library(base_path: impl AsRef<Path>) -> HashMap<i64, LocalMusicTrack> {
+        let root = base_path.as_ref().to_path_buf();
 
         let result = spawn_blocking(move || {
             let mut tracks: HashMap<i64, LocalMusicTrack> = HashMap::new();
@@ -101,8 +109,6 @@ impl MusicStorage {
         result.unwrap_or_default()
     }
 }
-
-
 
 fn parse_file_metadata(
     path: &PathBuf,

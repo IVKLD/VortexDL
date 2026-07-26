@@ -121,13 +121,17 @@ async fn run_parallel_downloads(ctx: &Context, tracks: Vec<DiscoveredMusicTrack>
 
             async move {
                 let mut task = DownloadTask::new(&track, &naming_template, &output_dir);
-                let cancel_rx = ctx.dm.as_ref().and_then(|m| m.get_cancel_receiver(task.track.id));
+                let cancel_rx = ctx
+                    .dm
+                    .as_ref()
+                    .and_then(|m| m.get_cancel_receiver(task.track.id));
 
                 if let Some(m) = &ctx.dm {
                     m.update_downloading(task.track.id);
                 }
 
-                let artwork_handle = resolve::spawn_artwork_fetch(&ctx, task.track.artwork_url.as_ref());
+                let artwork_handle =
+                    resolve::spawn_artwork_fetch(&ctx, task.track.artwork_url.as_ref());
 
                 let download_result = run_with_cancellation(cancel_rx, async {
                     let stream = resolve::resolve_stream_source(&ctx, task.track.id).await?;

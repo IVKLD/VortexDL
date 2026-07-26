@@ -51,7 +51,9 @@ async fn download_progressive(
     let active_proxy = proxy_url.or_else(|| settings.network.get_proxy_url());
     let client = build_http_client(active_proxy, 5, 30);
     let response = client.get(url).send().await?.error_for_status()?;
-    let total = response.content_length().unwrap_or_else(|| task.track.estimated_bytes());
+    let total = response
+        .content_length()
+        .unwrap_or_else(|| task.track.estimated_bytes());
 
     let tmp_path = task.file_path.with_extension("mp3.tmp");
     let res = async {

@@ -96,7 +96,7 @@ struct ApiDoc;
 
 pub async fn run_server(state: AppState, args: &Args) -> anyhow::Result<()> {
     let router = build_router(state, args.serve).await;
-    let addr: SocketAddr = format!("{}:{}", args.host, args.port).parse()?;
+    let addr = SocketAddr::new(args.host, args.port);
     let listener = TcpListener::bind(addr).await?;
 
     tracing::info!("VortexDL running on http://{}", addr);
