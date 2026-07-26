@@ -63,10 +63,8 @@ impl DownloadManager {
             } else {
                 false
             }
-        }) {
-            if should_notify {
-                self.events.notify_track_update(item);
-            }
+        }) && should_notify {
+            self.events.notify_track_update(item);
         }
     }
 

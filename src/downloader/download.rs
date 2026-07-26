@@ -113,10 +113,10 @@ async fn download_hls(
             tokio::spawn(async move {
                 loop {
                     sleep(Duration::from_millis(200)).await;
-                    if let Ok(meta) = fs::metadata(&tmp_path).await {
-                        if meta.len() > 0 {
-                            dm.update_progress(track_id, meta.len(), estimated_total);
-                        }
+                    if let Ok(meta) = fs::metadata(&tmp_path).await
+                        && meta.len() > 0
+                    {
+                        dm.update_progress(track_id, meta.len(), estimated_total);
                     }
                 }
             })

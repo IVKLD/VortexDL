@@ -1,24 +1,50 @@
-# Rust
+# Rust & Cargo
 target/
 debug/
 **/*.rs.bk
 *.pdb
+rustc-ice-*.txt
+cargo-timing*.html
+plan-dist-manifest.json
+dist-manifest.json
 
-# Nix / Direnv
-.direnv/
-.devbox/
 
-# Database & Local Storage
+# Frontend & Node
+node_modules/
+**/node_modules/
+dist/
+**/dist/
+.angular/
+**/.angular/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+
+# Database, Local Storage & Downloads
 *.redb
 vortex.redb
 downloads/
 
-# Environment & IDE
+# Environment & Config
 .env
+.env.*.local
+.env.local
+
+# IDEs, Editors & OS
 .idea/
 .vscode/
 .zed/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+
+# Nix / Direnv / Cargo local
+.direnv/
+.devbox/
 .rustup/
 .cargo/
-
 result
+result-*
