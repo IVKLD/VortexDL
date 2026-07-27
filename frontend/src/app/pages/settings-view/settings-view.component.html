@@ -1,12 +1,12 @@
-<form id="settings-form" [formRoot]="settingsForm" (focusout)="submitBtn.click()">
-    <app-soundcloud-section [form]="settingsForm.soundcloud" [isTesting]="isTesting()"
+<form id="settings-form" [formRoot]="state.settingsForm" (focusout)="submitBtn.click()">
+    <app-soundcloud-section [form]="state.settingsForm.soundcloud" [isTesting]="isTesting()"
         (testSoundcloud)="testSoundcloud()" />
 
-    <app-downloads-section [downloadsForm]="settingsForm.downloads" [systemForm]="settingsForm.system" />
+    <app-downloads-section [downloadsForm]="state.settingsForm.downloads" [systemForm]="state.settingsForm.system" />
 
-    <app-network-section [form]="settingsForm.network" [isTesting]="isNetworkTesting()" (testProxy)="testProxy()" />
+    <app-network-section [form]="state.settingsForm.network" [isTesting]="isNetworkTesting()" (testProxy)="testProxy()" />
 
-    <app-adb-section [form]="settingsForm.adb" [connectedDevices]="connectedDevices()" [isRefreshing]="isRefreshing()"
+    <app-adb-section [form]="state.settingsForm.adb" [connectedDevices]="connectedDevices()" [isRefreshing]="isRefreshing()"
         (refresh)="refreshDevices()" (removeDevice)="removeDevice($event)" />
 
     <button #submitBtn type="submit" style="display: none;"></button>

@@ -18,7 +18,6 @@ export interface HeaderSearchBind {
     formField: FieldTree<string>;
     focused?: WritableSignal<boolean>;
     onSubmit?: (query: string) => void;
-    onClear?: () => void;
 }
 
 export interface HeaderSortOption<T = unknown> {

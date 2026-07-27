@@ -67,6 +67,7 @@
   height: auto;
   align-self: start;
   width: 100%;
+  z-index: 2;
   transition: opacity 0.2s cubic-bezier(0.25, 0.46, 0.45, 0.94),
               display 0.2s allow-discrete;
   pointer-events: none;

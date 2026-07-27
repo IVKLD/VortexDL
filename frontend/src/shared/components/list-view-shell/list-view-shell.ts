@@ -12,7 +12,7 @@ export class ListViewShellComponent {
     public initial = input(false);
 
     protected readonly showSkeleton = computed(() => this.loading() && !this.hasResults());
-    protected readonly showResults = computed(() => this.hasResults());
+    protected readonly showResults = computed(() => this.hasResults() && !this.initial());
     protected readonly showResultsDimmed = computed(() => this.hasResults() && this.loading());
     protected readonly showEmpty = computed(() =>
         this.empty() || (!this.hasResults() && !this.loading() && !this.initial())

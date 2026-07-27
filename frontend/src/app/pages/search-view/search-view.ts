@@ -51,18 +51,30 @@ export class SearchView {
 
     protected readonly state = inject(SearchViewState);
 
-    protected readonly isInitial = computed(() => {
+    protected readonly isSearchInputFocused = computed(() => {
         const bind = this._headerService.searchBind();
-        return Boolean(bind?.focused?.()) || !this.state.query().trim();
+        return Boolean(bind?.focused?.());
     });
-    protected readonly isEmpty = computed(() => !this.isInitial() && !this.state.results().length && !this.state.loading());
+
+    protected readonly isInitial = computed(() => {
+        if (this.state.loading()) {
+            return false;
+        }
+        if (!this.state.hasSearched()) {
+            return true;
+        }
+        return this.isSearchInputFocused() && this.history.history().length > 0;
+    });
+
+    protected readonly isEmpty = computed(() => !this.isInitial() && this.state.hasSearched() && !this.state.loading() && !this.state.results().length);
 
     protected readonly downloadedIds = computed(() => new Set(this._tracksState.tracks().map(t => t.id)));
     protected readonly downloadingIds = computed(() => new Set(this.tracking.activeDownloads().map(d => d.id)));
 
     protected onViewRange(range: { start: number; end: number }): void {
-        if (this.isInitial() || !this.state.hasMore() || this.state.loading()) return;
-        if (range.end >= this.state.results().length - 5) {
+        if (this.isInitial() || !this.state.hasMore() || this.state.loading() || this.state.results().length === 0) return;
+
+        if (range.end >= this.state.results().length - 3) {
             this.state.loadMore();
         }
     }

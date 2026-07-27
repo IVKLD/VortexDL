@@ -70,11 +70,14 @@ export const routes: CustomRoutes = [
         resolve: {
             headerSearch: () => {
                 const state = inject(SearchViewState);
+                const focused = signal(false);
                 return {
                     formField: form(state.query),
-                    focused: signal(false),
-                    onSubmit: (q: string) => state.search(q),
-                    onClear: () => state.search(''),
+                    focused,
+                    onSubmit: (q: string) => {
+                        focused.set(false);
+                        state.search(q);
+                    },
                 };
             },
         },

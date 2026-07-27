@@ -11,19 +11,20 @@
                 (downloadTrack)="downloadTrack($event)" (deleteTrack)="deleteTrack($event)" />
         </rx-virtual-scroll-viewport>
 
-        @if (state.loading() && state.hasMore()) {
-        <div class="list-loader">
-            <mat-spinner diameter="30" />
-        </div>
+        @if (state.loading() && state.results().length > 0) {
+            <div class="load-more-indicator">
+                <mat-spinner diameter="22" />
+                <span>Loading more tracks...</span>
+            </div>
         }
     </ng-container>
 
     <app-empty-pane empty icon="search_off" heading="No results found" description="Try a different search query" />
 
     <ng-container initial>
-        @if (history.history().length > 0) {
+        @if (history.history().length > 0 && (!state.hasSearched() || isSearchInputFocused())) {
         <app-search-history-panel (selectItem)="selectHistoryItem($event)" />
-        } @else {
+        } @else if (!state.hasSearched()) {
         <app-empty-pane icon="travel_explore" heading="Search SoundCloud"
             description="Find tracks, artists and music to download" [accent]="true" />
         }
