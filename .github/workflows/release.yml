@@ -41,7 +41,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Update flake.nix
+      - name: Update Nix Package
         run: |
           VERSION=${GITHUB_REF#refs/tags/v}
           BINARY_PATH="target/release/vortex-dl"
@@ -54,9 +54,10 @@ jobs:
           git fetch origin main
           git checkout main
           
-          sed -i "s|version = \"[^\"]*\";|version = \"$VERSION\";|" flake.nix
-          sed -i "s|hash = \"[^\"]*\";|hash = \"$SRI_HASH\";|" flake.nix
+          sed -i "s|version = \"[^\"]*\";|version = \"$VERSION\";|" nix/package.nix
+          sed -i "s|hash = \"[^\"]*\";|hash = \"$SRI_HASH\";|" nix/package.nix
           
-          git add flake.nix
-          git commit -m "chore: release v$VERSION (update flake.nix)"
+          git add nix/package.nix
+          git commit -m "chore: release v$VERSION (update nix package)"
           git push origin main
+
