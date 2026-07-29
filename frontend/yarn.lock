@@ -227,6 +227,13 @@
   dependencies:
     "@angular-eslint/bundled-angular-compiler" "22.0.0"
 
+"@angular/animations@^22.0.8":
+  version "22.0.8"
+  resolved "https://registry.yarnpkg.com/@angular/animations/-/animations-22.0.8.tgz#cfa28b35482895a984fdae2c8688c74a1e8b9f80"
+  integrity sha512-hdBlckl5mARzuc5gt2siydIAxeJbBiRneg8V0kazEDH6xNkNp/1siro68ZaHgTY5dCUEOec/eC4zbhB8AlSLhQ==
+  dependencies:
+    tslib "^2.3.0"
+
 "@angular/build@^22.0.2":
   version "22.0.2"
   resolved "https://registry.npmjs.org/@angular/build/-/build-22.0.2.tgz"

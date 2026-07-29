@@ -33,8 +33,6 @@ pub async fn start_download(
 ) -> Result<impl IntoResponse, ApiError> {
     let url = body.url;
 
-    tracing::info!("Download request: {url}");
-
     if !state.download_manager.reserve_url(&url) {
         return Err(ApiError::conflict("This URL is already being processed")
             .with_code(ErrorCode::AlreadyProcessing));
@@ -55,7 +53,6 @@ pub async fn start_download(
         let ctx = downloader::Context::from_state(&state).with_dm(state.download_manager.clone());
 
         if let Err(e) = downloader::run_download_pipeline(&ctx, &url).await {
-            tracing::error!("Download failed for {url}: {e}");
             state.download_manager.broadcast_event(ServerEvent::Error {
                 message: format!("Download failed: {e}"),
             });

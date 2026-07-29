@@ -22,11 +22,11 @@
     <app-empty-pane empty icon="search_off" heading="No results found" description="Try a different search query" />
 
     <ng-container initial>
-        @if (history.history().length > 0 && (!state.hasSearched() || isSearchInputFocused())) {
-        <app-search-history-panel (selectItem)="selectHistoryItem($event)" />
-        } @else if (!state.hasSearched()) {
         <app-empty-pane icon="travel_explore" heading="Search SoundCloud"
             description="Find tracks, artists and music to download" [accent]="true" />
-        }
     </ng-container>
 </app-list-view-shell>
+
+@if (history.history().length > 0 && state.showHistory()) {
+    <app-search-history-panel animate.enter="history-enter" animate.leave="history-leave" (selectItem)="selectHistoryItem($event)" />
+}

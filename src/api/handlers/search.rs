@@ -13,7 +13,10 @@ use crate::{
         errors::{ApiError, ErrorCode},
         state::AppState,
     },
-    utils::soundcloud::resize_artwork_url,
+    utils::{
+        proxy::race_proxies,
+        soundcloud::{SoundCloudClientBuilder, resize_artwork_url},
+    },
 };
 
 #[derive(Debug, Deserialize)]
@@ -136,14 +139,66 @@ pub async fn get_stream_url(
     State(state): State<AppState>,
     Path(id): Path<i64>,
 ) -> Result<impl IntoResponse, ApiError> {
-    let stream_url = state
-        .client
-        .get_stream_url(&Identifier::Id(id), Some(&StreamType::Progressive))
-        .await
-        .map_err(|e| {
-            ApiError::bad_request(format!("Failed to resolve stream: {e}"))
-                .with_code(ErrorCode::SoundCloudError)
-        })?;
+    let direct_url = async {
+        let track = state.client.get_track(&Identifier::Id(id)).await?;
+        match state
+            .client
+            .resolve_stream_url_from_track(&track, Some(&StreamType::Progressive))
+            .await
+        {
+            Ok(url) => Ok(url),
+            _ => {
+                state
+                    .client
+                    .resolve_stream_url_from_track(&track, Some(&StreamType::Hls))
+                    .await
+            }
+        }
+    }
+    .await;
+
+    if let Ok(url) = direct_url {
+        return Ok(Json(StreamUrlResponse { url }));
+    }
+
+    let settings = state.settings.read().await.clone();
+    if !settings.network.use_proxy || settings.network.fallback_proxies.is_empty() {
+        return Err(ApiError::bad_request(
+            "Direct resolution failed and no fallback proxies configured",
+        )
+        .with_code(ErrorCode::SoundCloudError));
+    }
+
+    let stream_url = race_proxies(&settings, move |s, proxy| async move {
+        let client = SoundCloudClientBuilder::new(&s)
+            .with_proxy(Some(&proxy))
+            .build()
+            .await
+            .map_err(|e| anyhow::anyhow!("Failed to build client: {e}"))?;
+
+        let track = client
+            .get_track(&Identifier::Id(id))
+            .await
+            .map_err(|e| anyhow::anyhow!("Failed to get track: {e}"))?;
+
+        match client
+            .resolve_stream_url_from_track(&track, Some(&StreamType::Progressive))
+            .await
+        {
+            Ok(url) => Ok(url),
+            _ => client
+                .resolve_stream_url_from_track(&track, Some(&StreamType::Hls))
+                .await
+                .map_err(|e| anyhow::anyhow!("Failed to resolve HLS stream: {e}")),
+        }
+    })
+    .await
+    .map_err(|e| {
+        ApiError::bad_request(format!(
+            "Failed to resolve stream: all fallback proxies failed: {e}"
+        ))
+        .with_code(ErrorCode::SoundCloudError)
+    })?;
 
     Ok(Json(StreamUrlResponse { url: stream_url }))
 }

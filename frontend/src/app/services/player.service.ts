@@ -1,5 +1,5 @@
 import { effect, inject, Injectable, NgZone, signal } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { firstValueFrom } from 'rxjs';
 import { PlayableTrack } from '@shared/models/music-track.model';
 import { MusicTracksViewState } from '@app/pages/music-tracks-view/music-tracks-view.state';
@@ -9,6 +9,7 @@ import {
     setupMediaSessionHandlers,
     updateMediaSessionMetadata,
 } from '@shared/utils/media-session.utils';
+import { NotificationService } from './notification.service';
 
 @Injectable({
     providedIn: 'root'
@@ -16,6 +17,7 @@ import {
 export class PlayerService {
     private readonly _http = inject(HttpClient);
     private readonly _musicState = inject(MusicTracksViewState);
+    private readonly _notification = inject(NotificationService);
     private readonly zone = inject(NgZone);
     private readonly _audio = new Audio();
     private readonly _queue = signal<PlayableTrack[]>([]);
@@ -83,6 +85,15 @@ export class PlayerService {
                     this.next();
                 });
             });
+
+            this.audio.addEventListener('error', () => {
+                this.zone.run(() => {
+                    const current = this.currentTrack();
+                    if (current) {
+                        this.handlePlaybackError(current, 'Audio playback failed: geoblocked or unsupported format');
+                    }
+                });
+            });
         });
     }
 
@@ -136,6 +147,16 @@ export class PlayerService {
         }
         this.shuffleQueue = q;
         this.shuffleIndex = current ? 0 : -1;
+    }
+
+    private handlePlaybackError(track: PlayableTrack, message: string): void {
+        if (this.currentTrack()?.id === track.id) {
+            this.audio.pause();
+            this.audio.src = '';
+            this.currentTrack.set(null);
+            this.isPlaying.set(false);
+            this._notification.error(message);
+        }
     }
 
     public get audio(): HTMLAudioElement {
@@ -204,7 +225,10 @@ export class PlayerService {
         if (track.streamUrl) {
             this.audio.src = track.streamUrl;
             this.audio.load();
-            this.audio.play().catch(() => {});
+            this.audio.play().catch(playErr => {
+                console.error('Playback failed:', playErr);
+                this.handlePlaybackError(track, 'Playback failed: browser block or unsupported format');
+            });
             return;
         }
 
@@ -212,7 +236,10 @@ export class PlayerService {
         if (isLocal) {
             this.audio.src = `/api/downloads/${track.id}/stream`;
             this.audio.load();
-            this.audio.play().catch(() => {});
+            this.audio.play().catch(playErr => {
+                console.error('Playback failed:', playErr);
+                this.handlePlaybackError(track, 'Playback failed: browser block or unsupported format');
+            });
             return;
         }
 
@@ -222,10 +249,17 @@ export class PlayerService {
             if (this.currentTrack()?.id === track.id) {
                 this.audio.src = res.url;
                 this.audio.load();
-                this.audio.play().catch(() => {});
+                this.audio.play().catch(playErr => {
+                    console.error('Playback failed:', playErr);
+                    this.handlePlaybackError(track, 'Playback failed: browser block or unsupported format');
+                });
             }
-        } catch (err) {
+        } catch (err: unknown) {
             console.error('Failed to stream track:', err);
+            const msg = err instanceof HttpErrorResponse && err.error?.message
+                ? err.error.message
+                : 'Failed to resolve stream URL from SoundCloud';
+            this.handlePlaybackError(track, msg);
         }
     }
 

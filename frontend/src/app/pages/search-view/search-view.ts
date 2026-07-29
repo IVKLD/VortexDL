@@ -51,19 +51,11 @@ export class SearchView {
 
     protected readonly state = inject(SearchViewState);
 
-    protected readonly isSearchInputFocused = computed(() => {
-        const bind = this._headerService.searchBind();
-        return Boolean(bind?.focused?.());
-    });
-
     protected readonly isInitial = computed(() => {
         if (this.state.loading()) {
             return false;
         }
-        if (!this.state.hasSearched()) {
-            return true;
-        }
-        return this.isSearchInputFocused() && this.history.history().length > 0;
+        return !this.state.hasSearched();
     });
 
     protected readonly isEmpty = computed(() => !this.isInitial() && this.state.hasSearched() && !this.state.loading() && !this.state.results().length);
@@ -80,10 +72,6 @@ export class SearchView {
     }
 
     protected selectHistoryItem(item: string): void {
-        this._headerService.searchBind()?.focused?.set(false);
-        if (document.activeElement instanceof HTMLElement) {
-            document.activeElement.blur();
-        }
         this.state.search(item);
     }
 

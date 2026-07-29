@@ -84,7 +84,6 @@ export class Header {
     protected onSearchKeydown(event: KeyboardEvent): void {
         const bind = this.headerService.searchBind();
         if (event.key === 'Enter' && bind && bind.onSubmit) {
-            bind.focused?.set(false);
             bind.onSubmit(bind.formField().value().trim());
         }
     }

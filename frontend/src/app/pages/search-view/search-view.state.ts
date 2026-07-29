@@ -18,6 +18,7 @@ export class SearchViewState {
     public readonly query = signal<string>('');
 
     public readonly hasSearched = signal<boolean>(false);
+    public readonly showHistory = signal<boolean>(false);
     public readonly results = signal<SearchTrackItemRdo[]>([]);
     public readonly loading = signal(false);
     public readonly hasMore = signal(false);
@@ -25,10 +26,10 @@ export class SearchViewState {
     public clear(): void {
         this.query.set('');
         this.hasSearched.set(false);
+        this.showHistory.set(false);
         this.results.set([]);
         this.loading.set(false);
         this.hasMore.set(false);
-        this._headerService.searchBind()?.focused?.set(false);
     }
 
     public search(query: string): void {
@@ -40,7 +41,7 @@ export class SearchViewState {
 
         this.query.set(trimmed);
         this.hasSearched.set(true);
-        this._headerService.searchBind()?.focused?.set(false);
+        this.showHistory.set(false);
         this._history.add(trimmed);
         this.results.set([]);
 

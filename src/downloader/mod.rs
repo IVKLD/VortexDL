@@ -140,17 +140,24 @@ async fn run_parallel_downloads(ctx: &Context, tracks: Vec<DiscoveredMusicTrack>
                     }
                     download::download_single_track(&ctx, &task, stream).await
                 })
-                .await?;
+                .await;
 
                 let handle = match download_result {
-                    Ok(()) => Some(tokio::spawn(complete::finalize_single_track(
+                    Some(Ok(())) => Some(tokio::spawn(complete::finalize_single_track(
                         ctx,
                         task,
                         artwork_handle,
                         pb.clone(),
                     ))),
-                    Err(err) => {
+                    Some(Err(err)) => {
                         complete::handle_track_failure(&ctx, &task, err, &pb).await;
+                        None
+                    }
+                    None => {
+                        tracing::info!("Track download canceled: {}", task.display_name());
+                        if let Some(h) = artwork_handle {
+                            h.abort();
+                        }
                         None
                     }
                 };

@@ -159,3 +159,33 @@ header {
     }
   }
 }
+
+@keyframes historyFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-12px) translateX(-50%);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) translateX(-50%);
+  }
+}
+
+@keyframes historyFadeOut {
+  from {
+    opacity: 1;
+    transform: translateY(0) translateX(-50%);
+  }
+  to {
+    opacity: 0;
+    transform: translateY(-12px) translateX(-50%);
+  }
+}
+
+:host(.history-enter) {
+  animation: historyFadeIn 180ms cubic-bezier(0, 0, 0.2, 1) forwards;
+}
+
+:host(.history-leave) {
+  animation: historyFadeOut 140ms cubic-bezier(0.4, 0, 1, 1) forwards;
+}
