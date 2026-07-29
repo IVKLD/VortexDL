@@ -141,9 +141,9 @@ export class DownloadTrackingService {
     }
 
     private handleTrackUpdate(item: DownloadItem): void {
-        this.updateActiveDownloads(item);
-
         if (item.status === DownloadStatus.Finished) {
+            this.activeDownloads.update(downloads => downloads.filter(d => d.id !== item.id));
+
             this._musicState.addTrack({
                 id: item.id,
                 artist: item.artist,
@@ -156,7 +156,10 @@ export class DownloadTrackingService {
             });
             this.syncPlayerQueue();
         } else if (item.status === DownloadStatus.Failed) {
+            this.activeDownloads.update(downloads => downloads.filter(d => d.id !== item.id));
             this.addError(`Failed to download "${item.artist} - ${item.title}": ${item.error || 'Unknown error'}`);
+        } else {
+            this.updateActiveDownloads(item);
         }
     }
 
@@ -178,9 +181,9 @@ export class DownloadTrackingService {
             const index = downloads.findIndex(d => d.id === item.id);
 
             if (
-                item.status === DownloadStatus.Finished ||
+                item.status === DownloadStatus.Canceled ||
                 item.status === DownloadStatus.Failed ||
-                item.status === DownloadStatus.Canceled
+                item.status === DownloadStatus.Finished
             ) {
                 return downloads.filter(d => d.id !== item.id);
             }

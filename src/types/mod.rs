@@ -67,16 +67,6 @@ impl DiscoveredMusicTrack {
         ))
     }
 
-    pub fn estimated_bytes(&self) -> u64 {
-        match self.duration_ms {
-            Some(ms) => {
-                let secs = (ms as f64 / 1000.0).max(1.0);
-                (secs * 24_000.0) as u64
-            }
-            None => 3_500_000,
-        }
-    }
-
     pub fn to_metadata(&self, source_url: Option<String>) -> TrackMetadata {
         TrackMetadata {
             id: self.id,

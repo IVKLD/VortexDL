@@ -67,13 +67,7 @@ impl Drop for TempFileGuard {
     }
 }
 
-struct AbortOnDrop(tokio::task::JoinHandle<()>);
 
-impl Drop for AbortOnDrop {
-    fn drop(&mut self) {
-        self.0.abort();
-    }
-}
 
 async fn download_progressive(
     context: &Context,
@@ -87,7 +81,15 @@ async fn download_progressive(
     let response = client.get(url).send().await?.error_for_status()?;
     let total = response
         .content_length()
-        .unwrap_or_else(|| task.track.estimated_bytes());
+        .unwrap_or_else(|| {
+            match task.track.duration_ms {
+                Some(ms) => {
+                    let secs = (ms as f64 / 1000.0).max(1.0);
+                    (secs * 16_000.0) as u64
+                }
+                None => 2_500_000,
+            }
+        });
 
     let tmp_path = task.file_path.with_extension("mp3.tmp");
     let mut temp_guard = TempFileGuard::new(tmp_path.clone());
@@ -136,21 +138,39 @@ async fn download_hls(
 
     let tmp_path = task.file_path.with_extension("mp3.tmp");
     let mut temp_guard = TempFileGuard::new(tmp_path.clone());
-    let estimated_total = task.track.estimated_bytes();
 
-    let _monitor_guard = context.dm.clone().map(|dm| {
-        let tmp_path = tmp_path.clone();
-        let track_id = task.track.id;
-        AbortOnDrop(tokio::spawn(async move {
-            loop {
-                sleep(Duration::from_millis(200)).await;
-                if let Ok(meta) = fs::metadata(&tmp_path).await
-                    && meta.len() > 0
-                {
-                    dm.update_progress(track_id, meta.len(), estimated_total);
+    let track_id = task.track.id;
+    let tmp_path_clone = tmp_path.clone();
+    let dm = context.dm.clone();
+    let duration_ms = task.track.duration_ms;
+    tokio::spawn(async move {
+        let mut has_existed = false;
+        let mut missing_count = 0;
+        loop {
+            sleep(Duration::from_millis(500)).await;
+            match fs::metadata(&tmp_path_clone).await {
+                Ok(meta) => {
+                    has_existed = true;
+                    missing_count = 0;
+                    if let Some(manager) = &dm {
+                        let estimated_total = match duration_ms {
+                            Some(ms) => ((ms as f64 / 1000.0).max(1.0) * 24_000.0) as u64,
+                            None => 3_500_000,
+                        };
+                        manager.update_progress(track_id, meta.len(), estimated_total);
+                    }
+                }
+                Err(_) => {
+                    if has_existed {
+                        break;
+                    }
+                    missing_count += 1;
+                    if missing_count > 20 {
+                        break;
+                    }
                 }
             }
-        }))
+        }
     });
 
     client
