@@ -67,8 +67,6 @@ impl Drop for TempFileGuard {
     }
 }
 
-
-
 async fn download_progressive(
     context: &Context,
     task: &DownloadTask,
@@ -81,14 +79,12 @@ async fn download_progressive(
     let response = client.get(url).send().await?.error_for_status()?;
     let total = response
         .content_length()
-        .unwrap_or_else(|| {
-            match task.track.duration_ms {
-                Some(ms) => {
-                    let secs = (ms as f64 / 1000.0).max(1.0);
-                    (secs * 16_000.0) as u64
-                }
-                None => 2_500_000,
+        .unwrap_or_else(|| match task.track.duration_ms {
+            Some(ms) => {
+                let secs = (ms as f64 / 1000.0).max(1.0);
+                (secs * 16_000.0) as u64
             }
+            None => 2_500_000,
         });
 
     let tmp_path = task.file_path.with_extension("mp3.tmp");
