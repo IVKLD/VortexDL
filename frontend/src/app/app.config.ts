@@ -14,6 +14,8 @@ import { MAT_SNACK_BAR_DEFAULT_OPTIONS } from '@angular/material/snack-bar';
 import { apiInterceptor } from '@shared/interceptors/api.interceptor';
 import { retryInterceptor } from '@shared/interceptors/retry.interceptor';
 import { loadingInterceptor } from '@shared/interceptors/loading.interceptor';
+import { MAT_DIALOG_SCROLL_STRATEGY } from '@angular/material/dialog';
+import { CustomBlockScrollStrategy } from './services/scroll-strategy';
 
 export const appConfig: ApplicationConfig = {
     providers: [
@@ -32,6 +34,10 @@ export const appConfig: ApplicationConfig = {
         {
             provide: ErrorHandler,
             useClass: GlobalErrorHandler,
+        },
+        {
+            provide: MAT_DIALOG_SCROLL_STRATEGY,
+            useFactory: () => () => new CustomBlockScrollStrategy(),
         },
         provideBrowserGlobalErrorListeners(),
         provideRouter(routes),

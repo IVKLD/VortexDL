@@ -1,9 +1,10 @@
-import { inject, Injectable, NgZone, signal } from '@angular/core';
+import { inject, Injectable, signal } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { MusicTracksViewState } from '../pages/music-tracks-view/music-tracks-view.state';
 import { PlayerService } from '@app/services/player.service';
 import { AudioFormat, MusicTrack } from '@shared/models/music-track.model';
-import { Observable, Subscription } from 'rxjs';
+import { Observable } from 'rxjs';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { WebSocketService } from './websocket.service';
 
 export enum DownloadStatus {
@@ -61,10 +62,8 @@ export class DownloadTrackingService {
     private readonly _api = inject(DownloadTrackingApiService);
     private readonly _musicState = inject(MusicTracksViewState);
     private readonly _player = inject(PlayerService);
-    private readonly _zone = inject(NgZone);
     private readonly _wsService = inject(WebSocketService);
 
-    private _wsSubscription?: Subscription;
     public readonly activeDownloads = signal<DownloadItem[]>([]);
     public readonly errors = signal<string[]>([]);
     public readonly syncingUrls = signal<string[]>([]);
@@ -90,19 +89,13 @@ export class DownloadTrackingService {
     }
 
     private initializeWebSocket(): void {
-        this.cleanupWebSocket();
-
-        this._wsSubscription = this._wsService.connect<ServerEvent>('/api/download/events').subscribe({
-            next: (serverEvent) => this.handleServerEvent(serverEvent),
-            error: (err) => console.error('Download tracking WebSocket error:', err),
-        });
-    }
-
-    private cleanupWebSocket(): void {
-        if (this._wsSubscription) {
-            this._wsSubscription.unsubscribe();
-            this._wsSubscription = undefined;
-        }
+        this._wsService
+            .connect<ServerEvent>('/api/download/events')
+            .pipe(takeUntilDestroyed())
+            .subscribe({
+                next: (serverEvent) => this.handleServerEvent(serverEvent),
+                error: (err) => console.error('Download tracking WebSocket error:', err),
+            });
     }
 
     private handleServerEvent(event: ServerEvent): void {
@@ -112,13 +105,13 @@ export class DownloadTrackingService {
         }
 
         if (event.type === ServerEventType.SyncStarted) {
-            this.updateSyncingUrls([...this.syncingUrls().filter(u => u !== event.url), event.url]);
+            this.syncingUrls.set([...this.syncingUrls().filter(u => u !== event.url), event.url]);
             return;
         }
 
         if (event.type === ServerEventType.SyncFinished) {
             if (event.url) {
-                this.updateSyncingUrls(this.syncingUrls().filter(u => u !== event.url));
+                this.syncingUrls.set(this.syncingUrls().filter(u => u !== event.url));
             } else {
                 this.fetchSyncingUrls();
             }
@@ -134,10 +127,6 @@ export class DownloadTrackingService {
             this.addError(event.message);
             return;
         }
-    }
-
-    private updateSyncingUrls(urls: string[]): void {
-        this.syncingUrls.set(urls);
     }
 
     private handleTrackUpdate(item: DownloadItem): void {
@@ -161,10 +150,6 @@ export class DownloadTrackingService {
         } else {
             this.updateActiveDownloads(item);
         }
-    }
-
-    private addError(message: string): void {
-        this.errors.update(prev => prev.includes(message) ? prev : [message, ...prev].slice(0, 5));
     }
 
     private syncPlayerQueue(): void {
@@ -196,6 +181,10 @@ export class DownloadTrackingService {
 
             return [...downloads, item];
         });
+    }
+
+    private addError(message: string): void {
+        this.errors.update(prev => prev.includes(message) ? prev : [message, ...prev].slice(0, 5));
     }
 
     public removeFromQueue(id: number): void {
