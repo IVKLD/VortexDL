@@ -24,9 +24,7 @@ use crate::{
     storage::MusicStorage,
     types::DiscoveredMusicTrack,
     ui::create_total_progress_bar,
-    utils::{
-        cancellation::run_with_cancellation, filename::clean_filename,
-    },
+    utils::{cancellation::run_with_cancellation, filename::clean_filename},
 };
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -37,7 +35,7 @@ pub enum SourcePlatform {
 
 impl SourcePlatform {
     pub fn detect(url: &Url) -> Self {
-        if yt_audio_downloader::is_youtube_url(url.as_str()) {
+        if yt_downloader_rs::is_youtube_url(url.as_str()) {
             Self::YouTube
         } else {
             Self::SoundCloud
