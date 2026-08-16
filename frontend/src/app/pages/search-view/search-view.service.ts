@@ -17,7 +17,11 @@ export class SearchViewService {
         return this._http.post<void>('/download', payload);
     }
 
-    public getStreamUrl(trackId: number): Observable<StreamUrlResponseRdo> {
-        return this._http.get<StreamUrlResponseRdo>(`/search/tracks/${trackId}/stream`);
+    public getStreamUrl(trackId: number, permalinkUrl?: string): Observable<StreamUrlResponseRdo> {
+        const params: Record<string, string> = {};
+        if (permalinkUrl) {
+            params['url'] = permalinkUrl;
+        }
+        return this._http.get<StreamUrlResponseRdo>(`/search/tracks/${trackId}/stream`, { params });
     }
 }

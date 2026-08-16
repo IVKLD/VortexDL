@@ -12,6 +12,13 @@ const FORMATS_CONFIG: { format: AudioFormat, color: string }[] = [
     {format: AudioFormat.MP3, color: '#818cf8'},
     {format: AudioFormat.FLAC, color: '#34d399'},
     {format: AudioFormat.WAV, color: '#f472b6'},
+    {format: AudioFormat.M4A, color: '#fbbf24'},
+    {format: AudioFormat.AAC, color: '#38bdf8'},
+    {format: AudioFormat.OGG, color: '#a3e635'},
+    {format: AudioFormat.OPUS, color: '#c084fc'},
+    {format: AudioFormat.WMA, color: '#fb7185'},
+    {format: AudioFormat.ALAC, color: '#2dd4bf'},
+    {format: AudioFormat.AIFF, color: '#e879f9'},
     {format: AudioFormat.UNKNOWN, color: '#94a3b8'}
 ];
 

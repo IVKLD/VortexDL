@@ -1,7 +1,10 @@
 use serde::{Deserialize, Serialize};
 use url::Url;
 
-use crate::utils::{filename::parse_track_metadata, soundcloud::resize_artwork_url};
+use crate::{
+    storage::metadata::detect_platform_str,
+    utils::{filename::parse_track_metadata, soundcloud::resize_artwork_url},
+};
 
 #[derive(Default, Clone, Debug, Serialize, Deserialize, PartialEq, Eq, utoipa::ToSchema)]
 pub struct TrackMetadata {
@@ -10,6 +13,7 @@ pub struct TrackMetadata {
     pub title: String,
     pub artwork_url: Option<String>,
     pub source_url: Option<String>,
+    pub platform: String,
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize, utoipa::ToSchema)]
@@ -68,12 +72,15 @@ impl DiscoveredMusicTrack {
     }
 
     pub fn to_metadata(&self, source_url: Option<String>) -> TrackMetadata {
+        let platform = detect_platform_str(source_url.as_deref()).to_string();
+
         TrackMetadata {
             id: self.id,
             artist: self.artist.clone(),
             title: self.title.clone(),
             artwork_url: self.artwork_url.as_ref().map(|u| u.as_str().to_string()),
             source_url,
+            platform,
         }
     }
 }

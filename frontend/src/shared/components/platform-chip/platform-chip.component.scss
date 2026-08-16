@@ -1,0 +1,72 @@
+:host {
+    display: inline-flex;
+    align-items: center;
+    vertical-align: middle;
+}
+
+.platform-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 2px 8px;
+    border-radius: 12px;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.3px;
+    text-transform: uppercase;
+    backdrop-filter: blur(8px);
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    user-select: none;
+    line-height: 1.4;
+
+    .chip-icon {
+        font-size: 14px;
+        width: 14px;
+        height: 14px;
+        line-height: 14px;
+    }
+
+    &.youtube {
+        background: rgba(255, 0, 0, 0.15);
+        border: 1px solid rgba(255, 60, 60, 0.35);
+        color: #ff5252;
+        box-shadow: 0 2px 8px rgba(255, 0, 0, 0.12);
+
+        .chip-icon {
+            color: #ff5252;
+        }
+
+        &:hover {
+            background: rgba(255, 0, 0, 0.25);
+            border-color: rgba(255, 60, 60, 0.6);
+            box-shadow: 0 4px 12px rgba(255, 0, 0, 0.25);
+        }
+    }
+
+    &.soundcloud {
+        background: rgba(255, 85, 0, 0.15);
+        border: 1px solid rgba(255, 120, 0, 0.35);
+        color: #ff7700;
+        box-shadow: 0 2px 8px rgba(255, 85, 0, 0.12);
+
+        .chip-icon {
+            color: #ff7700;
+        }
+
+        &:hover {
+            background: rgba(255, 85, 0, 0.25);
+            border-color: rgba(255, 120, 0, 0.6);
+            box-shadow: 0 4px 12px rgba(255, 85, 0, 0.25);
+        }
+    }
+
+    &.auto {
+        background: rgba(255, 255, 255, 0.08);
+        border: 1px solid rgba(255, 255, 255, 0.15);
+        color: rgba(255, 255, 255, 0.6);
+
+        .chip-icon {
+            color: rgba(255, 255, 255, 0.6);
+        }
+    }
+}

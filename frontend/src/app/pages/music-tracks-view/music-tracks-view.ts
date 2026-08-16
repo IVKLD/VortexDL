@@ -22,6 +22,7 @@ import { ListViewShellComponent } from '@shared/components/list-view-shell/list-
 import { FileSizePipe } from '@shared/pipes/file-size.pipe';
 import { MatIconButton } from '@angular/material/button';
 import { DragSelectDirective } from './directives/drag-select.directive';
+import { PlatformChipComponent } from '@shared/components/platform-chip/platform-chip.component';
 
 @Component({
     selector: 'app-music-tracks-view',
@@ -40,6 +41,7 @@ import { DragSelectDirective } from './directives/drag-select.directive';
         EmptyPaneComponent,
         ListViewShellComponent,
         DragSelectDirective,
+        PlatformChipComponent,
     ],
     templateUrl: './music-tracks-view.html',
     styleUrl: './music-tracks-view.scss',

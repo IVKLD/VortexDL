@@ -1,6 +1,4 @@
-use yt_audio_downloader::{
-    AudioFormat, AudioQuality, ProgressEvent, YoutubeAudioDownloader,
-};
+use yt_audio_downloader::{AudioFormat, AudioQuality, ProgressEvent, YoutubeAudioDownloader};
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -24,7 +22,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                 ..
             } => {
                 if let Some(pct) = percentage {
-                    print!("\r[>] Downloading: {:.1}% ({} bytes)", pct, bytes_downloaded);
+                    print!(
+                        "\r[>] Downloading: {:.1}% ({} bytes)",
+                        pct, bytes_downloaded
+                    );
                 } else {
                     print!("\r[>] Downloading: {} bytes", bytes_downloaded);
                 }

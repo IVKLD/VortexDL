@@ -2,18 +2,19 @@
 
 <div class="downloads-container">
     @if (itemList.length > 0) {
-    <div class="active-downloads">
-        <header>
-            <span>Active Downloads</span>
-            @if (itemList.length > 0) {
-            <mark>{{ itemList.length }}</mark>
-            }
-        </header>
+        <div class="active-downloads">
+            <header>
+                <span>Active Downloads</span>
+                @if (itemList.length > 0) {
+                    <mark>{{ itemList.length }}</mark>
+                }
+            </header>
 
-        <rx-virtual-scroll-viewport [itemSize]="52">
-            <app-active-download-item *rxVirtualFor="let item of itemList; trackBy: 'id'" (remove)="remove.emit($event)"
-                [item]="item" />
-        </rx-virtual-scroll-viewport>
-    </div>
+            <rx-virtual-scroll-viewport [itemSize]="52">
+                <app-active-download-item *rxVirtualFor="let item of itemList; trackBy: 'id'"
+                                          (remove)="remove.emit($event)"
+                                          [item]="item"/>
+            </rx-virtual-scroll-viewport>
+        </div>
     }
 </div>

@@ -6,9 +6,9 @@
     <ng-container results>
         <rx-virtual-scroll-viewport [itemSize]="82" scrollWindow (viewRange)="onViewRange($event)">
             <app-search-result-item *rxVirtualFor="let track of state.results(); trackBy: 'id'" [track]="track"
-                [isPlaying]="player.isTrackPlaying(track.id)" [isDownloaded]="downloadedIds().has(track.id)"
-                [isDownloading]="downloadingIds().has(track.id)" (playTrack)="togglePlay($event)"
-                (downloadTrack)="downloadTrack($event)" (deleteTrack)="deleteTrack($event)" />
+                [isPlaying]="player.isTrackPlaying(track.id)" [isLoadingStream]="player.loadingTrackId() === track.id"
+                [isDownloaded]="downloadedIds().has(track.id)" [isDownloading]="downloadingIds().has(track.id)"
+                (playTrack)="togglePlay($event)" (downloadTrack)="downloadTrack($event)" (deleteTrack)="deleteTrack($event)" />
         </rx-virtual-scroll-viewport>
 
         @if (state.loading() && state.results().length > 0) {

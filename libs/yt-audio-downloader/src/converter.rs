@@ -1,7 +1,11 @@
-use crate::error::{Result, YoutubeAudioError};
-use crate::models::{AudioFormat, AudioQuality, VideoMetadata};
 use std::path::{Path, PathBuf};
+
 use tokio::process::Command;
+
+use crate::{
+    error::{Result, YoutubeAudioError},
+    models::{AudioFormat, AudioQuality, VideoMetadata},
+};
 
 pub struct AudioConverter;
 
@@ -39,6 +43,7 @@ impl AudioConverter {
         }
 
         let mut cmd = Command::new("ffmpeg");
+        cmd.kill_on_drop(true);
         cmd.args(["-y", "-i"]).arg(input_path);
 
         match format {
@@ -51,7 +56,12 @@ impl AudioConverter {
                 }
             }
             AudioFormat::M4a => {
-                cmd.args(["-codec:a", "aac", "-b:a", quality.bitrate_kbps()]);
+                let bitrate = match quality {
+                    AudioQuality::Best | AudioQuality::High => "256k",
+                    AudioQuality::Medium => "192k",
+                    AudioQuality::Low => "128k",
+                };
+                cmd.args(["-codec:a", "aac", "-b:a", bitrate]);
             }
             AudioFormat::Opus => {
                 cmd.args(["-codec:a", "libopus", "-b:a", quality.bitrate_kbps()]);
@@ -70,7 +80,10 @@ impl AudioConverter {
         if let Some(meta) = metadata {
             cmd.args(["-metadata", &format!("title={}", meta.title)]);
             cmd.args(["-metadata", &format!("artist={}", meta.author)]);
-            cmd.args(["-metadata", &format!("comment=Downloaded from YouTube (ID: {})", meta.id)]);
+            cmd.args([
+                "-metadata",
+                &format!("comment=Downloaded from YouTube (ID: {})", meta.id),
+            ]);
         }
 
         cmd.arg(&output_path);

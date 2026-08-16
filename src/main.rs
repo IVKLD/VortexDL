@@ -5,8 +5,8 @@ use clap::Parser;
 use tokio::sync::RwLock;
 
 use crate::{
-    api::state::AppState, cli::Args, storage::MusicStorage, ui::create_standalone_spinner,
-    utils::soundcloud::SoundCloudClientBuilder,
+    api::state::AppState, cli::Args, settings::SettingsManager, storage::MusicStorage,
+    ui::create_standalone_spinner, utils::soundcloud,
 };
 
 mod adb_device;
@@ -39,8 +39,8 @@ async fn main() -> Result<()> {
 
     let pb = create_standalone_spinner("Initializing SoundCloud...");
     let storage = Arc::new(RwLock::new(MusicStorage::default()));
-    let settings_manager = crate::settings::SettingsManager::new(settings.clone());
-    let client = SoundCloudClientBuilder::new(&settings)
+    let settings_manager = SettingsManager::new(settings.clone());
+    let client = soundcloud::ClientBuilder::new(&settings)
         .with_settings_manager(settings_manager.clone())
         .build()
         .await?;

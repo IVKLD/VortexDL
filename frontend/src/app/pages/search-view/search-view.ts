@@ -44,7 +44,6 @@ export class SearchView {
     private readonly _notification = inject(NotificationService);
     private readonly _tracksState = inject(MusicTracksViewState);
     private readonly _tracksService = inject(MusicTracksViewService);
-    private readonly _headerService = inject(HeaderService);
     protected readonly tracking = inject(DownloadTrackingService);
     protected readonly player = inject(PlayerService);
     protected readonly history = inject(SearchHistoryService);

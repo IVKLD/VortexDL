@@ -34,7 +34,7 @@ export class MusicTracksViewState {
     );
 
     public readonly searchQuery = signal<string>('');
-    
+
     public readonly searchForm = form(this.searchQuery, (p) => {
         debounce(p, 200);
     });

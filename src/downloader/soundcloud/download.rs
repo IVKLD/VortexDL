@@ -4,13 +4,13 @@ use anyhow::{Result, anyhow};
 use futures::StreamExt;
 use tokio::{fs, io::AsyncWriteExt, time::sleep};
 
-use super::{DownloadTask, resolve::StreamSource};
+use super::resolve::StreamSource;
 use crate::{
-    downloader::Context,
-    utils::{http::build_http_client, soundcloud::SoundCloudClientBuilder, verification::verify},
+    downloader::{Context, DownloadTask},
+    utils::{http::build_http_client, soundcloud, verification::verify},
 };
 
-pub async fn download_single_track(
+pub async fn download_soundcloud_track(
     context: &Context,
     task: &DownloadTask,
     stream_source: StreamSource,
@@ -122,7 +122,7 @@ async fn download_hls(
 
     let proxied_client;
     let client: &soundcloud_rs::Client = if let Some(proxy) = active_proxy {
-        proxied_client = SoundCloudClientBuilder::new(&settings)
+        proxied_client = soundcloud::ClientBuilder::new(&settings)
             .with_proxy(Some(proxy))
             .build()
             .await

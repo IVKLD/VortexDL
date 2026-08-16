@@ -3,11 +3,14 @@ import { MatIcon } from '@angular/material/icon';
 import { PlayerService } from '@app/services/player.service';
 import {MatButton} from "@angular/material/button";
 
+import { MatProgressSpinner } from '@angular/material/progress-spinner';
+
 @Component({
     selector: 'app-player-dial',
     imports: [
         MatIcon,
-        MatButton
+        MatButton,
+        MatProgressSpinner,
     ],
     templateUrl: './player-dial.component.html',
     styleUrl: './player-dial.component.scss',

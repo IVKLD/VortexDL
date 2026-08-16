@@ -9,11 +9,15 @@
             <app-music-card *rxVirtualFor="let track of tracks(); trackBy: 'id'"
                 [appDragSelect]="track" (itemClick)="handleCardClick($event)"
                 [isActive]="activeTrackId() === track.id" [isPlaying]="player.isTrackPlaying(track.id)"
+                [isLoadingStream]="player.loadingTrackId() === track.id"
                 [isSelected]="state.selectedIds().has(track.id)" [track]="track" (playTrack)="playTrack(track)"
                 [cdkContextMenuTriggerFor]="cardMenu" [cdkContextMenuTriggerData]="{ $implicit: track }">
                 <aside meta>
+                    <app-platform-chip [url]="track.sourceUrl || track.permalinkUrl" />
                     <span>{{ track.size | fileSize }}</span>
-                    <strong [attr.data-format]="track.format">{{ track.format }}</strong>
+                    @if (track.format && track.format.toLowerCase() !== 'youtube' && track.format.toLowerCase() !== 'soundcloud' && track.format.toLowerCase() !== 'unknown') {
+                        <strong [attr.data-format]="track.format">{{ track.format }}</strong>
+                    }
                 </aside>
 
                 <div actions class="actions-wrapper">

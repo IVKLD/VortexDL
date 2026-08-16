@@ -115,10 +115,26 @@ main {
         width: fit-content;
 
         &[data-format="flac"],
-        &[data-format="wav"] {
+        &[data-format="wav"],
+        &[data-format="alac"],
+        &[data-format="aiff"] {
           background: color-mix(in srgb, var(--mat-sys-primary) 15%, transparent);
           border-color: color-mix(in srgb, var(--mat-sys-primary) 30%, transparent);
           color: var(--mat-sys-primary);
+        }
+
+        &[data-format="m4a"],
+        &[data-format="aac"] {
+          background: rgba(251, 191, 36, 0.15);
+          border-color: rgba(251, 191, 36, 0.3);
+          color: #fbbf24;
+        }
+
+        &[data-format="ogg"],
+        &[data-format="opus"] {
+          background: rgba(192, 132, 252, 0.15);
+          border-color: rgba(192, 132, 252, 0.3);
+          color: #c084fc;
         }
       }
 

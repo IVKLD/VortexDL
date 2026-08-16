@@ -1,32 +1,47 @@
-use crate::error::{Result, YoutubeAudioError};
-use crate::extractor::YoutubeExtractor;
-use crate::http::create_http_client;
-use crate::models::{AudioStreamResponse, VideoMetadata};
 use bytes::Bytes;
 use futures_util::Stream;
 use reqwest::Client;
 
+use crate::{
+    error::{Result, YoutubeAudioError},
+    extractor::YoutubeExtractor,
+    http::create_http_client,
+    models::{AudioStreamResponse, VideoMetadata},
+};
+
 pub struct AudioStreamer {
     client: Client,
+    proxy: Option<String>,
 }
 
 impl Default for AudioStreamer {
     fn default() -> Self {
         Self {
             client: create_http_client(),
+            proxy: None,
         }
     }
 }
 
 impl AudioStreamer {
     pub fn new(client: Client) -> Self {
-        Self { client }
+        Self {
+            client,
+            proxy: None,
+        }
+    }
+
+    pub fn with_proxy(client: Client, proxy: Option<String>) -> Self {
+        Self { client, proxy }
     }
 
     pub async fn get_stream_response(&self, url_or_id: &str) -> Result<AudioStreamResponse> {
-        let extractor = YoutubeExtractor::new(self.client.clone());
+        let extractor = YoutubeExtractor::with_proxy(self.client.clone(), self.proxy.clone());
         let media = extractor.extract_media(url_or_id).await?;
-        let best = media.best_stream().cloned().ok_or(YoutubeAudioError::NoAudioStreamFound)?;
+        let best = media
+            .best_stream()
+            .cloned()
+            .ok_or(YoutubeAudioError::NoAudioStreamFound)?;
         let metadata = media.metadata;
 
         Ok(AudioStreamResponse {

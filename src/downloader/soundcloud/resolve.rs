@@ -1,20 +1,14 @@
 use std::time::Duration;
 
 use anyhow::Result;
-use soundcloud_rs::{Identifier, StreamType};
+use soundcloud_rs::{ResolvedResource, StreamType};
 use tokio::task::JoinHandle;
 use url::Url;
 
+use super::discovery::{discover_liked_tracks, discover_playlist_tracks, init_progress_spinner};
 use crate::{
-    downloader::{
-        Context, DiscoveredMusicTrack,
-        discovery::{discover_liked_tracks, discover_playlist_tracks, init_progress_spinner},
-    },
-    utils::{
-        http::build_http_client,
-        proxy::race_proxies,
-        soundcloud::{ResolvedResource, SoundCloudClientBuilder, resolve_url},
-    },
+    downloader::{Context, DiscoveredMusicTrack},
+    utils::{http::build_http_client, proxy::race_proxies, soundcloud},
 };
 
 #[derive(Debug, Clone)]
@@ -41,25 +35,23 @@ pub async fn resolve_tracks_from_url(
     ctx: &Context,
     url: &Url,
 ) -> Result<Vec<DiscoveredMusicTrack>> {
-    let pb = init_progress_spinner(ctx, "Resolving URL...");
+    let pb = init_progress_spinner(ctx, "Resolving SoundCloud URL...");
 
     let result = match discover_tracks_from_url(ctx, url, &ctx.client).await {
         Ok(tracks) => Ok(tracks),
         Err(e) => {
-            println!("Direct discovery failed: {e}");
+            tracing::debug!("Direct discovery failed: {e}. Trying fallback proxies...");
             let settings = ctx.settings.read().await.clone();
 
             if !settings.network.use_proxy || settings.network.fallback_proxies.is_empty() {
                 return Err(e);
             }
 
-            tracing::debug!("Direct discovery failed: {e}. Trying fallback proxies...");
-
             race_proxies(&settings, |s, proxy| {
                 let ctx = ctx.clone();
                 let url = url.clone();
                 async move {
-                    let proxied_client = SoundCloudClientBuilder::new(&s)
+                    let proxied_client = soundcloud::ClientBuilder::new(&s)
                         .with_proxy(Some(&proxy))
                         .build()
                         .await?;
@@ -67,7 +59,9 @@ pub async fn resolve_tracks_from_url(
                 }
             })
             .await
-            .map_err(|proxy_err| anyhow::anyhow!("Discovery failed: {e} (proxies: {proxy_err})"))
+            .map_err(|proxy_err| {
+                anyhow::anyhow!("SoundCloud discovery failed: {e} (proxies: {proxy_err})")
+            })
         }
     };
 
@@ -80,7 +74,7 @@ async fn discover_tracks_from_url(
     url: &Url,
     client: &soundcloud_rs::Client,
 ) -> Result<Vec<DiscoveredMusicTrack>> {
-    let res = resolve_url(client, url).await?;
+    let res = client.resolve_url(url).await?;
 
     let all_tracks = match res {
         ResolvedResource::User(user) => {
@@ -117,7 +111,7 @@ pub async fn resolve_stream_source(ctx: &Context, id: i64) -> Result<StreamSourc
             }
 
             race_proxies(&settings, move |s, proxy| async move {
-                let client = SoundCloudClientBuilder::new(&s)
+                let client = soundcloud::ClientBuilder::new(&s)
                     .with_proxy(Some(&proxy))
                     .build()
                     .await?;
@@ -137,28 +131,12 @@ async fn resolve_with_client(
     id: i64,
     proxy_url: Option<&str>,
 ) -> Result<StreamSource> {
-    let track = client.get_track(&Identifier::Id(id)).await?;
-    let proxy_str = proxy_url.map(String::from);
-    let url = match client
-        .resolve_stream_url_from_track(&track, Some(&StreamType::Hls))
-        .await
-    {
-        Ok(url) => {
-            return Ok(StreamSource::Hls {
-                url,
-                proxy_url: proxy_str,
-            });
-        }
-        Err(_) => {
-            client
-                .resolve_stream_url_from_track(&track, Some(&StreamType::Progressive))
-                .await?
-        }
-    };
-    Ok(StreamSource::Progressive {
-        url,
-        proxy_url: proxy_str,
-    })
+    let (url, stype) = soundcloud::resolve_stream_url(client, id).await?;
+    let proxy_url = proxy_url.map(String::from);
+    match stype {
+        StreamType::Hls => Ok(StreamSource::Hls { url, proxy_url }),
+        _ => Ok(StreamSource::Progressive { url, proxy_url }),
+    }
 }
 
 pub fn spawn_artwork_fetch(

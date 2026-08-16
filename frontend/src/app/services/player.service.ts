@@ -1,15 +1,12 @@
 import { effect, inject, Injectable, NgZone, signal } from '@angular/core';
-import { HttpClient, HttpErrorResponse } from '@angular/common/http';
+import { HttpClient } from '@angular/common/http';
 import { firstValueFrom } from 'rxjs';
 import { PlayableTrack } from '@shared/models/music-track.model';
 import { MusicTracksViewState } from '@app/pages/music-tracks-view/music-tracks-view.state';
-import { shuffleArray } from '@shared/utils/array.utils';
-import {
-    setMediaSessionPlaybackState,
-    setupMediaSessionHandlers,
-    updateMediaSessionMetadata,
-} from '@shared/utils/media-session.utils';
 import { NotificationService } from './notification.service';
+import { AudioEngineService } from './player/audio-engine.service';
+import { PlayerQueueService } from './player/player-queue.service';
+import { MediaSessionManagerService } from './player/media-session-manager.service';
 
 @Injectable({
     providedIn: 'root'
@@ -19,91 +16,50 @@ export class PlayerService {
     private readonly _musicState = inject(MusicTracksViewState);
     private readonly _notification = inject(NotificationService);
     private readonly zone = inject(NgZone);
-    private readonly _audio = new Audio();
-    private readonly _queue = signal<PlayableTrack[]>([]);
 
-    private readonly _volume = signal<number>(
-        +(localStorage.getItem('player_volume') ?? 0.2)
-    );
-
-    private readonly _shuffle = signal<boolean>(
-        localStorage.getItem('player_shuffle') === 'true'
-    );
-
-    private shuffleQueue: PlayableTrack[] = [];
-    private shuffleIndex = -1;
+    private readonly audioEngine = new AudioEngineService();
+    private readonly queueService = new PlayerQueueService();
+    private readonly mediaSession = new MediaSessionManagerService();
 
     public readonly currentTrack = signal<PlayableTrack | null>(null);
-    public readonly queue = this._queue.asReadonly();
-    public readonly shuffle = this._shuffle.asReadonly();
+    public readonly loadingTrackId = signal<number | null>(null);
 
-    public readonly isPlaying = signal(false);
-    public readonly progress = signal(0);
-    public readonly duration = signal(0);
+    public readonly queue = this.queueService.queue;
+    public readonly shuffle = this.queueService.shuffle;
 
-    public readonly volume = this._volume.asReadonly();
+    public readonly isPlaying = this.audioEngine.isPlaying;
+    public readonly progress = this.audioEngine.progress;
+    public readonly duration = this.audioEngine.duration;
+    public readonly volume = this.audioEngine.volume;
 
     constructor() {
-        this.listenToAudioEvents();
+        this.setupAudioEngineCallbacks();
         this.setupMediaSession();
         this.setupKeyboardShortcuts();
 
         effect(() => {
-            const vol = this.volume();
-            this.audio.volume = Math.pow(vol, 2);
-            localStorage.setItem('player_volume', vol.toString());
+            const track = this.currentTrack();
+            this.mediaSession.updateMetadata(track);
         });
 
         effect(() => {
-            const track = this.currentTrack();
-            if (track) {
-                updateMediaSessionMetadata(track);
+            const playing = this.isPlaying();
+            this.mediaSession.updatePlaybackState(playing);
+        });
+    }
+
+    private setupAudioEngineCallbacks(): void {
+        this.audioEngine.onEnded = () => this.next();
+        this.audioEngine.onError = () => {
+            const current = this.currentTrack();
+            if (current) {
+                this.handlePlaybackError(current, 'Audio playback failed');
             }
-        });
-    }
-
-    private listenToAudioEvents(): void {
-        this.zone.runOutsideAngular(() => {
-            this.audio.addEventListener('timeupdate', () => {
-                this.progress.set(this.audio.currentTime);
-            });
-
-            this.audio.addEventListener('loadedmetadata', () => {
-                this.duration.set(this.audio.duration);
-            });
-
-            this.audio.addEventListener('play', () => {
-                this.setPlaybackState(true);
-            });
-
-            this.audio.addEventListener('pause', () => {
-                this.setPlaybackState(false);
-            });
-
-            this.audio.addEventListener('ended', () => {
-                this.zone.run(() => {
-                    this.next();
-                });
-            });
-
-            this.audio.addEventListener('error', () => {
-                this.zone.run(() => {
-                    const current = this.currentTrack();
-                    if (current) {
-                        this.handlePlaybackError(current, 'Audio playback failed: geoblocked or unsupported format');
-                    }
-                });
-            });
-        });
-    }
-
-    private setPlaybackState(playing: boolean): void {
-        this.isPlaying.set(playing);
-        setMediaSessionPlaybackState(playing);
+        };
     }
 
     private setupMediaSession(): void {
-        setupMediaSessionHandlers({
+        this.mediaSession.initHandlers({
             onPlay: () => this.togglePlay(),
             onPause: () => this.togglePlay(),
             onPreviousTrack: () => this.previous(),
@@ -130,78 +86,57 @@ export class PlayerService {
         });
     }
 
-    private generateShuffleQueue(current: PlayableTrack | null): void {
-        const q = shuffleArray(this._queue());
-        if (q.length === 0) {
-            this.shuffleQueue = [];
-            this.shuffleIndex = -1;
-            return;
-        }
-
-        if (current) {
-            const idx = q.findIndex(t => t.id === current.id);
-            if (idx !== -1) {
-                q.splice(idx, 1);
-                q.unshift(current);
-            }
-        }
-        this.shuffleQueue = q;
-        this.shuffleIndex = current ? 0 : -1;
-    }
-
     private handlePlaybackError(track: PlayableTrack, message: string): void {
         if (this.currentTrack()?.id === track.id) {
-            this.audio.pause();
-            this.audio.src = '';
+            this.audioEngine.stop();
             this.currentTrack.set(null);
-            this.isPlaying.set(false);
+            this.loadingTrackId.set(null);
             this._notification.error(message);
         }
     }
 
+    private playSource(track: PlayableTrack, src: string): void {
+        if (this.currentTrack()?.id !== track.id) {
+            this.loadingTrackId.set(null);
+            return;
+        }
+
+        this.audioEngine.playSource(src)
+            .then(() => {
+                if (this.currentTrack()?.id === track.id) {
+                    this.loadingTrackId.set(null);
+                }
+            })
+            .catch(err => {
+                this.loadingTrackId.set(null);
+                if (err?.name !== 'AbortError' && this.currentTrack()?.id === track.id) {
+                    this.handlePlaybackError(track, 'Playback failed');
+                }
+            });
+    }
+
     public get audio(): HTMLAudioElement {
-        return this._audio;
+        return this.audioEngine.audio;
     }
 
     public setVolume(value: number): void {
-        this._volume.set(value);
+        this.audioEngine.setVolume(value);
     }
 
     public toggleShuffle(): void {
-        const newVal = !this._shuffle();
-        this._shuffle.set(newVal);
-        localStorage.setItem('player_shuffle', newVal.toString());
-        if (newVal) {
-            this.generateShuffleQueue(this.currentTrack());
-        } else {
-            this.shuffleQueue = [];
-            this.shuffleIndex = -1;
-        }
+        this.queueService.toggleShuffle(this.currentTrack());
     }
 
-
     public setQueue(tracks: PlayableTrack[]): void {
-        this._queue.set(tracks);
-        if (this._shuffle()) {
-            this.generateShuffleQueue(this.currentTrack());
-        }
+        this.queueService.setQueue(tracks, this.currentTrack());
     }
 
     public removeFromQueue(trackId: number): void {
-        this._queue.update(q => q.filter(t => t.id !== trackId));
-        if (this._shuffle()) {
-            this.shuffleQueue = this.shuffleQueue.filter(t => t.id !== trackId);
-            const current = this.currentTrack();
-            if (current) {
-                this.shuffleIndex = this.shuffleQueue.findIndex(t => t.id === current.id);
-            }
-        }
+        this.queueService.removeFromQueue(trackId);
         const current = this.currentTrack();
         if (current && current.id === trackId) {
-            this.audio.pause();
-            this.audio.src = '';
+            this.audioEngine.stop();
             this.currentTrack.set(null);
-            this.isPlaying.set(false);
         }
     }
 
@@ -211,63 +146,44 @@ export class PlayerService {
             return;
         }
 
+        this.audioEngine.stop();
         this.currentTrack.set(track);
+        this.loadingTrackId.set(track.id);
 
-        if (this._shuffle()) {
-            const idx = this.shuffleQueue.findIndex(t => t.id === track.id);
-            if (idx !== -1) {
-                this.shuffleIndex = idx;
-            } else {
-                this.generateShuffleQueue(track);
-            }
-        }
+        this.queueService.onTrackSelected(track);
 
         if (track.streamUrl) {
-            this.audio.src = track.streamUrl;
-            this.audio.load();
-            this.audio.play().catch(playErr => {
-                console.error('Playback failed:', playErr);
-                this.handlePlaybackError(track, 'Playback failed: browser block or unsupported format');
-            });
-            return;
+            return this.playSource(track, track.streamUrl);
         }
 
-        const isLocal = this._musicState.tracks().some(t => t.id === track.id);
-        if (isLocal) {
-            this.audio.src = `/api/downloads/${track.id}/stream`;
-            this.audio.load();
-            this.audio.play().catch(playErr => {
-                console.error('Playback failed:', playErr);
-                this.handlePlaybackError(track, 'Playback failed: browser block or unsupported format');
-            });
-            return;
+        if (this._musicState.tracks().some(t => t.id === track.id)) {
+            return this.playSource(track, `/api/downloads/${track.id}/stream`);
         }
 
         try {
-            const res = await firstValueFrom(this._http.get<{ url: string }>(`/search/tracks/${track.id}/stream`));
-            track.streamUrl = res.url;
-            if (this.currentTrack()?.id === track.id) {
-                this.audio.src = res.url;
-                this.audio.load();
-                this.audio.play().catch(playErr => {
-                    console.error('Playback failed:', playErr);
-                    this.handlePlaybackError(track, 'Playback failed: browser block or unsupported format');
-                });
+            const params: Record<string, string> = {};
+            if (track.permalinkUrl) {
+                params['url'] = track.permalinkUrl;
             }
-        } catch (err: unknown) {
-            console.error('Failed to stream track:', err);
-            const msg = err instanceof HttpErrorResponse && err.error?.message
-                ? err.error.message
-                : 'Failed to resolve stream URL from SoundCloud';
-            this.handlePlaybackError(track, msg);
+            const res = await firstValueFrom(this._http.get<{ url: string }>(`/search/tracks/${track.id}/stream`, { params }));
+            if (this.currentTrack()?.id !== track.id) {
+                return;
+            }
+            track.streamUrl = res.url;
+            this.playSource(track, res.url);
+        } catch (_err: unknown) {
+            this.loadingTrackId.set(null);
+            if (this.currentTrack()?.id === track.id) {
+                this.handlePlaybackError(track, 'Failed to resolve stream URL');
+            }
         }
     }
 
     public togglePlay(): void {
         if (this.isPlaying()) {
-            this.audio.pause();
+            this.audioEngine.pause();
         } else if (this.audio.src) {
-            this.audio.play().catch(() => {});
+            this.audioEngine.audio.play().catch(() => { });
         }
     }
 
@@ -282,36 +198,18 @@ export class PlayerService {
     }
 
     public seek(time: number): void {
-        this.audio.currentTime = time;
+        this.audioEngine.seek(time);
     }
 
     public next(): void {
-        const queue = this.queue();
-        const current = this.currentTrack();
-
-        if (queue.length === 0 || !current) return;
-
-        if (this._shuffle()) {
-            if (this.shuffleQueue.length === 0) {
-                this.generateShuffleQueue(current);
-            }
-            if (this.shuffleQueue.length > 0) {
-                this.shuffleIndex = (this.shuffleIndex + 1) % this.shuffleQueue.length;
-                const nextTrack = this.shuffleQueue[this.shuffleIndex];
-                if (nextTrack) this.play(nextTrack);
-            }
-        } else {
-            const currentIndex = queue.findIndex(t => t.id === current.id);
-            const nextIndex = (currentIndex + 1) % queue.length;
-            const nextTrack = queue[nextIndex];
-
-            if (nextTrack) this.play(nextTrack);
+        const nextTrack = this.queueService.getNextTrack(this.currentTrack());
+        if (nextTrack) {
+            this.play(nextTrack);
         }
     }
 
     public previous(): void {
         const current = this.currentTrack();
-
         if (!current) return;
 
         if (this.audio.currentTime > 3) {
@@ -319,24 +217,9 @@ export class PlayerService {
             return;
         }
 
-        const queue = this.queue();
-        if (queue.length === 0) return;
-
-        if (this._shuffle()) {
-            if (this.shuffleQueue.length === 0) {
-                this.generateShuffleQueue(current);
-            }
-            if (this.shuffleQueue.length > 0) {
-                this.shuffleIndex = (this.shuffleIndex - 1 + this.shuffleQueue.length) % this.shuffleQueue.length;
-                const prevTrack = this.shuffleQueue[this.shuffleIndex];
-                if (prevTrack) this.play(prevTrack);
-            }
-        } else {
-            const currentIndex = queue.findIndex(t => t.id === current.id);
-            const prevIndex = (currentIndex - 1 + queue.length) % queue.length;
-            const prevTrack = queue[prevIndex];
-
-            if (prevTrack) this.play(prevTrack);
+        const prevTrack = this.queueService.getPreviousTrack(current);
+        if (prevTrack) {
+            this.play(prevTrack);
         }
     }
 }

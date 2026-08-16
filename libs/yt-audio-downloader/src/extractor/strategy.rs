@@ -1,5 +1,4 @@
-use crate::error::Result;
-use crate::models::ExtractedMedia;
+use crate::{error::Result, models::ExtractedMedia};
 
 pub trait MediaExtractor: Send + Sync {
     fn extract<'a>(

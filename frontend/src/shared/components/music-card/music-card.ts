@@ -1,5 +1,4 @@
 import { Component, input, output } from '@angular/core';
-import { MatIconButton } from '@angular/material/button';
 import { NgOptimizedImage } from '@angular/common';
 import { MatIcon } from '@angular/material/icon';
 import { MatProgressSpinner } from '@angular/material/progress-spinner';
@@ -13,7 +12,7 @@ export interface MusicCardTrack {
 
 @Component({
     selector: 'app-music-card',
-    imports: [MatIconButton, NgOptimizedImage, MatIcon, MatProgressSpinner],
+    imports: [NgOptimizedImage, MatIcon, MatProgressSpinner],
     templateUrl: './music-card.html',
     styleUrl: './music-card.scss',
     host: {

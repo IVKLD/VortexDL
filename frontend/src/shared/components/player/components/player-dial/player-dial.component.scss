@@ -51,6 +51,8 @@ button {
   z-index: 2;
 
   display: inline-flex;
+  align-items: center;
+  justify-content: center;
 
   aspect-ratio: 1;
 
@@ -64,6 +66,15 @@ button {
 
   --mat-button-tonal-container-color: white;
   --mat-button-tonal-label-text-color: black;
+
+  mat-spinner {
+    --mat-sys-primary: #000000;
+    --mat-progress-spinner-color: #000000;
+    --mdc-circular-progress-active-indicator-color: #000000;
+    --mdc-circular-progress-size: 20px;
+    width: 20px;
+    height: 20px;
+  }
 }
 
 span {
@@ -83,4 +94,3 @@ span {
   font-variant-numeric: tabular-nums;
   border: 1px solid rgba(255, 255, 255, 0.05);
 }
-

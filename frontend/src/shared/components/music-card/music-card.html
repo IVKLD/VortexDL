@@ -1,37 +1,30 @@
 @let data = track();
 
-<div class="card-content-wrapper">
-    <div class="artwork"
-         role="button"
-         tabindex="0"
-         (click)="$event.stopPropagation(); playTrack.emit(data)"
-         (keydown.enter)="playTrack.emit(data)"
-         (keydown.space)="$event.preventDefault(); playTrack.emit(data)">
-        @if (data.artworkUrl) {
-            <img [alt]="data.title" [ngSrc]="data.artworkUrl" height="48" width="48" />
+<div class="artwork">
+    @if (data.artworkUrl) {
+        <img [alt]="data.title" [ngSrc]="data.artworkUrl" height="48" width="48" />
+    } @else {
+        <mat-icon>music_note</mat-icon>
+    }
+
+    <button type="button"
+            class="play-overlay"
+            [class.visible]="isPlaying() || isLoadingStream()"
+            (click)="$event.stopPropagation(); playTrack.emit(data)">
+        @if (isLoadingStream()) {
+            <mat-spinner diameter="20"/>
         } @else {
-            <mat-icon>music_note</mat-icon>
+            <mat-icon>{{ isPlaying() ? 'pause' : 'play_arrow' }}</mat-icon>
         }
+    </button>
+</div>
 
-        <button [class.visible]="isPlaying() || isLoadingStream()"
-                tabindex="-1"
-                aria-hidden="true"
-                mat-icon-button>
-            @if (isLoadingStream()) {
-                <mat-spinner diameter="20"/>
-            } @else {
-                <mat-icon>{{ isPlaying() ? 'pause' : 'play_arrow' }}</mat-icon>
-            }
-        </button>
-    </div>
+<div class="info">
+    <section>
+        <h3>{{ data.title }}</h3>
+        <span>{{ data.artist }}</span>
+    </section>
 
-    <div class="info">
-        <section>
-            <h3>{{ data.title }}</h3>
-            <span>{{ data.artist }}</span>
-        </section>
-
-        <ng-content select="[meta]"/>
-        <ng-content select="[actions]"/>
-    </div>
+    <ng-content select="[meta]"/>
+    <ng-content select="[actions]"/>
 </div>

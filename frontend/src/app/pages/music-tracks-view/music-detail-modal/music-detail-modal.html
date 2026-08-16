@@ -23,7 +23,7 @@
             <span class="info-label">Artist</span>
             <span>{{ track.artist }}</span>
         </div>
-        @if (track.format) {
+        @if (track.format && track.format.toLowerCase() !== 'youtube' && track.format.toLowerCase() !== 'soundcloud' && track.format.toLowerCase() !== 'unknown') {
             <div>
                 <span class="info-label">Format</span>
                 <b [attr.data-format]="track.format">{{ track.format }}</b>

@@ -98,18 +98,15 @@ pub async fn remove_track(
 ) -> Result<impl IntoResponse, ApiError> {
     let mut storage = state.storage.write().await;
 
-    storage
-        .remove_track(id)
-        .await
-        .map_err(|e| {
-            ApiError::internal(format!("Failed to delete file: {e}")).with_code(ErrorCode::IoError)
-        })?
-        .ok_or_else(|| {
-            ApiError::not_found(format!("Track with ID {id} not found"))
-                .with_code(ErrorCode::TrackNotFound)
-        })?;
-
-    Ok(())
+    match storage.remove_track(id).await {
+        Ok(Some(_)) => Ok(()),
+        Ok(None) => Err(ApiError::not_found(format!("Track with ID {id} not found"))
+            .with_code(ErrorCode::TrackNotFound)),
+        Err(e) => {
+            Err(ApiError::internal(format!("Failed to delete file: {e}"))
+                .with_code(ErrorCode::IoError))
+        }
+    }
 }
 
 #[derive(Deserialize, utoipa::ToSchema)]

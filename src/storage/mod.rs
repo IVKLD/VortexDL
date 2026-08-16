@@ -25,12 +25,7 @@ impl MusicStorage {
         self.tracks.insert(id, data);
     }
 
-    pub fn update_tracks(&mut self, mut new_tracks: HashMap<i64, LocalMusicTrack>) {
-        for (id, data) in &self.tracks {
-            if !new_tracks.contains_key(id) && data.path.exists() {
-                new_tracks.insert(*id, data.clone());
-            }
-        }
+    pub fn update_tracks(&mut self, new_tracks: HashMap<i64, LocalMusicTrack>) {
         let count = new_tracks.len();
         self.tracks = new_tracks;
         tracing::debug!("Indexing complete. Found {} tracks.", count);
@@ -40,6 +35,7 @@ impl MusicStorage {
         let Some(data) = self.tracks.remove(&id) else {
             return Ok(None);
         };
+
         delete_track_file(&data.path).await?;
         let path_str = data.path.to_string_lossy().into_owned();
         let _ = spawn_blocking(move || {

@@ -8,7 +8,11 @@
         (touchstart)="$event.stopPropagation()"
         matButton="tonal"
 >
-    <mat-icon>{{ playIcon() }}</mat-icon>
+    @if (player.loadingTrackId()) {
+        <mat-spinner diameter="20"/>
+    } @else {
+        <mat-icon>{{ playIcon() }}</mat-icon>
+    }
 </button>
 
 <span #timerText>0:00 / 0:00</span>

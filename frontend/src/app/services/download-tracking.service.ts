@@ -1,11 +1,11 @@
-import { inject, Injectable, signal } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
-import { MusicTracksViewState } from '../pages/music-tracks-view/music-tracks-view.state';
-import { PlayerService } from '@app/services/player.service';
-import { AudioFormat, MusicTrack } from '@shared/models/music-track.model';
-import { Observable } from 'rxjs';
-import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { WebSocketService } from './websocket.service';
+import {inject, Injectable, signal} from '@angular/core';
+import {HttpClient} from '@angular/common/http';
+import {MusicTracksViewState} from '../pages/music-tracks-view/music-tracks-view.state';
+import {PlayerService} from '@app/services/player.service';
+import {AudioFormat, MusicTrack} from '@shared/models/music-track.model';
+import {Observable} from 'rxjs';
+import {takeUntilDestroyed} from '@angular/core/rxjs-interop';
+import {WebSocketService} from './websocket.service';
 
 export enum DownloadStatus {
     Queued = 'queued',
@@ -64,8 +64,11 @@ export class DownloadTrackingService {
     private readonly _player = inject(PlayerService);
     private readonly _wsService = inject(WebSocketService);
 
+    private readonly _errors = signal<string[]>([]);
+
     public readonly activeDownloads = signal<DownloadItem[]>([]);
-    public readonly errors = signal<string[]>([]);
+    public readonly errors = this._errors.asReadonly();
+
     public readonly syncingUrls = signal<string[]>([]);
 
     constructor() {
@@ -184,7 +187,7 @@ export class DownloadTrackingService {
     }
 
     private addError(message: string): void {
-        this.errors.update(prev => prev.includes(message) ? prev : [message, ...prev].slice(0, 5));
+        this._errors.update(prev => prev.includes(message) ? prev : [message, ...prev].slice(0, 5));
     }
 
     public removeFromQueue(id: number): void {
@@ -198,6 +201,6 @@ export class DownloadTrackingService {
     }
 
     public clearError(): void {
-        this.errors.set([]);
+        this._errors.set([]);
     }
 }

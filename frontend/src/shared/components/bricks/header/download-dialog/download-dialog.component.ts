@@ -2,13 +2,15 @@ import {Component, inject, OnInit, signal} from '@angular/core';
 import {MusicTracksViewService} from "@app/pages/music-tracks-view/music-tracks-view.service";
 import {DialogRef} from "@angular/cdk/dialog";
 import {form, FormField, required} from "@angular/forms/signals";
-import {soundCloudUrl} from "@shared/validators/form.validators";
+import {downloadUrl} from "@shared/validators/form.validators";
 import {ensureStringArray} from "@shared/utils/array.utils";
 import {MatError, MatFormField, MatHint, MatInput, MatLabel} from "@angular/material/input";
 import {MatIcon} from "@angular/material/icon";
 import {MatDialogActions, MatDialogClose, MatDialogContent, MatDialogTitle} from "@angular/material/dialog";
 import {MatList, MatListItem} from "@angular/material/list";
 import {MatButton, MatIconButton} from "@angular/material/button";
+
+import {PlatformChipComponent} from "@shared/components/platform-chip/platform-chip.component";
 
 const STORAGE_KEY = 'vortexdl_download_history';
 
@@ -29,7 +31,8 @@ const STORAGE_KEY = 'vortexdl_download_history';
         MatIconButton,
         MatDialogActions,
         MatButton,
-        MatDialogClose
+        MatDialogClose,
+        PlatformChipComponent
     ],
     templateUrl: './download-dialog.component.html',
     styleUrl: './download-dialog.component.scss',
@@ -42,7 +45,7 @@ export class DownloadDialogComponent implements OnInit {
     protected readonly history = signal<string[]>([]);
     protected readonly urlField = form(this._urlValue, (f) => {
         required(f, {message: 'URL is required'});
-        soundCloudUrl(f);
+        downloadUrl(f);
     });
 
     private loadHistory() {

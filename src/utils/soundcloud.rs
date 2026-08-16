@@ -1,24 +1,12 @@
 use std::sync::Arc;
 
 use anyhow::Result;
-use serde::{Deserialize, Serialize};
-use soundcloud_rs::{Client, ClientBuilder, ProxyUrlProvider};
+use soundcloud_rs::{
+    Client, ClientBuilder as RawClientBuilder, Identifier, ProxyUrlProvider, StreamType,
+};
 use url::Url;
 
 use crate::settings::{SettingsManager, UserSettings};
-
-#[derive(Serialize)]
-pub struct ResolveQuery<'a> {
-    pub url: &'a str,
-}
-
-#[derive(Deserialize, Debug)]
-#[serde(tag = "kind", rename_all = "lowercase")]
-pub enum ResolvedResource {
-    Track(soundcloud_rs::Track),
-    User(soundcloud_rs::User),
-    Playlist(soundcloud_rs::Playlist),
-}
 
 pub async fn update_cached_client_id(client: &Client, settings: &SettingsManager) {
     let active_client_id = client.get_client_id_value().await;
@@ -31,13 +19,13 @@ pub async fn update_cached_client_id(client: &Client, settings: &SettingsManager
     }
 }
 
-pub struct SoundCloudClientBuilder<'a> {
+pub struct ClientBuilder<'a> {
     settings: &'a UserSettings,
     proxy_url: Option<&'a str>,
     settings_manager: Option<SettingsManager>,
 }
 
-impl<'a> SoundCloudClientBuilder<'a> {
+impl<'a> ClientBuilder<'a> {
     pub fn new(settings: &'a UserSettings) -> Self {
         Self {
             settings,
@@ -57,7 +45,7 @@ impl<'a> SoundCloudClientBuilder<'a> {
     }
 
     pub async fn build(self) -> Result<Client> {
-        let mut builder = ClientBuilder::new()
+        let mut builder = RawClientBuilder::new()
             .with_max_retries(self.settings.system.max_retries)
             .with_retry_on_401(true);
 
@@ -86,11 +74,23 @@ impl<'a> SoundCloudClientBuilder<'a> {
     }
 }
 
-pub async fn resolve_url(client: &Client, url: &Url) -> Result<ResolvedResource> {
-    client
-        .get("resolve", Some(&ResolveQuery { url: url.as_str() }))
+pub async fn resolve_stream_url(client: &Client, id: i64) -> Result<(String, StreamType)> {
+    let track = client.get_track(&Identifier::Id(id)).await?;
+
+    if let Ok(url) = client
+        .resolve_stream_url_from_track(&track, Some(&StreamType::Hls))
         .await
-        .map_err(Into::into)
+    {
+        return Ok((url, StreamType::Hls));
+    }
+    if let Ok(url) = client
+        .resolve_stream_url_from_track(&track, Some(&StreamType::Progressive))
+        .await
+    {
+        return Ok((url, StreamType::Progressive));
+    }
+
+    anyhow::bail!("No playable stream URL found for track {id}")
 }
 
 pub fn resize_artwork_url(mut url: Url, size: &str) -> Url {

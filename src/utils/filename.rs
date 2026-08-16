@@ -1,6 +1,5 @@
 use deunicode::deunicode_with_tofu;
 
-#[allow(clippy::collapsible_if)]
 pub fn clean_filename(filename: &str) -> String {
     let ascii_str = deunicode_with_tofu(filename, "");
 

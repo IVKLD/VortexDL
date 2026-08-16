@@ -1,10 +1,13 @@
-<h2 mat-dialog-title>Download Music</h2>
+<h2 mat-dialog-title class="dialog-header">
+    <span>Download Music</span>
+    <app-platform-chip [url]="urlField().value()" [showAuto]="true" />
+</h2>
 
 <mat-dialog-content>
     <mat-form-field>
         <mat-label>
             <mat-icon>link</mat-icon>
-            SoundCloud URL
+            SoundCloud or YouTube URL
         </mat-label>
         <input
                 (keyup.enter)="onDownload()"
@@ -14,7 +17,7 @@
         @if (urlField().invalid()) {
             <mat-error>{{ urlField().errors()[0]?.message }}</mat-error>
         }
-        <mat-hint>Liked, Playlist, or Track URL</mat-hint>
+        <mat-hint>SoundCloud or YouTube Track / Playlist URL</mat-hint>
     </mat-form-field>
 
     <div>
@@ -27,7 +30,8 @@
                                        [class.active]="urlField().value() === item"
                         >
                             <div class="item">
-                                <span>{{ item }}</span>
+                                <app-platform-chip [url]="item" />
+                                <span class="url-text">{{ item }}</span>
                                 <button (click)="removeFromHistory(item)" mat-icon-button>
                                     <mat-icon>close</mat-icon>
                                 </button>

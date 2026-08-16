@@ -28,7 +28,12 @@ where
                 match changed {
                     Ok(()) if *rx.borrow() => return None,
                     Ok(()) => continue,
-                    Err(_) => return Some(future.await),
+                    Err(_) => {
+                        if *rx.borrow() {
+                            return None;
+                        }
+                        return Some(future.await);
+                    }
                 }
             }
         }
@@ -83,5 +88,22 @@ mod tests {
 
         let res = run_with_cancellation(Some(rx), future).await;
         assert_eq!(res, Some(42));
+    }
+
+    #[tokio::test]
+    async fn test_cancellation_triggered_then_sender_dropped() {
+        let (tx, rx) = watch::channel(false);
+        let future = async {
+            sleep(Duration::from_millis(100)).await;
+            42
+        };
+
+        tokio::spawn(async move {
+            let _ = tx.send(true);
+            drop(tx);
+        });
+
+        let res = run_with_cancellation(Some(rx), future).await;
+        assert_eq!(res, None);
     }
 }

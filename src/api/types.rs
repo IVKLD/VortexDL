@@ -95,9 +95,3 @@ impl MusicTrackRecord {
         }
     }
 }
-
-#[derive(Debug, Serialize, ToSchema)]
-#[serde(rename_all = "camelCase")]
-pub struct HealthResponse {
-    pub status: ApiStatus,
-}

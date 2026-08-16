@@ -80,13 +80,13 @@ impl MusicStorage {
                     {
                         visited.insert(path_str);
                         let data = LocalMusicTrack::from_cached(path, cached_track);
-                        insert_track(cached_track.metadata.id, data);
+                        insert_track(data.metadata.id, data);
                     } else if let Some(new_cached) =
                         parse_file_metadata(&path, size, mtime, created_at)
                     {
                         visited.insert(path_str.clone());
                         let data = LocalMusicTrack::from_cached(path, &new_cached);
-                        insert_track(new_cached.metadata.id, data);
+                        insert_track(data.metadata.id, data);
                         to_update.insert(path_str, new_cached);
                     }
                 }

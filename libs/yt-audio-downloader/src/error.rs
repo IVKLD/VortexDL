@@ -20,11 +20,8 @@ pub enum YoutubeAudioError {
     #[error("No audio stream found")]
     NoAudioStreamFound,
 
-    #[error("yt-dlp failed (code {status:?}): {stderr}")]
-    YtDlpFailed {
-        status: Option<i32>,
-        stderr: String,
-    },
+    #[error("yt-dlp error: {}", clean_ytdlp_stderr(.stderr))]
+    YtDlpFailed { status: Option<i32>, stderr: String },
 
     #[error("yt-dlp is not installed")]
     YtDlpNotFound,
@@ -40,3 +37,15 @@ pub enum YoutubeAudioError {
 }
 
 pub type Result<T> = std::result::Result<T, YoutubeAudioError>;
+
+fn clean_ytdlp_stderr(stderr: &str) -> String {
+    if stderr.contains("Sign in to confirm you’re not a bot")
+        || stderr.contains("Sign in to confirm")
+    {
+        "YouTube bot verification triggered for this track. Configure proxy or cookies.txt in settings".to_string()
+    } else if let Some(err_line) = stderr.lines().find(|l| l.contains("ERROR:")) {
+        err_line.trim().to_string()
+    } else {
+        stderr.trim().to_string()
+    }
+}

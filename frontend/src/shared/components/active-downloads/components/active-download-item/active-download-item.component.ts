@@ -5,9 +5,11 @@ import {MatProgressBar} from '@angular/material/progress-bar';
 import {NgOptimizedImage} from '@angular/common';
 import {MatIconButton} from "@angular/material/button";
 
+import { PlatformChipComponent } from '@shared/components/platform-chip/platform-chip.component';
+
 @Component({
     selector: 'app-active-download-item',
-    imports: [MatIcon, MatProgressBar, NgOptimizedImage, MatIconButton],
+    imports: [MatIcon, MatProgressBar, NgOptimizedImage, MatIconButton, PlatformChipComponent],
     templateUrl: './active-download-item.component.html',
     styleUrl: './active-download-item.component.scss',
     })

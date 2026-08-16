@@ -1,4 +1,4 @@
-use std::sync::Arc;
+use std::{collections::HashMap, sync::Arc, time::Instant};
 
 use tokio::sync::RwLock;
 
@@ -12,6 +12,8 @@ pub struct AppState {
     pub storage: Arc<RwLock<MusicStorage>>,
     pub download_manager: Arc<DownloadManager>,
     pub settings: SettingsManager,
+    pub youtube_cache: Arc<RwLock<HashMap<i64, String>>>,
+    pub stream_cache: Arc<RwLock<HashMap<i64, (String, Instant)>>>,
 }
 
 impl AppState {
@@ -25,6 +27,8 @@ impl AppState {
             storage,
             download_manager: Arc::new(DownloadManager::default()),
             settings,
+            youtube_cache: Arc::new(RwLock::new(HashMap::new())),
+            stream_cache: Arc::new(RwLock::new(HashMap::new())),
         }
     }
 }

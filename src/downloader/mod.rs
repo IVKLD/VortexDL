@@ -1,8 +1,7 @@
 mod complete;
-pub(crate) mod discovery;
-mod download;
 mod filter_existing;
-mod resolve;
+pub mod soundcloud;
+pub mod youtube;
 
 use std::{
     collections::HashSet,
@@ -25,8 +24,63 @@ use crate::{
     storage::MusicStorage,
     types::DiscoveredMusicTrack,
     ui::create_total_progress_bar,
-    utils::{cancellation::run_with_cancellation, filename::clean_filename},
+    utils::{
+        cancellation::run_with_cancellation, filename::clean_filename,
+    },
 };
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum SourcePlatform {
+    SoundCloud,
+    YouTube,
+}
+
+impl SourcePlatform {
+    pub fn detect(url: &Url) -> Self {
+        if yt_audio_downloader::is_youtube_url(url.as_str()) {
+            Self::YouTube
+        } else {
+            Self::SoundCloud
+        }
+    }
+
+    pub fn from_track(track: &DiscoveredMusicTrack) -> Self {
+        track
+            .permalink_url
+            .as_ref()
+            .map(Self::detect)
+            .unwrap_or(Self::SoundCloud)
+    }
+
+    pub fn spawn_artwork_fetch(
+        &self,
+        ctx: &Context,
+        track: &DiscoveredMusicTrack,
+    ) -> Option<tokio::task::JoinHandle<Option<Vec<u8>>>> {
+        soundcloud::resolve::spawn_artwork_fetch(ctx, track.artwork_url.as_ref())
+    }
+
+    pub async fn download_track(&self, ctx: &Context, task: &mut DownloadTask) -> Result<()> {
+        match self {
+            Self::YouTube => {
+                let url_or_id = task
+                    .track
+                    .permalink_url
+                    .as_ref()
+                    .map(|u| u.as_str())
+                    .unwrap_or("");
+                youtube::download::download_youtube_track(ctx, task, url_or_id).await
+            }
+            Self::SoundCloud => {
+                let stream = soundcloud::resolve::resolve_stream_source(ctx, task.track.id).await?;
+                if task.track.permalink_url.is_none() {
+                    task.track.permalink_url = Url::parse(stream.url()).ok();
+                }
+                soundcloud::download::download_soundcloud_track(ctx, task, stream).await
+            }
+        }
+    }
+}
 
 #[derive(Clone)]
 pub struct Context {
@@ -75,9 +129,16 @@ impl DownloadTask {
     }
 }
 
-/// Resolves SoundCloud URLs, checks database to avoid re-downloading, orchestrates parallel execution, and runs post-sync tasks.
+/// Resolves music URLs (SoundCloud or YouTube), checks database to avoid re-downloading, orchestrates parallel execution, and runs post-sync tasks.
 pub async fn run_download_pipeline(ctx: &Context, url: &Url) -> Result<()> {
-    let all_tracks = resolve::resolve_tracks_from_url(ctx, url).await?;
+    let platform = SourcePlatform::detect(url);
+
+    let all_tracks = match platform {
+        SourcePlatform::YouTube => youtube::resolve::discover_youtube_tracks(url).await?,
+        SourcePlatform::SoundCloud => {
+            soundcloud::resolve::resolve_tracks_from_url(ctx, url).await?
+        }
+    };
 
     let remote_ids: HashSet<i64> = all_tracks.iter().map(|track| track.id).collect();
     let to_download = filter_existing::exclude_already_downloaded_tracks(ctx, all_tracks).await;
@@ -130,17 +191,12 @@ async fn run_parallel_downloads(ctx: &Context, tracks: Vec<DiscoveredMusicTrack>
                     m.update_downloading(task.track.id);
                 }
 
-                let artwork_handle =
-                    resolve::spawn_artwork_fetch(&ctx, task.track.artwork_url.as_ref());
+                let platform = SourcePlatform::from_track(&task.track);
+                let artwork_handle = platform.spawn_artwork_fetch(&ctx, &task.track);
 
-                let download_result = run_with_cancellation(cancel_rx, async {
-                    let stream = resolve::resolve_stream_source(&ctx, task.track.id).await?;
-                    if task.track.permalink_url.is_none() {
-                        task.track.permalink_url = Url::parse(stream.url()).ok();
-                    }
-                    download::download_single_track(&ctx, &task, stream).await
-                })
-                .await;
+                let download_result =
+                    run_with_cancellation(cancel_rx, platform.download_track(&ctx, &mut task))
+                        .await;
 
                 let handle = match download_result {
                     Some(Ok(())) => Some(tokio::spawn(complete::finalize_single_track(
@@ -157,6 +213,9 @@ async fn run_parallel_downloads(ctx: &Context, tracks: Vec<DiscoveredMusicTrack>
                         tracing::info!("Track download canceled: {}", task.display_name());
                         if let Some(h) = artwork_handle {
                             h.abort();
+                        }
+                        if task.file_path.exists() {
+                            let _ = tokio::fs::remove_file(&task.file_path).await;
                         }
                         None
                     }

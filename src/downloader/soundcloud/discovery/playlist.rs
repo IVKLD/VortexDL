@@ -3,10 +3,8 @@ use std::collections::HashMap;
 use anyhow::{Result, anyhow};
 use soundcloud_rs::{Client, Identifier};
 
-use crate::{
-    downloader::{Context, discovery::init_progress_spinner},
-    types::DiscoveredMusicTrack,
-};
+use super::helpers::init_progress_spinner;
+use crate::{downloader::Context, types::DiscoveredMusicTrack};
 
 pub async fn discover_playlist_tracks(
     ctx: &Context,

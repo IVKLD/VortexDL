@@ -14,7 +14,10 @@
     </div>
 
     <div class="info">
-        <strong>{{ data.title }}</strong>
+        <div class="title-row">
+            <strong>{{ data.title }}</strong>
+            <app-platform-chip [url]="data.permalinkUrl || data.sourceUrl" />
+        </div>
 
         @if (data.status === DownloadStatus.Failed) {
         <small class="error-text">Failed</small>

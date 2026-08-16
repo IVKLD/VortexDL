@@ -52,10 +52,26 @@ app-music-card {
       border: 1px solid rgba(255, 255, 255, 0.05);
 
       &[data-format="flac"],
-      &[data-format="wav"] {
+      &[data-format="wav"],
+      &[data-format="alac"],
+      &[data-format="aiff"] {
         color: #64ffda;
         background: rgba(100, 255, 218, 0.05);
         border-color: rgba(100, 255, 218, 0.1);
+      }
+
+      &[data-format="m4a"],
+      &[data-format="aac"] {
+        color: #fbbf24;
+        background: rgba(251, 191, 36, 0.05);
+        border-color: rgba(251, 191, 36, 0.1);
+      }
+
+      &[data-format="ogg"],
+      &[data-format="opus"] {
+        color: #c084fc;
+        background: rgba(192, 132, 252, 0.05);
+        border-color: rgba(192, 132, 252, 0.1);
       }
     }
 

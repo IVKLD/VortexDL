@@ -2,10 +2,8 @@ use anyhow::Result;
 use soundcloud_rs::{Client, Identifier, UserTrackLikesQuery};
 use url::Url;
 
-use crate::{
-    downloader::{Context, discovery::init_progress_spinner},
-    types::DiscoveredMusicTrack,
-};
+use super::helpers::init_progress_spinner;
+use crate::{downloader::Context, types::DiscoveredMusicTrack};
 
 pub async fn discover_liked_tracks(
     ctx: &Context,

@@ -12,12 +12,9 @@ use soundcloud_rs::ClientBuilder;
 use url::Url;
 use utoipa::ToSchema;
 
-use crate::{
-    api::{
-        errors::{ApiError, ErrorCode},
-        state::AppState,
-    },
-    utils::soundcloud::resolve_url,
+use crate::api::{
+    errors::{ApiError, ErrorCode},
+    state::AppState,
 };
 
 #[derive(Deserialize, ToSchema)]
@@ -39,7 +36,9 @@ pub async fn test_soundcloud(
     State(state): State<AppState>,
     Json(payload): Json<TestSoundCloudRequest>,
 ) -> Result<impl IntoResponse, ApiError> {
-    resolve_url(&state.client, &payload.url)
+    state
+        .client
+        .resolve_url(&payload.url)
         .await
         .map(|_| {
             (
