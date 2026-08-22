@@ -91,14 +91,34 @@ nix develop
 nix profile install github:IVKLD/VortexDL
 ```
 
-#### 4. NixOS Module Integration
-Add to your `flake.nix` inputs:
+#### 4. NixOS System Configuration Example (`flake.nix`)
+
+Add `vortexdl` to your system `flake.nix` inputs and enable the systemd service:
+
 ```nix
-inputs.vortexdl.url = "github:IVKLD/VortexDL";
-```
-And import the module in your system configuration:
-```nix
-imports = [ inputs.vortexdl.nixosModules.vortexdl ];
+{
+  inputs = {
+    nixpkgs.url = "github:nixos/nixpkgs/nixos-unstable";
+    vortexdl.url = "github:IVKLD/VortexDL";
+  };
+
+  outputs = { self, nixpkgs, vortexdl, ... }: {
+    nixosConfigurations.myhostname = nixpkgs.lib.nixosSystem {
+      system = "x86_64-linux";
+      modules = [
+        vortexdl.nixosModules.vortexdl
+        ({ config, pkgs, ... }: {
+          services.vortexdl = {
+            enable = true;
+            port = 3200;
+            openFirewall = true;
+            downloadDir = "/home/user/Music";
+          };
+        })
+      ];
+    };
+  };
+}
 ```
 
 ## Troubleshooting
