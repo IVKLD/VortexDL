@@ -1,6 +1,8 @@
 [submodule "libs/soundcloud-rs"]
 	path = libs/soundcloud-rs
-	url = https://github.com/IVKLD/soundcloud-rs.git
+	url = git@github.com:IVKLD/soundcloud-rs.git
+	branch = master
 [submodule "libs/yt-downloader-rs"]
 	path = libs/yt-downloader-rs
-	url = https://github.com/IVKLD/yt-downloader-rs.git
+	url = git@github.com:IVKLD/yt-downloader-rs.git
+	branch = main
