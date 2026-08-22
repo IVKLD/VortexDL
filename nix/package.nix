@@ -23,8 +23,6 @@ pkgs.stdenv.mkDerivation rec {
   ];
 
   installPhase = ''
-    mkdir -p $out/bin
-    install -m755 $src $out/bin/vortex-dl
-    ln -s $out/bin/vortex-dl $out/bin/vortexdl
+    install -m755 -D $src $out/bin/vortex-dl
   '';
 }
