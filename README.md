@@ -74,12 +74,9 @@ curl -L https://github.com/IVKLD/VortexDL/releases/latest/download/vortex-dl -o 
 
 ### Running on NixOS
 
-If you are using **NixOS**, you can build and run VortexDL using `devbox` or `nix-shell`:
+To build and run VortexDL on NixOS using `devbox`:
 
 ```bash
-git clone https://github.com/IVKLD/VortexDL.git
-cd VortexDL
-
 # Enter isolated Nix environment
 devbox shell
 
@@ -88,7 +85,7 @@ just install
 just dist
 ```
 
-For prebuilt binary releases, ensure `programs.nix-ld.enable = true;` is enabled in your NixOS configuration (`/etc/nixos/configuration.nix`).
+For prebuilt binary releases, ensure `programs.nix-ld.enable = true;` is enabled in your NixOS configuration.
 
 ## Troubleshooting
 
