@@ -21,6 +21,7 @@ mod types;
 mod ui;
 mod utils;
 mod watchdog;
+mod webdav;
 
 #[global_allocator]
 static ALLOC: mimalloc::MiMalloc = mimalloc::MiMalloc;

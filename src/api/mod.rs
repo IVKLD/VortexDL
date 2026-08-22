@@ -12,8 +12,9 @@ use handlers::{
     },
     search::{get_stream_url, search_tracks},
     settings::{
+        config::{get_settings, update_settings},
         diagnostics::{test_proxy_ws, test_soundcloud},
-        get_settings, update_settings,
+        sync::{get_snapshot_handler, sync_handler},
     },
     tracks::{get_tracks, reindex_library, remove_track, remove_tracks, stream_track},
 };
@@ -50,8 +51,10 @@ pub mod types;
         handlers::devices::devices_ws,
         handlers::devices::get_device_storage_info,
         handlers::devices::sync_adb_device,
-        handlers::settings::get_settings,
-        handlers::settings::update_settings,
+        handlers::settings::config::get_settings,
+        handlers::settings::config::update_settings,
+        handlers::settings::sync::sync_handler,
+        handlers::settings::sync::get_snapshot_handler,
         handlers::settings::diagnostics::test_soundcloud,
         handlers::settings::diagnostics::test_proxy_ws,
     ),
@@ -77,6 +80,10 @@ pub mod types;
             download_manager::MessageLevel,
             handlers::settings::diagnostics::TestSoundCloudRequest,
             handlers::settings::diagnostics::ProxyTestResult,
+            handlers::settings::sync::SyncRequest,
+            handlers::settings::sync::SyncAction,
+            handlers::settings::sync::SyncProvider,
+            handlers::settings::sync::SnapshotResponse,
             handlers::search::SearchTrackItem,
             handlers::search::SearchResponse,
             handlers::search::StreamUrlResponse,
@@ -159,6 +166,8 @@ fn devices_routes() -> Router<AppState> {
 fn settings_routes() -> Router<AppState> {
     Router::new()
         .route("/", get(get_settings).post(update_settings))
+        .route("/sync", post(sync_handler))
+        .route("/sync/snapshot", get(get_snapshot_handler))
         .route("/test/soundcloud", post(test_soundcloud))
         .route("/test/proxy/ws", get(test_proxy_ws))
 }

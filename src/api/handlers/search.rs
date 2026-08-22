@@ -235,8 +235,7 @@ pub async fn resolve_stream_url_internal(
                 race_proxies(&settings, move |_, proxy| {
                     let v_id = video_id.clone();
                     async move {
-                        let client =
-                            yt_downloader_rs::create_http_client_with_proxy(Some(&proxy));
+                        let client = yt_downloader_rs::create_http_client_with_proxy(Some(&proxy));
                         let info = yt_downloader_rs::get_stream_info_with_client(
                             &v_id,
                             client,

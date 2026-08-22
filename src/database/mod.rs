@@ -9,10 +9,10 @@ use redb::Database;
 
 pub mod cache;
 pub mod settings;
-pub mod sync;
+pub mod sync_log;
 
 pub use settings::{get_settings, update_settings};
-pub use sync::{get_previous_ids, save_sync_ids};
+pub use sync_log::{get_all_sync_ids, get_previous_ids, restore_all_sync_ids, save_sync_ids};
 
 use crate::constants::{APP_DIR, DB_NAME};
 

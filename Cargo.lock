@@ -2225,7 +2225,6 @@ dependencies = [
  "serde_json",
  "tokio",
  "tracing",
- "url",
 ]
 
 [[package]]
@@ -2985,6 +2984,7 @@ version = "0.4.10"
 dependencies = [
  "anyhow",
  "axum",
+ "base64 0.22.1",
  "clap",
  "colored",
  "deunicode",
@@ -3003,6 +3003,7 @@ dependencies = [
  "soundcloud-rs",
  "symphonia",
  "tempfile",
+ "thiserror 2.0.20",
  "tokio",
  "tower",
  "tower-http",
@@ -3011,7 +3012,7 @@ dependencies = [
  "url",
  "utoipa",
  "utoipa-swagger-ui",
- "yt-downloader-rs",
+ "yt-audio-downloader",
 ]
 
 [[package]]
@@ -3422,7 +3423,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "yt-downloader-rs"
+name = "yt-audio-downloader"
 version = "0.1.0"
 dependencies = [
  "bytes",

@@ -7,7 +7,6 @@ use axum::{
     http::StatusCode,
     response::IntoResponse,
 };
-use tokio::spawn;
 
 use crate::{
     api::{
@@ -18,6 +17,23 @@ use crate::{
     },
     downloader,
 };
+
+async fn run_pipeline_bg(state: AppState, url: url::Url) {
+    let ctx = downloader::Context::from_state(&state).with_dm(state.download_manager.clone());
+
+    if let Err(e) = downloader::run_download_pipeline(&ctx, &url).await {
+        state.download_manager.broadcast_event(ServerEvent::Error {
+            message: format!("Download failed: {e}"),
+        });
+    }
+
+    state.download_manager.release_url(&url);
+    state
+        .download_manager
+        .broadcast_event(ServerEvent::SyncFinished {
+            url: Some(url.to_string()),
+        });
+}
 
 #[utoipa::path(
     method(post),
@@ -49,21 +65,8 @@ pub async fn start_download(
         message: format!("Started for: {url}"),
     };
 
-    spawn(async move {
-        let ctx = downloader::Context::from_state(&state).with_dm(state.download_manager.clone());
-
-        if let Err(e) = downloader::run_download_pipeline(&ctx, &url).await {
-            state.download_manager.broadcast_event(ServerEvent::Error {
-                message: format!("Download failed: {e}"),
-            });
-        }
-
-        state.download_manager.release_url(&url);
-        state
-            .download_manager
-            .broadcast_event(ServerEvent::SyncFinished {
-                url: Some(url.to_string()),
-            });
+    tokio::task::spawn_blocking(move || {
+        tokio::runtime::Handle::current().block_on(run_pipeline_bg(state, url));
     });
 
     Ok((StatusCode::ACCEPTED, Json(status)))
