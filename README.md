@@ -74,33 +74,21 @@ curl -L https://github.com/IVKLD/VortexDL/releases/latest/download/vortex-dl -o 
 
 ### Running on NixOS
 
-If you are using **NixOS**, you can run prebuilt binaries or build from source using Nix tools:
+If you are using **NixOS**, you can build and run VortexDL using `devbox` or `nix-shell`:
 
-#### 1. Running Binary (Releases) on NixOS
-Pre-compiled binaries expect standard Linux dynamic linkers (`/lib64/ld-linux-x86-64.so.2`). On NixOS, run the downloaded `vortex-dl` binary via `steam-run` or enable `nix-ld`:
-
-*   **Via `steam-run`:**
-    ```bash
-    nix-shell -p steam-run --run "steam-run ./vortex-dl --serve"
-    ```
-*   **Via `nix-ld`** (if `programs.nix-ld.enable = true;` is set in your `configuration.nix`):
-    ```bash
-    ./vortex-dl --serve
-    ```
-
-#### 2. Development & Building via Devbox (Nix)
-The repository includes a ready-to-use `devbox.json` environment:
 ```bash
 git clone https://github.com/IVKLD/VortexDL.git
 cd VortexDL
 
-# Enter isolated Nix environment with Rust, Node.js, Yarn, Just, and FFmpeg
+# Enter isolated Nix environment
 devbox shell
 
 # Build and run
 just install
 just dist
 ```
+
+For prebuilt binary releases, ensure `programs.nix-ld.enable = true;` is enabled in your NixOS configuration (`/etc/nixos/configuration.nix`).
 
 ## Troubleshooting
 
