@@ -78,7 +78,7 @@ VortexDL includes a complete `flake.nix` with dev shells, package derivations, a
 
 #### 1. Run directly via Flakes
 ```bash
-nix run github:IVKLD/VortexDL -- --serve
+nix run --refresh github:IVKLD/VortexDL -- --serve
 ```
 
 #### 2. Development Shell
