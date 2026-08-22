@@ -72,29 +72,33 @@ curl -L https://github.com/IVKLD/VortexDL/releases/latest/download/vortex-dl -o 
 *   Currently, only **Linux** is officially supported.
 *   Regarding **macOS** and **Windows**: I'm not a programmer and I have no clue how things work for Mac or Windows users. It should work in theory. If you really need support, open an Issue—I'll try to fix it or wait for contributors.
 
-### NixOS Installation & Setup
+### NixOS & Nix Flakes Setup
 
-On NixOS, you can run prebuilt binaries or install system dependencies via `nix-shell`:
+VortexDL includes a complete `flake.nix` with dev shells, package derivations, and NixOS / Home Manager modules:
 
-#### 1. Running Release Binary via `nix-ld`
-Ensure `nix-ld` is enabled in your `/etc/nixos/configuration.nix`:
+#### 1. Run directly via Flakes
+```bash
+nix run github:IVKLD/VortexDL -- --serve
+```
+
+#### 2. Development Shell
+```bash
+nix develop
+```
+
+#### 3. Install binary to Nix profile
+```bash
+nix profile install github:IVKLD/VortexDL
+```
+
+#### 4. NixOS Module Integration
+Add to your `flake.nix` inputs:
 ```nix
-programs.nix-ld.enable = true;
+inputs.vortexdl.url = "github:IVKLD/VortexDL";
 ```
-Then run the binary directly:
-```bash
-chmod +x vortex-dl
-./vortex-dl --serve
-```
-
-#### 2. Running in a temporary Nix environment
-```bash
-nix-shell -p ffmpeg android-tools
-```
-
-#### 3. Installing system-wide via Nix profile
-```bash
-nix profile install nixpkgs#ffmpeg nixpkgs#android-tools
+And import the module in your system configuration:
+```nix
+imports = [ inputs.vortexdl.nixosModules.vortexdl ];
 ```
 
 ## Troubleshooting
