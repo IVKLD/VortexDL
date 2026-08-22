@@ -72,6 +72,36 @@ curl -L https://github.com/IVKLD/VortexDL/releases/latest/download/vortex-dl -o 
 *   Currently, only **Linux** is officially supported.
 *   Regarding **macOS** and **Windows**: I'm not a programmer and I have no clue how things work for Mac or Windows users. It should work in theory. If you really need support, open an Issue—I'll try to fix it or wait for contributors.
 
+### Running on NixOS
+
+If you are using **NixOS**, you can run prebuilt binaries or build from source using Nix tools:
+
+#### 1. Running Binary (Releases) on NixOS
+Pre-compiled binaries expect standard Linux dynamic linkers (`/lib64/ld-linux-x86-64.so.2`). On NixOS, run the downloaded `vortex-dl` binary via `steam-run` or enable `nix-ld`:
+
+*   **Via `steam-run`:**
+    ```bash
+    nix-shell -p steam-run --run "steam-run ./vortex-dl --serve"
+    ```
+*   **Via `nix-ld`** (if `programs.nix-ld.enable = true;` is set in your `configuration.nix`):
+    ```bash
+    ./vortex-dl --serve
+    ```
+
+#### 2. Development & Building via Devbox (Nix)
+The repository includes a ready-to-use `devbox.json` environment:
+```bash
+git clone https://github.com/IVKLD/VortexDL.git
+cd VortexDL
+
+# Enter isolated Nix environment with Rust, Node.js, Yarn, Just, and FFmpeg
+devbox shell
+
+# Build and run
+just install
+just dist
+```
+
 ## Troubleshooting
 
 ### "No available download options"
