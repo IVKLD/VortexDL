@@ -72,20 +72,30 @@ curl -L https://github.com/IVKLD/VortexDL/releases/latest/download/vortex-dl -o 
 *   Currently, only **Linux** is officially supported.
 *   Regarding **macOS** and **Windows**: I'm not a programmer and I have no clue how things work for Mac or Windows users. It should work in theory. If you really need support, open an Issue—I'll try to fix it or wait for contributors.
 
-### Running on NixOS
+### NixOS Installation & Setup
 
-To build and run VortexDL on NixOS using `devbox`:
+On NixOS, you can run prebuilt binaries or install system dependencies via `nix-shell`:
 
+#### 1. Running Release Binary via `nix-ld`
+Ensure `nix-ld` is enabled in your `/etc/nixos/configuration.nix`:
+```nix
+programs.nix-ld.enable = true;
+```
+Then run the binary directly:
 ```bash
-# Enter isolated Nix environment
-devbox shell
-
-# Build and run
-just install
-just dist
+chmod +x vortex-dl
+./vortex-dl --serve
 ```
 
-For prebuilt binary releases, ensure `programs.nix-ld.enable = true;` is enabled in your NixOS configuration.
+#### 2. Running in a temporary Nix environment
+```bash
+nix-shell -p ffmpeg android-tools
+```
+
+#### 3. Installing system-wide via Nix profile
+```bash
+nix profile install nixpkgs#ffmpeg nixpkgs#android-tools
+```
 
 ## Troubleshooting
 
@@ -115,13 +125,12 @@ vortex-dl [URL] --output /path/to/music
 
 ### Requirements
 
-For development and building, one of the following is required:
+For development and building, the following dependencies are required:
 
-*   **Devbox (Nix):** Recommended method. All dependencies are isolated.
-*   **Manual Installation:**
-    *   Rust (stable toolchain)
-    *   Node.js (18+) and Yarn
-    *   [Just](https://github.com/casey/just) (task runner for development and build commands)
+*   **Rust** (stable toolchain)
+*   **Node.js** (18+) and **Yarn**
+*   **[Just](https://github.com/casey/just)** (task runner)
+*   **FFmpeg** (for audio processing)
 
 ### Getting Started
 
