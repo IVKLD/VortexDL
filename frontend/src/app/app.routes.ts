@@ -80,9 +80,9 @@ export const routes: CustomRoutes = [
         },
         data: {
             header: {
-                title: 'SoundCloud Search',
+                title: 'Music Search',
                 features: [HeaderFeature.Stats, HeaderFeature.Search],
-                searchPlaceholder: 'Search SoundCloud...',
+                searchPlaceholder: 'Search YouTube & SoundCloud...',
             },
         },
         component: SearchView,

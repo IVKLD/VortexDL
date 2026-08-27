@@ -36,7 +36,6 @@ mat-dialog-content {
 
 .simple-textarea {
   width: 100%;
-  box-sizing: border-box;
   background: var(--vortex-device-bg, var(--mat-sys-surface-container-low));
   border: 1px solid var(--vortex-device-border, var(--mat-sys-outline-variant));
   border-radius: 12px;
@@ -97,7 +96,6 @@ mat-dialog-content {
     border-radius: 8px;
     padding: 0 12px;
     background: var(--mat-sys-surface-container-low);
-    box-sizing: border-box;
 
     rx-virtual-scroll-viewport {
       height: 100%;

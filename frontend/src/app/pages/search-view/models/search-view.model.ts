@@ -18,3 +18,21 @@ export interface StreamUrlResponseRdo {
 export interface DownloadRequestDto {
     url: string;
 }
+
+export enum SearchProvider {
+    YouTube = 'youtube',
+    SoundCloud = 'soundcloud',
+}
+
+export enum SearchDurationFilter {
+    Any = 'any',
+    Short = 'short',
+    Medium = 'medium',
+    Long = 'long',
+    Epic = 'epic',
+}
+
+export interface SearchSettingsModel {
+    provider: SearchProvider;
+    duration?: SearchDurationFilter;
+}

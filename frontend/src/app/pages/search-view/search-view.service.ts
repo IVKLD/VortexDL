@@ -7,10 +7,17 @@ import { SearchResponseRdo, StreamUrlResponseRdo, DownloadRequestDto } from './m
 export class SearchViewService {
     private readonly _http = inject(HttpClient);
 
-    public searchTracks(query: string, limit = 20, offset = 0): Observable<SearchResponseRdo> {
-        return this._http.get<SearchResponseRdo>('/search/tracks', {
-            params: { query, limit, offset },
-        });
+    public searchTracks(
+        query: string,
+        limit = 20,
+        offset = 0,
+        provider?: string,
+        duration?: string
+    ): Observable<SearchResponseRdo> {
+        const params: Record<string, string | number> = { query, limit, offset };
+        if (provider) params['provider'] = provider;
+        if (duration && duration !== 'any') params['duration'] = duration;
+        return this._http.get<SearchResponseRdo>('/search/tracks', { params });
     }
 
     public downloadTrack(payload: DownloadRequestDto): Observable<void> {

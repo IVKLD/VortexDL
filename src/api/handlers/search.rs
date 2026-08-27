@@ -17,14 +17,33 @@ use crate::{
     utils::{filename, proxy::race_proxies, soundcloud},
 };
 
+#[derive(Debug, Deserialize, Serialize, ToSchema, PartialEq, Eq, Clone, Copy)]
+#[serde(rename_all = "snake_case")]
+pub enum SearchProviderParam {
+    Youtube,
+    Soundcloud,
+}
+
+#[derive(Debug, Deserialize, Serialize, ToSchema, PartialEq, Eq, Clone, Copy)]
+#[serde(rename_all = "snake_case")]
+pub enum SearchDurationFilter {
+    Any,
+    Short,
+    Medium,
+    Long,
+    Epic,
+}
+
 #[derive(Debug, Deserialize)]
 pub struct SearchQuery {
     pub query: String,
     pub limit: Option<i32>,
     pub offset: Option<i32>,
+    pub provider: Option<SearchProviderParam>,
+    pub duration: Option<SearchDurationFilter>,
 }
 
-#[derive(Debug, Serialize, ToSchema)]
+#[derive(Debug, Serialize, ToSchema, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct SearchTrackItem {
     pub id: i64,
@@ -69,7 +88,9 @@ fn youtube_meta_to_item(
     params(
         ("query" = String, Query, description = "Search query"),
         ("limit" = Option<i32>, Query, description = "Max results to return"),
-        ("offset" = Option<i32>, Query, description = "Result offset for pagination")
+        ("offset" = Option<i32>, Query, description = "Result offset for pagination"),
+        ("provider" = Option<SearchProviderParam>, Query, description = "Search provider filter: youtube, soundcloud"),
+        ("duration" = Option<SearchDurationFilter>, Query, description = "Duration filter: any, short, medium, long, epic")
     ),
     responses(
         (status = 200, description = "Search results", body = SearchResponse)
@@ -101,22 +122,34 @@ pub async fn search_tracks(
     }
 
     let limit = params.limit.unwrap_or(20) as usize;
-    let offset = params.offset.unwrap_or(0);
+    let offset = params.offset.unwrap_or(0) as usize;
+    let provider = params.provider.unwrap_or(SearchProviderParam::Soundcloud);
+    let allow_yt = provider == SearchProviderParam::Youtube;
+    let allow_sc = provider == SearchProviderParam::Soundcloud;
+
+    let yt_duration_filter = params.duration.unwrap_or(SearchDurationFilter::Any);
 
     let yt_fut = async {
-        if offset == 0 {
-            search_youtube(trimmed, limit).await.ok()
+        if allow_yt && offset == 0 {
+            let yt_fetch_count = if yt_duration_filter != SearchDurationFilter::Any { 40 } else { limit };
+            search_youtube(trimmed, yt_fetch_count).await.ok()
         } else {
             None
         }
     };
-    let sc_query = TracksQuery {
-        q: Some(params.query.clone()),
-        limit: params.limit,
-        offset: params.offset,
-        ..Default::default()
+    let sc_fut = async {
+        if allow_sc {
+            let sc_query = TracksQuery {
+                q: Some(params.query.clone()),
+                limit: params.limit,
+                offset: params.offset,
+                ..Default::default()
+            };
+            state.client.search_tracks(Some(&sc_query)).await.ok()
+        } else {
+            None
+        }
     };
-    let sc_fut = state.client.search_tracks(Some(&sc_query));
 
     let (yt_res, sc_res) = tokio::join!(yt_fut, sc_fut);
 
@@ -126,13 +159,26 @@ pub async fn search_tracks(
     if let Some(yt_videos) = yt_res {
         let mut yt_cache = state.youtube_cache.write().await;
         for meta in yt_videos {
+            let matches_duration = match yt_duration_filter {
+                SearchDurationFilter::Short => meta.duration_seconds < 120,
+                SearchDurationFilter::Medium => meta.duration_seconds >= 120 && meta.duration_seconds <= 600,
+                SearchDurationFilter::Long => meta.duration_seconds > 600 && meta.duration_seconds <= 1800,
+                SearchDurationFilter::Epic => meta.duration_seconds > 1800,
+                SearchDurationFilter::Any => true,
+            };
+            if !matches_duration {
+                continue;
+            }
             let (id, vid, item) = youtube_meta_to_item(&meta);
             yt_cache.insert(id, vid);
             combined_tracks.push(item);
+            if combined_tracks.len() >= limit {
+                break;
+            }
         }
     }
 
-    if let Ok(sc_results) = sc_res {
+    if let Some(sc_results) = sc_res {
         has_more = sc_results.next_href.is_some();
         let sc_tracks = sc_results.collection.into_iter().filter_map(|track| {
             let id = track.id?;

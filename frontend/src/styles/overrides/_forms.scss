@@ -35,7 +35,6 @@ mat-form-field {
     font-size: 0.875rem;
     font-weight: 500;
     letter-spacing: -0.01em;
-    box-sizing: border-box;
     color: rgba(255, 255, 255, 0.95);
   }
 
@@ -136,7 +135,6 @@ mat-form-field {
     align-items: center !important;
     justify-content: center !important;
     padding: 0 !important;
-    box-sizing: border-box !important;
     margin: 0 !important;
     color: rgba(255, 255, 255, 0.4) !important;
     transition: color 0.2s ease;

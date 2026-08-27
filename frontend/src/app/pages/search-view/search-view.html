@@ -1,3 +1,5 @@
+<app-search-toolbar />
+
 <app-list-view-shell [loading]="state.loading() && state.results().length === 0"
     [hasResults]="state.results().length > 0" [empty]="isEmpty()" [initial]="isInitial()">
 
@@ -22,8 +24,8 @@
     <app-empty-pane empty icon="search_off" heading="No results found" description="Try a different search query" />
 
     <ng-container initial>
-        <app-empty-pane icon="travel_explore" heading="Search SoundCloud"
-            description="Find tracks, artists and music to download" [accent]="true" />
+        <app-empty-pane icon="travel_explore" heading="Search Tracks"
+            description="Find music across YouTube & SoundCloud to stream and download" [accent]="true" />
     </ng-container>
 </app-list-view-shell>
 

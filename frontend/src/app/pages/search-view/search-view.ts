@@ -18,6 +18,7 @@ import {
     RxVirtualScrollViewportComponent,
     RxVirtualScrollWindowDirective
 } from '@rx-angular/template/virtual-scrolling';
+import { SearchToolbarComponent } from './components/search-toolbar/search-toolbar';
 import { SearchViewState } from './search-view.state';
 import { SearchHistoryService } from './search-history.service';
 
@@ -27,6 +28,7 @@ import { SearchHistoryService } from './search-history.service';
         SearchResultItemComponent,
         SearchHistoryPanelComponent,
         SearchSkeletonComponent,
+        SearchToolbarComponent,
         MatProgressSpinner,
         RxVirtualScrollViewportComponent,
         RxVirtualFor,
