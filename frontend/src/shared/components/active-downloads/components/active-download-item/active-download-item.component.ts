@@ -5,11 +5,12 @@ import {MatProgressBar} from '@angular/material/progress-bar';
 import {NgOptimizedImage} from '@angular/common';
 import {MatIconButton} from "@angular/material/button";
 
-import { PlatformChipComponent } from '@shared/components/platform-chip/platform-chip.component';
+import {PlatformChipComponent} from '@shared/components/platform-chip/platform-chip.component';
+import {PlatformPipe} from '@shared/pipes/platform.pipe';
 
 @Component({
     selector: 'app-active-download-item',
-    imports: [MatIcon, MatProgressBar, NgOptimizedImage, MatIconButton, PlatformChipComponent],
+    imports: [MatIcon, MatProgressBar, NgOptimizedImage, MatIconButton, PlatformChipComponent, PlatformPipe],
     templateUrl: './active-download-item.component.html',
     styleUrl: './active-download-item.component.scss',
     })
@@ -30,3 +31,4 @@ export class ActiveDownloadItemComponent {
         this.remove.emit(this.item().id);
     }
 }
+

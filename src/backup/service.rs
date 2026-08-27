@@ -7,10 +7,10 @@ use serde::{Deserialize, Serialize};
 use tracing::{debug, instrument};
 
 use crate::{
+    backup::{error::SyncError, strategy::ISyncStrategy},
     database,
     database::cache::CachedMusicTrack,
     settings::UserSettings,
-    webdav::{error::SyncError, strategy::ISyncStrategy},
 };
 
 #[derive(Debug, Serialize, Deserialize)]

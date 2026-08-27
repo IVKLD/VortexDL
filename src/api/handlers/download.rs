@@ -19,7 +19,7 @@ use crate::{
 };
 
 async fn run_pipeline_bg(state: AppState, url: url::Url) {
-    let ctx = downloader::Context::from_state(&state).with_dm(state.download_manager.clone());
+    let ctx = downloader::Context::from_state(&state);
 
     if let Err(e) = downloader::run_download_pipeline(&ctx, &url).await {
         state.download_manager.broadcast_event(ServerEvent::Error {
@@ -65,9 +65,7 @@ pub async fn start_download(
         message: format!("Started for: {url}"),
     };
 
-    tokio::task::spawn_blocking(move || {
-        tokio::runtime::Handle::current().block_on(run_pipeline_bg(state, url));
-    });
+    tokio::spawn(run_pipeline_bg(state, url));
 
     Ok((StatusCode::ACCEPTED, Json(status)))
 }

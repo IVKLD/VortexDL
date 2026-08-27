@@ -8,9 +8,9 @@ use tokio::task::spawn_blocking;
 
 use super::{MusicStorage, metadata::extract_track_metadata, model::LocalMusicTrack};
 use crate::{
-    api::types::AudioFormat,
     database::cache::{CachedMusicTrack, get_cached_music_tracks, update_cached_tracks_batch},
-    utils::time::system_time_to_secs,
+    types::AudioFormat,
+    utils::system_time_to_secs,
 };
 
 fn get_file_timestamps(metadata: &fs::Metadata) -> (u64, u64) {

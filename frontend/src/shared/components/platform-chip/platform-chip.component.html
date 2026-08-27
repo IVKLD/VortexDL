@@ -1,18 +1,15 @@
-@let p = detectedPlatform();
+@let p = platform();
 
-@if (p === 'youtube') {
+@if (p === SupportedPlatform.YouTube) {
     <span class="platform-chip youtube">
         <mat-icon class="chip-icon">play_circle_filled</mat-icon>
         <span class="chip-label">YouTube</span>
     </span>
-} @else if (p === 'soundcloud') {
+} @else if (p === SupportedPlatform.SoundCloud) {
     <span class="platform-chip soundcloud">
         <mat-icon class="chip-icon">cloud</mat-icon>
         <span class="chip-label">SoundCloud</span>
     </span>
-} @else if (showAuto()) {
-    <span class="platform-chip auto">
-        <mat-icon class="chip-icon">saved_search</mat-icon>
-        <span class="chip-label">Auto Detect</span>
-    </span>
 }
+
+

@@ -2,7 +2,9 @@
                 (playTrack)="playTrack.emit(track())"
                 [cdkContextMenuTriggerFor]="cardMenu" [cdkContextMenuTriggerData]="{ $implicit: track() }">
     <div meta>
-        <app-platform-chip [url]="track().permalinkUrl || track().sourceUrl"/>
+        @if ((track().permalinkUrl || track().sourceUrl) | platform; as platform) {
+            <app-platform-chip [platform]="platform"/>
+        }
         @if (track().genre && track().genre?.toLowerCase() !== 'youtube' && track().genre?.toLowerCase() !== 'soundcloud') {
             <span class="genre">{{ track().genre }}</span>
         }

@@ -16,9 +16,9 @@ export interface PlayableTrack {
     id: number;
     artist: string;
     title: string;
-    artworkUrl: string | null;
-    sourceUrl?: string | null;
-    permalinkUrl?: string | null;
+    artworkUrl?: string;
+    sourceUrl?: string;
+    permalinkUrl?: string;
     streamUrl?: string;
 }
 

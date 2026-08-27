@@ -5,13 +5,11 @@ use notify::{RecommendedWatcher, RecursiveMode, Watcher};
 use tokio::sync::RwLock;
 
 use crate::{
-    adb_device,
-    api::{
-        download_manager::{DownloadManager, MessageLevel, ServerEvent},
-        types::AudioFormat,
-    },
+    adb,
+    api::download_manager::{DownloadManager, MessageLevel, ServerEvent},
     settings::SettingsManager,
     storage::MusicStorage,
+    types::AudioFormat,
 };
 
 pub async fn init(
@@ -87,7 +85,7 @@ pub async fn init(
 
                         let tracks = MusicStorage::scan_library(&path_to_watch).await;
                         storage.write().await.update_tracks(tracks);
-                        adb_device::sync_connected(storage.clone(), settings.clone()).await;
+                        adb::sync_connected(storage.clone(), settings.clone()).await;
 
                         dm.broadcast_event(ServerEvent::Message {
                             message: "Library reindexing and sync completed".to_string(),

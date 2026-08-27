@@ -77,7 +77,6 @@ pub struct UserSettings {
     pub system: SystemSettings,
 }
 
-
 impl Default for UserSettings {
     fn default() -> Self {
         Self {

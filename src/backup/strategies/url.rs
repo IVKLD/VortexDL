@@ -3,7 +3,7 @@ use std::path::Path;
 use reqwest::{Client, StatusCode};
 use tracing::{debug, instrument};
 
-use crate::webdav::{error::SyncError, strategy::ISyncStrategy};
+use crate::backup::{error::SyncError, strategy::ISyncStrategy};
 
 pub struct UrlStrategy {
     client: Client,

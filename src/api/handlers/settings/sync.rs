@@ -10,7 +10,7 @@ use crate::{
         errors::{ApiError, ErrorCode},
         state::AppState,
     },
-    webdav::{
+    backup::{
         DataSnapshot, SyncError, SyncService,
         strategies::{LocalStrategy, UrlStrategy, WebDavStrategy},
     },

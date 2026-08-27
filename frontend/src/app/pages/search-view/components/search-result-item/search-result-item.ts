@@ -7,6 +7,7 @@ import { MusicCard } from '@shared/components/music-card/music-card';
 import { DurationPipe } from '@shared/pipes/duration.pipe';
 import { CompactNumberPipe } from '@shared/pipes/compact-number.pipe';
 import { PlatformChipComponent } from '@shared/components/platform-chip/platform-chip.component';
+import { PlatformPipe } from '@shared/pipes/platform.pipe';
 import { SearchTrackItemRdo } from '../../models/search-view.model';
 
 @Component({
@@ -20,6 +21,7 @@ import { SearchTrackItemRdo } from '../../models/search-view.model';
         CompactNumberPipe,
         CdkMenuModule,
         PlatformChipComponent,
+        PlatformPipe,
     ],
     templateUrl: './search-result-item.html',
     styleUrl: './search-result-item.scss',

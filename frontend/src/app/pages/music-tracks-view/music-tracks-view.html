@@ -13,9 +13,11 @@
                 [isSelected]="state.selectedIds().has(track.id)" [track]="track" (playTrack)="playTrack(track)"
                 [cdkContextMenuTriggerFor]="cardMenu" [cdkContextMenuTriggerData]="{ $implicit: track }">
                 <aside meta>
-                    <app-platform-chip [url]="track.sourceUrl || track.permalinkUrl" />
+                    @if ((track.sourceUrl || track.permalinkUrl) | platform; as platform) {
+                        <app-platform-chip [platform]="platform" />
+                    }
                     <span>{{ track.size | fileSize }}</span>
-                    @if (track.format && track.format.toLowerCase() !== 'youtube' && track.format.toLowerCase() !== 'soundcloud' && track.format.toLowerCase() !== 'unknown') {
+                    @if (track.format && track.format !== AudioFormat.UNKNOWN) {
                         <strong [attr.data-format]="track.format">{{ track.format }}</strong>
                     }
                 </aside>

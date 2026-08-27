@@ -6,7 +6,7 @@ use reqwest::{
 };
 use tracing::{debug, instrument};
 
-use crate::webdav::{error::SyncError, strategy::ISyncStrategy};
+use crate::backup::{error::SyncError, strategy::ISyncStrategy};
 
 const SNAPSHOT_FILENAME: &str = "state.json";
 

@@ -141,8 +141,8 @@ export class DownloadTrackingService {
                 artist: item.artist,
                 title: item.title,
                 format: item.format || AudioFormat.MP3,
-                artworkUrl: item.artworkUrl || null,
-                sourceUrl: item.sourceUrl || null,
+                artworkUrl: item.artworkUrl || undefined,
+                sourceUrl: item.sourceUrl || undefined,
                 createdAt: item.createdAt || 0,
                 size: item.size || 0,
             });

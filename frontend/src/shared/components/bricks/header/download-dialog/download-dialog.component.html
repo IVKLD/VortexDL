@@ -1,6 +1,8 @@
-<h2 mat-dialog-title class="dialog-header">
+<h2 mat-dialog-title>
     <span>Download Music</span>
-    <app-platform-chip [url]="urlField().value()" [showAuto]="true" />
+    @if (urlField().value() | platform; as platform) {
+    <app-platform-chip [platform]="platform" />
+    }
 </h2>
 
 <mat-dialog-content>
@@ -9,37 +11,33 @@
             <mat-icon>link</mat-icon>
             SoundCloud or YouTube URL
         </mat-label>
-        <input
-                (keyup.enter)="onDownload()"
-                [formField]="urlField"
-                matInput
-        />
+        <input (keyup.enter)="onDownload()" [formField]="urlField" matInput />
         @if (urlField().invalid()) {
-            <mat-error>{{ urlField().errors()[0]?.message }}</mat-error>
+        <mat-error>{{ urlField().errors()[0]?.message }}</mat-error>
         }
         <mat-hint>SoundCloud or YouTube Track / Playlist URL</mat-hint>
     </mat-form-field>
 
     <div>
         @if (history().length > 0) {
-            <div class="history-section">
-                <h3>Recent URLs</h3>
-                <mat-list>
-                    @for (item of history(); track item) {
-                        <mat-list-item (click)="selectHistory(item)"
-                                       [class.active]="urlField().value() === item"
-                        >
-                            <div class="item">
-                                <app-platform-chip [url]="item" />
-                                <span class="url-text">{{ item }}</span>
-                                <button (click)="removeFromHistory(item)" mat-icon-button>
-                                    <mat-icon>close</mat-icon>
-                                </button>
-                            </div>
-                        </mat-list-item>
-                    }
-                </mat-list>
-            </div>
+        <div class="history-section">
+            <h3>Recent URLs</h3>
+            <mat-list>
+                @for (item of history(); track item) {
+                <mat-list-item (click)="selectHistory(item)" [class.active]="urlField().value() === item">
+                    <div class="item">
+                        @if (item | platform; as platform) {
+                        <app-platform-chip [platform]="platform" />
+                        }
+                        <span class="url-text">{{ item }}</span>
+                        <button (click)="removeFromHistory(item)" mat-icon-button>
+                            <mat-icon>close</mat-icon>
+                        </button>
+                    </div>
+                </mat-list-item>
+                }
+            </mat-list>
+        </div>
         }
     </div>
 </mat-dialog-content>

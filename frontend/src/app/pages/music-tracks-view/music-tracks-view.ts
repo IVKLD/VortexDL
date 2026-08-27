@@ -23,6 +23,9 @@ import { FileSizePipe } from '@shared/pipes/file-size.pipe';
 import { MatIconButton } from '@angular/material/button';
 import { DragSelectDirective } from './directives/drag-select.directive';
 import { PlatformChipComponent } from '@shared/components/platform-chip/platform-chip.component';
+import { PlatformPipe } from '@shared/pipes/platform.pipe';
+
+import { AudioFormat } from '@shared/models/music-track.model';
 
 @Component({
     selector: 'app-music-tracks-view',
@@ -42,6 +45,7 @@ import { PlatformChipComponent } from '@shared/components/platform-chip/platform
         ListViewShellComponent,
         DragSelectDirective,
         PlatformChipComponent,
+        PlatformPipe,
     ],
     templateUrl: './music-tracks-view.html',
     styleUrl: './music-tracks-view.scss',
@@ -50,9 +54,10 @@ export class MusicTracksView {
     private readonly _api = inject(MusicTracksViewService);
     private readonly _dialog = inject(MatDialog);
     private readonly _overlayContainer = inject(OverlayContainer);
-
     protected readonly state = inject(MusicTracksViewState);
     protected readonly player = inject(PlayerService);
+
+    protected readonly AudioFormat = AudioFormat;
     protected readonly tracks = this.state.sortedTracks;
 
     protected readonly activeTrackId = computed(() => this.player.currentTrack()?.id);

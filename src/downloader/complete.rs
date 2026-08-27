@@ -6,8 +6,7 @@ use url::Url;
 
 use super::DownloadTask;
 use crate::{
-    adb_device,
-    api::types::AudioFormat,
+    adb,
     database::cache::{CachedMusicTrack, update_cached_tracks_batch},
     downloader::Context,
     storage::{
@@ -15,7 +14,8 @@ use crate::{
         metadata::{SaveTrackArgs, save_track_info},
         sync::sync_url_ids,
     },
-    utils::{soundcloud, time::system_time_to_secs},
+    types::AudioFormat,
+    utils::{soundcloud, system_time_to_secs},
 };
 
 pub async fn finalize_pipeline_sync(
@@ -25,7 +25,7 @@ pub async fn finalize_pipeline_sync(
 ) -> anyhow::Result<()> {
     sync_url_ids(url, remote_ids).await?;
 
-    adb_device::sync_connected(context.storage.clone(), context.settings.clone()).await;
+    adb::sync_connected(context.storage.clone(), context.settings.clone()).await;
 
     soundcloud::update_cached_client_id(&context.client, &context.settings).await;
 
@@ -77,49 +77,37 @@ pub async fn finalize_single_track(
 
     let track_id = task.track.id;
     let path_str = task.file_path.to_string_lossy().into_owned();
-    let cached_track = CachedMusicTrack {
-        metadata,
-        created_at: now,
-        size,
-        mtime,
-    };
 
-    let cache_task = tokio::task::spawn_blocking(move || {
-        let mut to_update = std::collections::HashMap::new();
-        to_update.insert(path_str, cached_track);
-        update_cached_tracks_batch(&to_update, &HashSet::new())
-    });
-
-    let sc_id = task.track.id.to_string();
-    let file_path = task.file_path.clone();
-    let title = task.track.title.clone();
-    let artist = task.track.artist.clone();
-    let artwork_url = task.track.artwork_url.clone();
-    let source_url = task.track.permalink_url.clone();
-
-    let meta_task = tokio::task::spawn_blocking(move || {
-        save_track_info(SaveTrackArgs {
-            path: &file_path,
+    tokio::task::spawn_blocking(move || {
+        let sc_id = task.track.id.to_string();
+        if let Err(err) = save_track_info(SaveTrackArgs {
+            path: &task.file_path,
             sc_id: &sc_id,
-            title: &title,
-            artist: &artist,
-            artwork_url: artwork_url.as_ref(),
-            source_url: source_url.as_ref(),
+            title: &task.track.title,
+            artist: &task.track.artist,
+            artwork_url: task.track.artwork_url.as_ref(),
+            source_url: task.track.permalink_url.as_ref(),
             artwork_data,
-        })
-    });
+        }) {
+            tracing::warn!(track_id, "Failed to save track metadata: {err:#}");
+        }
 
-    let (cache_res, meta_res) = tokio::join!(cache_task, meta_task);
-
-    if let Err(err) = cache_res {
-        tracing::error!(track_id, "Cache update task panicked: {err:#}");
-    }
-
-    match meta_res {
-        Err(err) => tracing::error!(track_id, "Metadata task panicked or was cancelled: {err:#}"),
-        Ok(Err(err)) => tracing::warn!(track_id, "Failed to save track metadata: {err:#}"),
-        _ => {}
-    }
+        let mut to_update = std::collections::HashMap::new();
+        to_update.insert(
+            path_str,
+            CachedMusicTrack {
+                metadata,
+                created_at: now,
+                size,
+                mtime,
+            },
+        );
+        if let Err(err) = update_cached_tracks_batch(&to_update, &HashSet::new()) {
+            tracing::error!(track_id, "Failed to update track cache: {err:#}");
+        }
+    })
+    .await
+    .ok();
 }
 
 pub async fn handle_track_failure(

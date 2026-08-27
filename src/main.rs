@@ -9,8 +9,9 @@ use crate::{
     ui::create_standalone_spinner, utils::soundcloud,
 };
 
-mod adb_device;
+mod adb;
 mod api;
+mod backup;
 mod cli;
 mod constants;
 mod database;
@@ -21,7 +22,6 @@ mod types;
 mod ui;
 mod utils;
 mod watchdog;
-mod webdav;
 
 #[global_allocator]
 static ALLOC: mimalloc::MiMalloc = mimalloc::MiMalloc;
@@ -30,7 +30,7 @@ static ALLOC: mimalloc::MiMalloc = mimalloc::MiMalloc;
 async fn main() -> Result<()> {
     let args = Args::parse();
 
-    utils::tracing::setup();
+    utils::setup_tracing();
     database::init()?;
 
     let mut settings = database::get_settings()?;
@@ -61,7 +61,7 @@ async fn main() -> Result<()> {
     )
     .await?;
 
-    adb_device::init(storage, state.settings.clone());
+    adb::init(storage, state.settings.clone());
 
     cli::execute_app(state, args).await
 }

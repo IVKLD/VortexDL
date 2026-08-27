@@ -2,48 +2,46 @@ use std::time::Duration;
 
 use colored::Colorize;
 use indicatif::{ProgressBar, ProgressStyle};
-
-macro_rules! info  { ($($a:tt)*) => { println!("{} {}", "[INFO]".blue().bold(), format!($($a)*)) } }
-macro_rules! ok    { ($($a:tt)*) => { println!("{} {}", "[OK]".green().bold(), format!($($a)*)) } }
-macro_rules! warn  { ($($a:tt)*) => { println!("{} {}", "[WARN]".yellow().bold(), format!($($a)*)) } }
-macro_rules! err   { ($($a:tt)*) => { println!("{} {}", "[ERROR]".red().bold(), format!($($a)*)) } }
+use tracing::{error, info, warn};
 
 pub fn sync_start(device: &str, dir: &str) {
-    info!("Syncing [{device}] → {dir}");
+    info!(device = %device, dir = %dir, "Syncing ADB device");
 }
 
 pub fn sync_complete(device: &str) {
-    ok!("Sync complete [{device}]");
+    info!(device = %device, "Sync complete");
 }
 
 pub fn sync_not_needed(device: &str) {
-    info!("Sync not needed, no changes on [{device}]");
+    info!(device = %device, "Sync not needed, no changes");
 }
 
 pub fn removing(count: usize, device: &str) {
-    info!("Removing {count} orphaned tracks from [{device}]");
+    info!(device = %device, count = %count, "Removing orphaned tracks");
 }
 
 pub fn pushing(count: usize, device: &str) {
-    info!("Pushing {count} tracks to [{device}]");
+    info!(device = %device, count = %count, "Pushing tracks");
 }
 
 pub fn push_results(pushed: u64, failed: u64) {
     if failed > 0 {
-        warn!("{pushed} pushed, {failed} failed");
+        warn!(pushed = %pushed, failed = %failed, "Track push completed with failures");
+    } else {
+        info!(pushed = %pushed, "Track push completed successfully");
     }
 }
 
 pub fn deleted(path: &str) {
-    info!("Deleted: {path}");
+    info!(path = %path, "Deleted file");
 }
 
 pub fn delete_failed(path: &str, e: &dyn std::fmt::Display) {
-    warn!("Failed to delete {path}: {e}");
+    warn!(path = %path, error = %e, "Failed to delete file");
 }
 
 pub fn remote_access_failed(dir: &str, device: &str, e: &dyn std::fmt::Display) {
-    err!("Cannot access {dir} on {device}: {e}");
+    error!(dir = %dir, device = %device, error = %e, "Cannot access remote directory");
 }
 
 pub fn pb_warn(pb: &ProgressBar, msg: String) {

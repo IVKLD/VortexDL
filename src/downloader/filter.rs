@@ -9,20 +9,18 @@ pub async fn exclude_already_downloaded_tracks(
     tracks
         .into_iter()
         .filter(|track| {
-            if storage
+            let exists = storage
                 .tracks
                 .get(&track.id)
-                .is_some_and(|d| d.path.exists() && !d.is_archived())
-            {
+                .is_some_and(|d| d.path.exists() && !d.is_archived());
+            if exists {
                 tracing::info!(
                     "Skipping {} - {} (already downloaded)",
                     track.artist,
                     track.title
                 );
-                false
-            } else {
-                true
             }
+            !exists
         })
         .collect()
 }

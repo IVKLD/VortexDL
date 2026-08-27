@@ -9,7 +9,7 @@ use axum::{
 };
 
 use crate::{
-    adb_device::{AdbError, StorageInfo, get_device_storages, list_devices, sync_device},
+    adb::{AdbError, StorageInfo, get_device_storages, list_devices, sync_device},
     api::{
         errors::{ApiError, ErrorCode},
         state::AppState,

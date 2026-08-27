@@ -7,7 +7,7 @@ export interface MusicCardTrack {
     id: number;
     artist: string;
     title: string;
-    artworkUrl?: string | null;
+    artworkUrl?: string;
 }
 
 @Component({

@@ -1,13 +1,12 @@
 use std::time::Duration;
 
 use anyhow::Result;
-use soundcloud_rs::{ResolvedResource, StreamType};
+use soundcloud_rs::StreamType;
 use tokio::task::JoinHandle;
 use url::Url;
 
-use super::discovery::{discover_liked_tracks, discover_playlist_tracks, init_progress_spinner};
 use crate::{
-    downloader::{Context, DiscoveredMusicTrack},
+    downloader::Context,
     utils::{http::build_http_client, proxy::race_proxies, soundcloud},
 };
 
@@ -29,74 +28,6 @@ impl StreamSource {
             Self::Progressive { url, .. } | Self::Hls { url, .. } => url,
         }
     }
-}
-
-pub async fn resolve_tracks_from_url(
-    ctx: &Context,
-    url: &Url,
-) -> Result<Vec<DiscoveredMusicTrack>> {
-    let pb = init_progress_spinner(ctx, "Resolving SoundCloud URL...");
-
-    let result = match discover_tracks_from_url(ctx, url, &ctx.client).await {
-        Ok(tracks) => Ok(tracks),
-        Err(e) => {
-            tracing::debug!("Direct discovery failed: {e}. Trying fallback proxies...");
-            let settings = ctx.settings.read().await.clone();
-
-            if !settings.network.use_proxy || settings.network.fallback_proxies.is_empty() {
-                return Err(e);
-            }
-
-            race_proxies(&settings, |s, proxy| {
-                let ctx = ctx.clone();
-                let url = url.clone();
-                async move {
-                    let proxied_client = soundcloud::ClientBuilder::new(&s)
-                        .with_proxy(Some(&proxy))
-                        .build()
-                        .await?;
-                    discover_tracks_from_url(&ctx, &url, &proxied_client).await
-                }
-            })
-            .await
-            .map_err(|proxy_err| {
-                anyhow::anyhow!("SoundCloud discovery failed: {e} (proxies: {proxy_err})")
-            })
-        }
-    };
-
-    pb.finish_and_clear();
-    result
-}
-
-async fn discover_tracks_from_url(
-    ctx: &Context,
-    url: &Url,
-    client: &soundcloud_rs::Client,
-) -> Result<Vec<DiscoveredMusicTrack>> {
-    let res = client.resolve_url(url).await?;
-
-    let all_tracks = match res {
-        ResolvedResource::User(user) => {
-            let id = user
-                .id
-                .ok_or_else(|| anyhow::anyhow!("User ID is missing"))?;
-            discover_liked_tracks(ctx, client, id).await?
-        }
-        ResolvedResource::Playlist(playlist) => {
-            let id = playlist
-                .id
-                .ok_or_else(|| anyhow::anyhow!("Playlist ID is missing"))?;
-            discover_playlist_tracks(ctx, client, id).await?
-        }
-        ResolvedResource::Track(track) => {
-            let discovered = DiscoveredMusicTrack::from_track(track)
-                .ok_or_else(|| anyhow::anyhow!("Track missing required ID"))?;
-            vec![discovered]
-        }
-    };
-
-    Ok(all_tracks)
 }
 
 pub async fn resolve_stream_source(ctx: &Context, id: i64) -> Result<StreamSource> {

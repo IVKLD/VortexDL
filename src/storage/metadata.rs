@@ -100,14 +100,6 @@ pub fn save_track_info(args: SaveTrackArgs) -> Result<()> {
         set_txxx(&mut tag, TAG_SOURCE_URL, url.as_str());
     }
 
-    set_txxx(&mut tag, LEGACY_SC_IDENTIFIER, args.sc_id);
-    if let Some(url) = args.artwork_url {
-        set_txxx(&mut tag, LEGACY_SC_ARTWORK_URL, url.as_str());
-    }
-    if let Some(url) = args.source_url {
-        set_txxx(&mut tag, LEGACY_SC_SOURCE_URL, url.as_str());
-    }
-
     if let Some(data) = args.artwork_data {
         tag.remove_all_pictures();
         tag.add_frame(Frame::with_content(

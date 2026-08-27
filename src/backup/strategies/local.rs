@@ -2,7 +2,7 @@ use std::path::{Path, PathBuf};
 
 use tracing::{debug, instrument};
 
-use crate::webdav::{error::SyncError, strategy::ISyncStrategy};
+use crate::backup::{error::SyncError, strategy::ISyncStrategy};
 
 pub struct LocalStrategy {
     remote_path: PathBuf,

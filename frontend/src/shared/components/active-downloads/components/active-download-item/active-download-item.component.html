@@ -2,34 +2,36 @@
 
 <div [class.failed]="data.status === DownloadStatus.Failed" class="item" [style.--progress-width.%]="progressPercent">
     @if (hasProgress) {
-    <div class="progress-fill"></div>
+        <div class="progress-fill"></div>
     }
 
     <div class="img-container">
         @if (data.artworkUrl) {
-        <img [alt]="data.title" [ngSrc]="data.artworkUrl" height="40" width="40" />
+            <img [alt]="data.title" [ngSrc]="data.artworkUrl" height="40" width="40"/>
         } @else {
-        <mat-icon>music_note</mat-icon>
+            <mat-icon>music_note</mat-icon>
         }
     </div>
 
     <div class="info">
         <div class="title-row">
             <strong>{{ data.title }}</strong>
-            <app-platform-chip [url]="data.permalinkUrl || data.sourceUrl" />
+            @if ((data.permalinkUrl || data.sourceUrl) | platform; as platform) {
+                <app-platform-chip [platform]="platform"/>
+            }
         </div>
 
         @if (data.status === DownloadStatus.Failed) {
-        <small class="error-text">Failed</small>
+            <small class="error-text">Failed</small>
         } @else {
-        <div class="download-status-row">
-            @if (hasProgress) {
-            <small class="progress-text">{{ progressPercent }}%</small>
-            <mat-progress-bar mode="determinate" [value]="progressPercent" />
-            } @else {
-            <mat-progress-bar mode="indeterminate" />
-            }
-        </div>
+            <div class="download-status-row">
+                @if (hasProgress) {
+                    <small class="progress-text">{{ progressPercent }}%</small>
+                    <mat-progress-bar mode="determinate" [value]="progressPercent"/>
+                } @else {
+                    <mat-progress-bar mode="indeterminate"/>
+                }
+            </div>
         }
     </div>
 

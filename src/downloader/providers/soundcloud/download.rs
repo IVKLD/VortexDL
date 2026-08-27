@@ -1,4 +1,4 @@
-use std::{path::PathBuf, time::Duration};
+use std::time::Duration;
 
 use anyhow::{Result, anyhow};
 use futures::StreamExt;
@@ -41,32 +41,6 @@ pub async fn download_soundcloud_track(
     }
 }
 
-struct TempFileGuard {
-    path: PathBuf,
-    disarmed: bool,
-}
-
-impl TempFileGuard {
-    fn new(path: PathBuf) -> Self {
-        Self {
-            path,
-            disarmed: false,
-        }
-    }
-
-    fn disarm(&mut self) {
-        self.disarmed = true;
-    }
-}
-
-impl Drop for TempFileGuard {
-    fn drop(&mut self) {
-        if !self.disarmed {
-            let _ = std::fs::remove_file(&self.path);
-        }
-    }
-}
-
 async fn download_progressive(
     context: &Context,
     task: &DownloadTask,
@@ -80,17 +54,11 @@ async fn download_progressive(
     let total = response
         .content_length()
         .unwrap_or_else(|| match task.track.duration_ms {
-            Some(ms) => {
-                let secs = (ms as f64 / 1000.0).max(1.0);
-                (secs * 16_000.0) as u64
-            }
+            Some(ms) => ((ms as f64 / 1000.0).max(1.0) * 16_000.0) as u64,
             None => 2_500_000,
         });
 
-    let tmp_path = task.file_path.with_extension("mp3.tmp");
-    let mut temp_guard = TempFileGuard::new(tmp_path.clone());
-
-    let mut file = fs::File::create(&tmp_path).await?;
+    let mut file = fs::File::create(&task.file_path).await?;
     let mut stream = response.bytes_stream();
     let mut position = 0;
 
@@ -105,9 +73,7 @@ async fn download_progressive(
     }
 
     drop(file);
-    verify(&tmp_path, total).await?;
-    fs::rename(&tmp_path, &task.file_path).await?;
-    temp_guard.disarm();
+    verify(&task.file_path, total).await?;
     Ok(())
 }
 
@@ -132,19 +98,17 @@ async fn download_hls(
         &context.client
     };
 
-    let tmp_path = task.file_path.with_extension("mp3.tmp");
-    let mut temp_guard = TempFileGuard::new(tmp_path.clone());
-
     let track_id = task.track.id;
-    let tmp_path_clone = tmp_path.clone();
+    let path_clone = task.file_path.clone();
     let dm = context.dm.clone();
     let duration_ms = task.track.duration_ms;
-    tokio::spawn(async move {
+
+    let progress_task = tokio::spawn(async move {
         let mut has_existed = false;
         let mut missing_count = 0;
         loop {
             sleep(Duration::from_millis(500)).await;
-            match fs::metadata(&tmp_path_clone).await {
+            match fs::metadata(&path_clone).await {
                 Ok(meta) => {
                     has_existed = true;
                     missing_count = 0;
@@ -169,13 +133,13 @@ async fn download_hls(
         }
     });
 
-    client
-        .download_hls_to_file(stream_url, &tmp_path)
-        .await
-        .map_err(|err| anyhow!("HLS download failed: {err}"))?;
+    let download_res = client
+        .download_hls_to_file(stream_url, &task.file_path)
+        .await;
+    progress_task.abort();
 
-    verify(&tmp_path, 0).await?;
-    fs::rename(&tmp_path, &task.file_path).await?;
-    temp_guard.disarm();
+    download_res.map_err(|err| anyhow!("HLS download failed: {err}"))?;
+
+    verify(&task.file_path, 0).await?;
     Ok(())
 }

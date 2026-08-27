@@ -2,7 +2,6 @@ import { Component, computed, inject } from '@angular/core';
 import { MatProgressSpinner } from '@angular/material/progress-spinner';
 import { NotificationService } from '@app/services/notification.service';
 import { DownloadTrackingService } from '@app/services/download-tracking.service';
-import { HeaderService } from '@shared/components/bricks/header/header.service';
 import { SearchViewService } from './search-view.service';
 import { SearchTrackItemRdo } from './models/search-view.model';
 import { PlayerService } from '@app/services/player.service';

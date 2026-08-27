@@ -11,6 +11,7 @@ import {MatList, MatListItem} from "@angular/material/list";
 import {MatButton, MatIconButton} from "@angular/material/button";
 
 import {PlatformChipComponent} from "@shared/components/platform-chip/platform-chip.component";
+import {PlatformPipe} from "@shared/pipes/platform.pipe";
 
 const STORAGE_KEY = 'vortexdl_download_history';
 
@@ -32,7 +33,8 @@ const STORAGE_KEY = 'vortexdl_download_history';
         MatDialogActions,
         MatButton,
         MatDialogClose,
-        PlatformChipComponent
+        PlatformChipComponent,
+        PlatformPipe,
     ],
     templateUrl: './download-dialog.component.html',
     styleUrl: './download-dialog.component.scss',

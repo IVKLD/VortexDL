@@ -5,7 +5,7 @@ use clap::Parser;
 use url::Url;
 
 use crate::{
-    adb_device,
+    adb,
     api::{self, state::AppState},
     downloader::{self, Context},
     settings::UserSettings,
@@ -100,9 +100,9 @@ async fn run_cli_sync(state: AppState) -> Result<()> {
         return Ok(());
     }
 
-    let connected = match adb_device::list_devices().await {
+    let connected = match adb::list_devices().await {
         Ok(devices) => devices,
-        Err(adb_device::AdbError::NotAvailable) => {
+        Err(adb::AdbError::NotAvailable) => {
             println!(
                 "adb binary not found in PATH. Please install adb and ensure it is accessible."
             );
@@ -124,7 +124,7 @@ async fn run_cli_sync(state: AppState) -> Result<()> {
             .find(|d| d.enabled && d.device_id == *id)
         {
             println!("Syncing with device: {} -> {}", id, cfg.remote_music_dir);
-            adb_device::sync_device(id, &cfg.remote_music_dir, state.storage.clone(), true).await?;
+            adb::sync_device(id, &cfg.remote_music_dir, state.storage.clone(), true).await?;
             synced_any = true;
         } else {
             println!(

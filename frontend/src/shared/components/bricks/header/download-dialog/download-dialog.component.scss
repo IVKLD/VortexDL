@@ -1,12 +1,5 @@
-.dialog-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-}
-
 mat-dialog-content {
-  > mat-form-field {
+  >mat-form-field {
     width: 100%;
   }
 
