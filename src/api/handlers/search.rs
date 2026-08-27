@@ -131,7 +131,11 @@ pub async fn search_tracks(
 
     let yt_fut = async {
         if allow_yt && offset == 0 {
-            let yt_fetch_count = if yt_duration_filter != SearchDurationFilter::Any { 40 } else { limit };
+            let yt_fetch_count = if yt_duration_filter != SearchDurationFilter::Any {
+                40
+            } else {
+                limit
+            };
             search_youtube(trimmed, yt_fetch_count).await.ok()
         } else {
             None
@@ -161,8 +165,12 @@ pub async fn search_tracks(
         for meta in yt_videos {
             let matches_duration = match yt_duration_filter {
                 SearchDurationFilter::Short => meta.duration_seconds < 120,
-                SearchDurationFilter::Medium => meta.duration_seconds >= 120 && meta.duration_seconds <= 600,
-                SearchDurationFilter::Long => meta.duration_seconds > 600 && meta.duration_seconds <= 1800,
+                SearchDurationFilter::Medium => {
+                    meta.duration_seconds >= 120 && meta.duration_seconds <= 600
+                }
+                SearchDurationFilter::Long => {
+                    meta.duration_seconds > 600 && meta.duration_seconds <= 1800
+                }
                 SearchDurationFilter::Epic => meta.duration_seconds > 1800,
                 SearchDurationFilter::Any => true,
             };
