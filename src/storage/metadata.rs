@@ -63,7 +63,7 @@ fn get_txxx_with_legacy(tag: &Tag, key: &str, legacy_key: &str) -> Option<String
 pub fn detect_platform_str(source_url: Option<&str>) -> &'static str {
     source_url
         .map(|u| {
-            if yt_downloader_rs::is_youtube_url(u) {
+            if yt_audio_downloader::is_youtube_url(u) {
                 "youtube"
             } else {
                 "soundcloud"
@@ -134,10 +134,10 @@ fn extract_track_id(tag: Option<&Tag>, source_url: Option<&str>, path: &Path) ->
     }
 
     if let Some(url) = source_url
-        && yt_downloader_rs::is_youtube_url(url)
-        && let Ok(video_id) = yt_downloader_rs::extract_video_id(url)
+        && yt_audio_downloader::is_youtube_url(url)
+        && let Ok(video_id) = yt_audio_downloader::extract_video_id(url)
     {
-        return yt_downloader_rs::youtube_id_to_i64(&video_id);
+        return yt_audio_downloader::youtube_id_to_i64(&video_id);
     }
 
     let mut hasher = DefaultHasher::new();
@@ -253,7 +253,7 @@ mod tests {
         let _ = tag.write_to_path(&file_path, Version::Id3v23);
 
         let meta = extract_track_metadata(&file_path).unwrap();
-        let expected_id = yt_downloader_rs::youtube_id_to_i64("dQw4w9WgXcQ");
+        let expected_id = yt_audio_downloader::youtube_id_to_i64("dQw4w9WgXcQ");
         assert_eq!(meta.id, expected_id);
 
         let _ = std::fs::remove_file(&file_path);

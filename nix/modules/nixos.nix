@@ -111,7 +111,7 @@ in
           "ANDROID_USER_HOME=${cfg.dataDir}/.android"
         ];
         
-        ExecStart = "${cfg.package}/bin/vortexdl --serve --port ${toString cfg.port} --host ${cfg.host}"
+        ExecStart = "${cfg.package}/bin/vortex-dl --serve --port ${toString cfg.port} --host ${cfg.host}"
           + (lib.optionalString (cfg.downloadDir != null) " --output ${cfg.downloadDir}")
           + (lib.optionalString (cfg.extraArgs != []) " ${lib.escapeShellArgs cfg.extraArgs}");
       };

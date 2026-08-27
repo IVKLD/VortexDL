@@ -1,6 +1,7 @@
 pub mod cancellation;
 pub mod filename;
 pub mod http;
+pub mod paths;
 pub mod proxy;
 pub mod soundcloud;
 pub mod time;

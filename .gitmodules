@@ -2,7 +2,7 @@
 	path = libs/soundcloud-rs
 	url = git@github.com:IVKLD/soundcloud-rs.git
 	branch = master
-[submodule "libs/yt-downloader-rs"]
-	path = libs/yt-downloader-rs
-	url = git@github.com:IVKLD/yt-downloader-rs.git
+[submodule "libs/yt-audio-downloader-rs"]
+	path = libs/yt-audio-downloader-rs
+	url = git@github.com:IVKLD/yt-audio-downloader-rs.git
 	branch = main

@@ -35,7 +35,7 @@ pub enum SourcePlatform {
 
 impl SourcePlatform {
     pub fn detect(url: &Url) -> Self {
-        if yt_downloader_rs::is_youtube_url(url.as_str()) {
+        if yt_audio_downloader::is_youtube_url(url.as_str()) {
             Self::YouTube
         } else {
             Self::SoundCloud

@@ -59,7 +59,7 @@ in
       };
 
       Service = {
-        ExecStart = "${cfg.package}/bin/vortexdl --serve --port ${toString cfg.port} --host ${cfg.host}"
+        ExecStart = "${cfg.package}/bin/vortex-dl --serve --port ${toString cfg.port} --host ${cfg.host}"
           + (if cfg.downloadDir != null then " --output ${cfg.downloadDir}" else " --output ${cfg.dataDir}")
           + (lib.optionalString (cfg.extraArgs != []) " ${lib.escapeShellArgs cfg.extraArgs}");
         WorkingDirectory = cfg.dataDir;

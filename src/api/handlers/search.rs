@@ -7,7 +7,7 @@ use serde::{Deserialize, Serialize};
 use soundcloud_rs::TracksQuery;
 use url::Url;
 use utoipa::ToSchema;
-use yt_downloader_rs::{YoutubeAudioDownloader, search_youtube};
+use yt_audio_downloader::{YoutubeAudioDownloader, search_youtube};
 
 use crate::{
     api::{
@@ -45,9 +45,9 @@ pub struct SearchResponse {
 }
 
 fn youtube_meta_to_item(
-    meta: &yt_downloader_rs::models::VideoMetadata,
+    meta: &yt_audio_downloader::models::VideoMetadata,
 ) -> (i64, String, SearchTrackItem) {
-    let id = yt_downloader_rs::youtube_id_to_i64(&meta.id);
+    let id = yt_audio_downloader::youtube_id_to_i64(&meta.id);
     let permalink_url = format!("https://www.youtube.com/watch?v={}", meta.id);
     let (artist, title) = filename::parse_track_metadata(&meta.title, &meta.author);
     let item = SearchTrackItem {
@@ -87,7 +87,7 @@ pub async fn search_tracks(
     }
 
     if let Ok(parsed_url) = Url::parse(trimmed)
-        && yt_downloader_rs::is_youtube_url(parsed_url.as_str())
+        && yt_audio_downloader::is_youtube_url(parsed_url.as_str())
     {
         let downloader = YoutubeAudioDownloader::new();
         if let Ok(meta) = downloader.fetch_metadata(trimmed).await {
@@ -208,14 +208,14 @@ pub async fn resolve_stream_url_internal(
 
     if let Some(ref u) = target_url
         && let Ok(parsed_url) = Url::parse(u)
-        && yt_downloader_rs::is_youtube_url(parsed_url.as_str())
-        && let Ok(video_id) = yt_downloader_rs::extractor::extract_video_id(u)
+        && yt_audio_downloader::is_youtube_url(parsed_url.as_str())
+        && let Ok(video_id) = yt_audio_downloader::extractor::extract_video_id(u)
     {
         let settings = state.settings.read().await.clone();
         let proxy_url = settings.network.get_proxy_url();
-        let client = yt_downloader_rs::create_http_client_with_proxy(proxy_url);
+        let client = yt_audio_downloader::create_http_client_with_proxy(proxy_url);
 
-        let direct_res = yt_downloader_rs::get_stream_info_with_client(
+        let direct_res = yt_audio_downloader::get_stream_info_with_client(
             &video_id,
             client,
             proxy_url.map(String::from),
@@ -235,8 +235,8 @@ pub async fn resolve_stream_url_internal(
                 race_proxies(&settings, move |_, proxy| {
                     let v_id = video_id.clone();
                     async move {
-                        let client = yt_downloader_rs::create_http_client_with_proxy(Some(&proxy));
-                        let info = yt_downloader_rs::get_stream_info_with_client(
+                        let client = yt_audio_downloader::create_http_client_with_proxy(Some(&proxy));
+                        let info = yt_audio_downloader::get_stream_info_with_client(
                             &v_id,
                             client,
                             Some(proxy),

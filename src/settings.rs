@@ -4,7 +4,7 @@ use serde::{Deserialize, Serialize};
 use tokio::sync::RwLock;
 use utoipa::ToSchema;
 
-use crate::database::update_settings;
+use crate::{database::update_settings, utils::paths::default_output_path};
 
 #[derive(Serialize, Deserialize, Debug, Clone, ToSchema)]
 #[serde(rename_all = "camelCase")]
@@ -77,6 +77,7 @@ pub struct UserSettings {
     pub system: SystemSettings,
 }
 
+
 impl Default for UserSettings {
     fn default() -> Self {
         Self {
@@ -87,7 +88,7 @@ impl Default for UserSettings {
                 cached_client_id: None,
             },
             downloads: DownloadSettings {
-                output_path: "./downloads".to_string(),
+                output_path: default_output_path(),
                 max_concurrent: 3,
                 naming_template: "{artist} - {title}".to_string(),
             },

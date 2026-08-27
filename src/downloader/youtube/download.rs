@@ -1,6 +1,6 @@
 use anyhow::{Result, anyhow};
 use tokio::fs;
-use yt_downloader_rs::{AudioFormat, ProgressEvent, YoutubeAudioDownloader};
+use yt_audio_downloader::{AudioFormat, ProgressEvent, YoutubeAudioDownloader};
 
 use crate::downloader::{Context, DownloadTask};
 
