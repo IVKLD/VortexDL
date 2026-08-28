@@ -10,7 +10,7 @@ use futures::{
     future::join_all,
     stream::{self, StreamExt},
 };
-use indicatif::MultiProgress;
+use indicatif::{MultiProgress, ProgressBar};
 pub use providers::{soundcloud, youtube};
 pub use task::{Context, DownloadTask};
 use url::Url;
@@ -101,6 +101,56 @@ pub async fn run_download_pipeline(ctx: &Context, url: &Url) -> Result<()> {
     Ok(())
 }
 
+async fn process_parallel_track(
+    ctx: Context,
+    track: DiscoveredMusicTrack,
+    naming_template: String,
+    output_dir: PathBuf,
+    pb: ProgressBar,
+) -> Option<tokio::task::JoinHandle<()>> {
+    let mut task = DownloadTask::new(&track, &naming_template, &output_dir);
+    let cancel_rx = ctx
+        .dm
+        .as_ref()
+        .and_then(|m| m.get_cancel_receiver(task.track.id));
+
+    if let Some(m) = &ctx.dm {
+        m.update_downloading(task.track.id);
+    }
+
+    let platform = SourcePlatform::from_track(&task.track);
+    let artwork_handle = platform.spawn_artwork_fetch(&ctx, &task.track);
+
+    let download_result =
+        run_with_cancellation(cancel_rx, platform.download_track(&ctx, &mut task)).await;
+
+    let handle = match download_result {
+        Some(Ok(())) => Some(tokio::spawn(complete::finalize_single_track(
+            ctx,
+            task,
+            artwork_handle,
+            pb.clone(),
+        ))),
+        Some(Err(err)) => {
+            complete::handle_track_failure(&ctx, &task, err, &pb).await;
+            None
+        }
+        None => {
+            tracing::info!("Track download canceled: {}", task.display_name());
+            if let Some(h) = artwork_handle {
+                h.abort();
+            }
+            if task.file_path.exists() {
+                let _ = tokio::fs::remove_file(&task.file_path).await;
+            }
+            None
+        }
+    };
+
+    pb.inc(1);
+    handle
+}
+
 async fn run_parallel_downloads(ctx: &Context, tracks: Vec<DiscoveredMusicTrack>) {
     let mp = MultiProgress::new();
     let total_tracks = tracks.len();
@@ -118,53 +168,21 @@ async fn run_parallel_downloads(ctx: &Context, tracks: Vec<DiscoveredMusicTrack>
     let results: Vec<_> = stream::iter(tracks)
         .map(|track| {
             let ctx = ctx.clone();
-            let pb = total_pb.clone();
-            let output_dir = output_dir.clone();
             let naming_template = naming_template.clone();
+            let output_dir = output_dir.clone();
+            let pb = total_pb.clone();
 
             async move {
-                let mut task = DownloadTask::new(&track, &naming_template, &output_dir);
-                let cancel_rx = ctx
-                    .dm
-                    .as_ref()
-                    .and_then(|m| m.get_cancel_receiver(task.track.id));
-
-                if let Some(m) = &ctx.dm {
-                    m.update_downloading(task.track.id);
-                }
-
-                let platform = SourcePlatform::from_track(&task.track);
-                let artwork_handle = platform.spawn_artwork_fetch(&ctx, &task.track);
-
-                let download_result =
-                    run_with_cancellation(cancel_rx, platform.download_track(&ctx, &mut task))
-                        .await;
-
-                let handle = match download_result {
-                    Some(Ok(())) => Some(tokio::spawn(complete::finalize_single_track(
-                        ctx,
-                        task,
-                        artwork_handle,
-                        pb.clone(),
-                    ))),
-                    Some(Err(err)) => {
-                        complete::handle_track_failure(&ctx, &task, err, &pb).await;
-                        None
-                    }
-                    None => {
-                        tracing::info!("Track download canceled: {}", task.display_name());
-                        if let Some(h) = artwork_handle {
-                            h.abort();
-                        }
-                        if task.file_path.exists() {
-                            let _ = tokio::fs::remove_file(&task.file_path).await;
-                        }
-                        None
-                    }
-                };
-
-                pb.inc(1);
-                handle
+                tokio::spawn(process_parallel_track(
+                    ctx,
+                    track,
+                    naming_template,
+                    output_dir,
+                    pb,
+                ))
+                .await
+                .ok()
+                .flatten()
             }
         })
         .buffer_unordered(max_concurrent)
