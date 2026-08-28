@@ -78,16 +78,16 @@ pub async fn resolve_stream_url(client: &Client, id: i64) -> Result<(String, Str
     let track = client.get_track(&Identifier::Id(id)).await?;
 
     if let Ok(url) = client
-        .resolve_stream_url_from_track(&track, Some(&StreamType::Hls))
-        .await
-    {
-        return Ok((url, StreamType::Hls));
-    }
-    if let Ok(url) = client
         .resolve_stream_url_from_track(&track, Some(&StreamType::Progressive))
         .await
     {
         return Ok((url, StreamType::Progressive));
+    }
+    if let Ok(url) = client
+        .resolve_stream_url_from_track(&track, Some(&StreamType::Hls))
+        .await
+    {
+        return Ok((url, StreamType::Hls));
     }
 
     anyhow::bail!("No playable stream URL found for track {id}")
