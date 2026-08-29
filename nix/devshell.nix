@@ -11,6 +11,7 @@ pkgs.mkShell {
     nodejs
     yarn
     ffmpeg
+    yt-dlp
     clang
     mold
     cargo-watch

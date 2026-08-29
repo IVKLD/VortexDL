@@ -97,7 +97,7 @@ in
       after = [ "network.target" ];
       wantedBy = [ "multi-user.target" ];
       
-      path = [ pkgs.ffmpeg pkgs.android-tools ];
+      path = [ pkgs.ffmpeg pkgs.yt-dlp pkgs.android-tools ];
 
       serviceConfig = {
         Type = "simple";
