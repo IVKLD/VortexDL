@@ -16,9 +16,6 @@
     <div class="info">
         <div class="title-row">
             <strong>{{ data.title }}</strong>
-            @if ((data.permalinkUrl || data.sourceUrl) | platform; as platform) {
-                <app-platform-chip [platform]="platform"/>
-            }
         </div>
 
         @if (data.status === DownloadStatus.Failed) {
