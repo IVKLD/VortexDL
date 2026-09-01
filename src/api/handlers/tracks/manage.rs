@@ -32,15 +32,10 @@ pub async fn remove_track(
     Path(id): Path<i64>,
 ) -> Result<impl IntoResponse, ApiError> {
     let mut storage = state.storage.write().await;
-
-    match storage.remove_track(id).await {
-        Ok(Some(_)) => Ok(()),
-        Ok(None) => Err(ApiError::not_found(format!("Track with ID {id} not found"))
+    match storage.remove_track(id).await? {
+        Some(_) => Ok(StatusCode::OK),
+        None => Err(ApiError::not_found(format!("Track with ID {id} not found"))
             .with_code(ErrorCode::TrackNotFound)),
-        Err(e) => {
-            Err(ApiError::internal(format!("Failed to delete file: {e}"))
-                .with_code(ErrorCode::IoError))
-        }
     }
 }
 
@@ -57,14 +52,6 @@ pub async fn remove_tracks(
     Json(payload): Json<DeleteTracksPayload>,
 ) -> Result<impl IntoResponse, ApiError> {
     let mut storage = state.storage.write().await;
-
-    storage
-        .remove_tracks_batch(payload.ids)
-        .await
-        .map_err(|e| {
-            ApiError::internal(format!("Failed to delete tracks: {e}"))
-                .with_code(ErrorCode::IoError)
-        })?;
-
+    storage.remove_tracks_batch(payload.ids).await?;
     Ok(StatusCode::OK)
 }

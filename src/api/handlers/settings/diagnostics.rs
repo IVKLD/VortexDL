@@ -12,10 +12,7 @@ use soundcloud_rs::ClientBuilder;
 use url::Url;
 use utoipa::ToSchema;
 
-use crate::api::{
-    errors::{ApiError, ErrorCode},
-    state::AppState,
-};
+use crate::api::{errors::ApiError, state::AppState};
 
 #[derive(Deserialize, ToSchema)]
 #[serde(rename_all = "camelCase")]
@@ -36,20 +33,11 @@ pub async fn test_soundcloud(
     State(state): State<AppState>,
     Json(payload): Json<TestSoundCloudRequest>,
 ) -> Result<impl IntoResponse, ApiError> {
-    state
-        .client
-        .resolve_url(&payload.url)
-        .await
-        .map(|_| {
-            (
-                StatusCode::OK,
-                Json("SoundCloud URL is valid and accessible"),
-            )
-        })
-        .map_err(|e| {
-            ApiError::bad_request(format!("SoundCloud verification failed: {e}"))
-                .with_code(ErrorCode::SoundCloudError)
-        })
+    state.client.resolve_url(&payload.url).await?;
+    Ok((
+        StatusCode::OK,
+        Json("SoundCloud URL is valid and accessible"),
+    ))
 }
 #[derive(Serialize, ToSchema)]
 #[serde(rename_all = "camelCase")]

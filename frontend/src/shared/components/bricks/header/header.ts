@@ -21,6 +21,7 @@ import { MusicTracksViewService } from '@app/pages/music-tracks-view/music-track
 import { NotificationService } from '@app/services/notification.service';
 import { DownloadTrackingService } from '@app/services/download-tracking.service';
 import { DownloadDialogComponent } from './download-dialog/download-dialog.component';
+import packageJson from '@package';
 
 @Component({
     selector: 'app-header',
@@ -44,6 +45,9 @@ export class Header {
     private readonly _downloadTracking = inject(DownloadTrackingService);
     protected readonly headerService = inject(HeaderService);
     private readonly _localSyncing = signal(false);
+
+    protected readonly version = packageJson.version;
+
     protected readonly Feature = HeaderFeature;
     protected readonly tracksCount = computed(() => this._musicState.tracks().length);
 

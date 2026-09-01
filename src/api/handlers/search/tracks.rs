@@ -62,20 +62,6 @@ pub async fn search_tracks(
         );
     }
 
-    if let Ok(parsed_url) = Url::parse(trimmed)
-        && yt_audio_downloader::is_youtube_url(parsed_url.as_str())
-    {
-        let downloader = YoutubeAudioDownloader::new();
-        if let Ok(meta) = downloader.fetch_metadata(trimmed).await {
-            let (id, vid, track_item) = youtube_meta_to_item(&meta);
-            state.youtube_cache.write().await.insert(id, vid);
-            return Ok(Json(SearchResponse {
-                tracks: vec![track_item],
-                has_more: false,
-            }));
-        }
-    }
-
     let limit = params.limit.unwrap_or(20) as usize;
     let offset = params.offset.unwrap_or(0) as usize;
     let provider = params.provider.unwrap_or(SearchProviderParam::Soundcloud);
@@ -86,6 +72,11 @@ pub async fn search_tracks(
 
     let yt_fut = async {
         if allow_yt && offset == 0 {
+            if yt_audio_downloader::is_youtube_url(trimmed)
+                && let Ok(meta) = YoutubeAudioDownloader::new().fetch_metadata(trimmed).await
+            {
+                return Some(vec![meta]);
+            }
             let yt_fetch_count = if yt_duration_filter != SearchDurationFilter::Any {
                 40
             } else {

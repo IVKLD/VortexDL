@@ -5,11 +5,8 @@ use axum::{
 };
 
 use crate::{
-    adb::{AdbError, sync_device},
-    api::{
-        errors::{ApiError, ErrorCode},
-        state::AppState,
-    },
+    adb::sync_device,
+    api::{errors::ApiError, state::AppState},
 };
 
 #[utoipa::path(
@@ -41,17 +38,6 @@ pub async fn sync_adb_device(
         }
     };
 
-    sync_device(&device_id, &remote_music_dir, state.storage.clone(), true)
-        .await
-        .map_err(|e| match e.downcast_ref::<AdbError>() {
-            Some(AdbError::AlreadyInProgress) => ApiError::new(
-                StatusCode::CONFLICT,
-                ErrorCode::AlreadyProcessing,
-                "Device is currently syncing",
-            ),
-            _ => ApiError::internal(format!("Failed to sync device {device_id}: {e}"))
-                .with_code(ErrorCode::AdbError),
-        })?;
-
+    sync_device(&device_id, &remote_music_dir, state.storage.clone(), true).await?;
     Ok(StatusCode::OK)
 }

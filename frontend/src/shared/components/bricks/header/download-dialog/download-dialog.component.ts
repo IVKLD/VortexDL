@@ -5,7 +5,7 @@ import {form, FormField, required} from "@angular/forms/signals";
 import {downloadUrl} from "@shared/validators/form.validators";
 import {MatError, MatFormField, MatHint, MatInput, MatLabel} from "@angular/material/input";
 import {MatIcon} from "@angular/material/icon";
-import {MatDialogActions, MatDialogClose, MatDialogContent, MatDialogTitle} from "@angular/material/dialog";
+import {MatDialogActions, MatDialogClose, MatDialogContent} from "@angular/material/dialog";
 import {MatList, MatListItem} from "@angular/material/list";
 import {MatButton, MatIconButton} from "@angular/material/button";
 
@@ -22,7 +22,6 @@ const STORAGE_KEY = 'vortexdl_download_history';
         MatIcon,
         MatHint,
         MatDialogContent,
-        MatDialogTitle,
         MatFormField,
         MatLabel,
         FormField,

@@ -6,16 +6,12 @@ export interface SearchTrackItemRdo extends PlayableTrack {
     genre: string | null;
 }
 
-export interface SearchResponseRdo {
+export interface SearchRdo {
     tracks: SearchTrackItemRdo[];
     hasMore: boolean;
 }
 
-export interface StreamUrlResponseRdo {
-    url: string;
-}
-
-export interface DownloadRequestDto {
+export interface DownloadDto {
     url: string;
 }
 

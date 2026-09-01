@@ -46,14 +46,3 @@ pub struct SearchResponse {
     pub tracks: Vec<SearchTrackItem>,
     pub has_more: bool,
 }
-
-#[derive(Debug, Deserialize)]
-pub struct StreamQuery {
-    pub url: Option<String>,
-}
-
-#[derive(Debug, Serialize, ToSchema)]
-#[serde(rename_all = "camelCase")]
-pub struct StreamUrlResponse {
-    pub url: String,
-}

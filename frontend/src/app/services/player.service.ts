@@ -1,6 +1,4 @@
 import { effect, inject, Injectable, NgZone, signal } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
-import { firstValueFrom } from 'rxjs';
 import { PlayableTrack } from '@shared/models/music-track.model';
 import { MusicTracksViewState } from '@app/pages/music-tracks-view/music-tracks-view.state';
 import { NotificationService } from './notification.service';
@@ -12,7 +10,6 @@ import { MediaSessionManagerService } from './player/media-session-manager.servi
     providedIn: 'root'
 })
 export class PlayerService {
-    private readonly _http = inject(HttpClient);
     private readonly _musicState = inject(MusicTracksViewState);
     private readonly _notification = inject(NotificationService);
     private readonly zone = inject(NgZone);
@@ -156,27 +153,11 @@ export class PlayerService {
             return this.playSource(track, track.streamUrl);
         }
 
-        if (this._musicState.tracks().some(t => t.id === track.id)) {
-            return this.playSource(track, `/api/downloads/${track.id}/stream`);
-        }
-
-        try {
-            const params: Record<string, string> = {};
-            if (track.permalinkUrl) {
-                params['url'] = track.permalinkUrl;
-            }
-            const res = await firstValueFrom(this._http.get<{ url: string }>(`/search/tracks/${track.id}/stream`, { params }));
-            if (this.currentTrack()?.id !== track.id) {
-                return;
-            }
-            track.streamUrl = res.url;
-            this.playSource(track, res.url);
-        } catch (_err: unknown) {
-            this.loadingTrackId.set(null);
-            if (this.currentTrack()?.id === track.id) {
-                this.handlePlaybackError(track, 'Failed to resolve stream URL');
-            }
-        }
+        const streamUrl = track.permalinkUrl
+            ? `/api/stream/${track.id}?url=${encodeURIComponent(track.permalinkUrl)}`
+            : `/api/stream/${track.id}`;
+        track.streamUrl = streamUrl;
+        this.playSource(track, streamUrl);
     }
 
     public togglePlay(): void {

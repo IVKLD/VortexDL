@@ -10,13 +10,14 @@ use handlers::{
     download::{
         download_events, get_download_queue, get_syncing_urls, remove_from_queue, start_download,
     },
-    search::{get_stream_url, search_tracks},
+    search::search_tracks,
     settings::{
         config::{get_settings, update_settings},
         diagnostics::{test_proxy_ws, test_soundcloud},
         sync::{get_snapshot_handler, sync_handler},
     },
-    tracks::{get_tracks, reindex_library, remove_track, remove_tracks, stream_track},
+    stream::stream_audio,
+    tracks::{get_tracks, reindex_library, remove_track, remove_tracks},
 };
 use tokio::net::TcpListener;
 use tower_http::cors::CorsLayer;
@@ -40,13 +41,12 @@ pub mod types;
         handlers::download::queue::remove_from_queue,
         handlers::download::events::download_events,
         handlers::download::queue::get_syncing_urls,
+        handlers::stream::stream_audio,
         handlers::search::tracks::search_tracks,
-        handlers::search::stream::get_stream_url,
         handlers::tracks::list::get_tracks,
         handlers::tracks::library::reindex_library,
         handlers::tracks::manage::remove_track,
         handlers::tracks::manage::remove_tracks,
-        handlers::tracks::stream::stream_track,
         handlers::devices::list::list_adb_devices,
         handlers::devices::ws::devices_ws,
         handlers::devices::list::get_device_storage_info,
@@ -86,7 +86,6 @@ pub mod types;
             handlers::settings::sync::SnapshotResponse,
             handlers::search::types::SearchTrackItem,
             handlers::search::types::SearchResponse,
-            handlers::search::types::StreamUrlResponse,
             handlers::tracks::manage::DeleteTracksPayload,
         )
     ),
@@ -108,6 +107,7 @@ pub async fn run_server(state: AppState, args: &Args) -> anyhow::Result<()> {
 
 pub async fn build_router(state: AppState, embed_frontend: bool) -> Router {
     let api_routes = Router::new()
+        .route("/stream/{id}", get(stream_audio))
         .nest("/download", download_routes())
         .nest("/downloads", downloads_routes())
         .nest("/library", library_routes())
@@ -142,7 +142,6 @@ fn downloads_routes() -> Router<AppState> {
     Router::new()
         .route("/", get(get_tracks).delete(remove_tracks))
         .route("/{id}", delete(remove_track))
-        .route("/{id}/stream", get(stream_track))
 }
 
 fn library_routes() -> Router<AppState> {
@@ -150,9 +149,7 @@ fn library_routes() -> Router<AppState> {
 }
 
 fn search_routes() -> Router<AppState> {
-    Router::new()
-        .route("/tracks", get(search_tracks))
-        .route("/tracks/{id}/stream", get(get_stream_url))
+    Router::new().route("/tracks", get(search_tracks))
 }
 
 fn devices_routes() -> Router<AppState> {

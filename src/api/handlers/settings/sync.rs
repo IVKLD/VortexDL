@@ -6,10 +6,7 @@ use url::Url;
 use utoipa::ToSchema;
 
 use crate::{
-    api::{
-        errors::{ApiError, ErrorCode},
-        state::AppState,
-    },
+    api::{errors::ApiError, state::AppState},
     backup::{
         DataSnapshot, SyncError, SyncService,
         strategies::{LocalStrategy, UrlStrategy, WebDavStrategy},
@@ -122,7 +119,7 @@ pub struct SnapshotResponse {
     )
 )]
 pub async fn get_snapshot_handler() -> Result<impl IntoResponse, ApiError> {
-    let snapshot = DataSnapshot::from_database().map_err(map_sync_error)?;
+    let snapshot = DataSnapshot::from_database()?;
     let response = SnapshotResponse {
         sync_records_count: snapshot.synced_ids.len(),
     };
@@ -141,15 +138,6 @@ pub async fn sync_handler(
     State(_state): State<AppState>,
     Json(payload): Json<SyncRequest>,
 ) -> Result<StatusCode, ApiError> {
-    payload
-        .provider
-        .execute(payload.action)
-        .await
-        .map_err(map_sync_error)?;
-
+    payload.provider.execute(payload.action).await?;
     Ok(StatusCode::OK)
-}
-
-fn map_sync_error(err: SyncError) -> ApiError {
-    ApiError::bad_request(format!("Sync error: {err}")).with_code(ErrorCode::DatabaseError)
 }

@@ -2,7 +2,7 @@
 
     <div class="left">
         <div>
-            <span class="label-text">Vortex</span>
+            <span class="label-text">Vortex v.{{ version }}</span>
             <span>{{ headerService.config()?.title || 'System' }}</span>
         </div>
 
@@ -14,7 +14,6 @@
         </div>
         }
     </div>
-
 
     @if (headerService.hasFeature(Feature.Search) && headerService.searchBind(); as searchBind) {
     <div class="center">
@@ -29,7 +28,6 @@
         </mat-form-field>
     </div>
     }
-
 
     <div class="right">
         @if (headerService.sortBind(); as bind) {

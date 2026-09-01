@@ -3,7 +3,7 @@ use std::io;
 use anyhow::Error as AnyhowError;
 use axum::{
     Json,
-    http::StatusCode,
+    http::{Error as HttpError, StatusCode},
     response::{IntoResponse, Response},
 };
 use serde::{Deserialize, Serialize};
@@ -96,6 +96,80 @@ impl From<io::Error> for ApiError {
         Self::new(
             StatusCode::INTERNAL_SERVER_ERROR,
             ErrorCode::IoError,
+            err.to_string(),
+        )
+    }
+}
+
+impl From<reqwest::Error> for ApiError {
+    fn from(err: reqwest::Error) -> Self {
+        Self::new(
+            StatusCode::BAD_REQUEST,
+            ErrorCode::NetworkError,
+            err.to_string(),
+        )
+    }
+}
+
+impl From<yt_audio_downloader::YoutubeAudioError> for ApiError {
+    fn from(err: yt_audio_downloader::YoutubeAudioError) -> Self {
+        Self::new(
+            StatusCode::BAD_REQUEST,
+            ErrorCode::NetworkError,
+            err.to_string(),
+        )
+    }
+}
+
+impl From<soundcloud_rs::Error> for ApiError {
+    fn from(err: soundcloud_rs::Error) -> Self {
+        Self::new(
+            StatusCode::BAD_REQUEST,
+            ErrorCode::SoundCloudError,
+            err.to_string(),
+        )
+    }
+}
+
+impl From<HttpError> for ApiError {
+    fn from(err: HttpError) -> Self {
+        Self::internal(err.to_string())
+    }
+}
+
+impl From<std::convert::Infallible> for ApiError {
+    fn from(err: std::convert::Infallible) -> Self {
+        match err {}
+    }
+}
+
+impl From<crate::adb::AdbError> for ApiError {
+    fn from(err: crate::adb::AdbError) -> Self {
+        match err {
+            crate::adb::AdbError::AlreadyInProgress => Self::new(
+                StatusCode::CONFLICT,
+                ErrorCode::AlreadyProcessing,
+                "Device is currently syncing",
+            ),
+            crate::adb::AdbError::NotAvailable => Self::new(
+                StatusCode::INTERNAL_SERVER_ERROR,
+                ErrorCode::AdbError,
+                "ADB binary not found in PATH",
+            ),
+            crate::adb::AdbError::Other(e) => Self::new(
+                StatusCode::INTERNAL_SERVER_ERROR,
+                ErrorCode::AdbError,
+                format!("{:#}", e),
+            ),
+        }
+    }
+}
+
+impl From<crate::backup::SyncError> for ApiError {
+    fn from(err: crate::backup::SyncError) -> Self {
+        Self::new(
+            StatusCode::BAD_REQUEST,
+            ErrorCode::DatabaseError,
             err.to_string(),
         )
     }

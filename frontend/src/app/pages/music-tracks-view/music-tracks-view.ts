@@ -89,7 +89,7 @@ export class MusicTracksView {
 
     protected downloadTrack(track: MusicTrack): void {
         const link = document.createElement('a');
-        link.href = `/api/downloads/${track.id}/stream`;
+        link.href = `/api/stream/${track.id}`;
         link.download = `${track.artist} - ${track.title}.${track.format}`;
         link.click();
     }

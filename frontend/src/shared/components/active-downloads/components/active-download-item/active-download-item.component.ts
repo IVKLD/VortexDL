@@ -5,15 +5,12 @@ import {MatProgressBar} from '@angular/material/progress-bar';
 import {NgOptimizedImage} from '@angular/common';
 import {MatIconButton} from "@angular/material/button";
 
-import {PlatformChipComponent} from '@shared/components/platform-chip/platform-chip.component';
-import {PlatformPipe} from '@shared/pipes/platform.pipe';
-
 @Component({
     selector: 'app-active-download-item',
-    imports: [MatIcon, MatProgressBar, NgOptimizedImage, MatIconButton, PlatformChipComponent, PlatformPipe],
+    imports: [MatIcon, MatProgressBar, NgOptimizedImage, MatIconButton],
     templateUrl: './active-download-item.component.html',
     styleUrl: './active-download-item.component.scss',
-    })
+})
 export class ActiveDownloadItemComponent {
     public readonly item = input.required<DownloadItem>();
     protected readonly DownloadStatus = DownloadStatus;

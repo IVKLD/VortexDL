@@ -2,7 +2,7 @@ use axum::{Json, extract::Path};
 
 use crate::{
     adb::{StorageInfo, get_device_storages, list_devices},
-    api::errors::{ApiError, ErrorCode},
+    api::errors::ApiError,
 };
 
 #[utoipa::path(
@@ -13,14 +13,9 @@ use crate::{
     )
 )]
 pub async fn list_adb_devices() -> Result<Json<Vec<String>>, ApiError> {
-    let devices = list_devices().await.map_err(|e| {
-        ApiError::internal(format!("Failed to list ADB devices: {e}"))
-            .with_code(ErrorCode::AdbError)
-    })?;
-
+    let devices = list_devices().await?;
     let mut list: Vec<String> = devices.into_iter().collect();
     list.sort();
-
     Ok(Json(list))
 }
 
@@ -37,12 +32,6 @@ pub async fn list_adb_devices() -> Result<Json<Vec<String>>, ApiError> {
 pub async fn get_device_storage_info(
     Path(device_id): Path<String>,
 ) -> Result<Json<Vec<StorageInfo>>, ApiError> {
-    let storages = get_device_storages(&device_id).await.map_err(|e| {
-        ApiError::internal(format!(
-            "Failed to list storage partitions for device {device_id}: {e}"
-        ))
-        .with_code(ErrorCode::AdbError)
-    })?;
-
+    let storages = get_device_storages(&device_id).await?;
     Ok(Json(storages))
 }

@@ -28,9 +28,7 @@ pub async fn discover_youtube_tracks(url: &Url) -> Result<Vec<DiscoveredMusicTra
     let url_str = url.as_str();
 
     if let Some(playlist_id) = extract_playlist_id(url_str) {
-        let downloader = YoutubeAudioDownloader::new();
-        let metadata_list = downloader
-            .fetch_playlist(&playlist_id)
+        let metadata_list = yt_audio_downloader::fetch_playlist(&playlist_id)
             .await
             .map_err(|e| anyhow!("Failed to fetch YouTube playlist: {e}"))?;
 
@@ -39,8 +37,7 @@ pub async fn discover_youtube_tracks(url: &Url) -> Result<Vec<DiscoveredMusicTra
             .map(youtube_meta_to_discovered)
             .collect())
     } else {
-        let downloader = YoutubeAudioDownloader::new();
-        let meta = downloader
+        let meta = YoutubeAudioDownloader::new()
             .fetch_metadata(url_str)
             .await
             .map_err(|e| anyhow!("Failed to fetch YouTube track metadata: {e}"))?;
