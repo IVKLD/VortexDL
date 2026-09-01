@@ -8,7 +8,6 @@ cargo-timing*.html
 plan-dist-manifest.json
 dist-manifest.json
 
-
 # Frontend & Node
 node_modules/
 **/node_modules/
@@ -25,11 +24,19 @@ yarn-error.log*
 *.redb
 vortex.redb
 downloads/
+music/
+audio_output/
+*.mp3
+*.flac
+*.m4a
+*.webm
+*.opus
+*.wav
 
 # Environment & Config
 .env
-.env.*.local
-.env.local
+.env.*
+cookies.txt
 
 # IDEs, Editors & OS
 .idea/

@@ -1,62 +1,85 @@
-# Voltexdl
+<p align="center">
+  <h2 align="center">VortexDL — Web Interface</h2>
+</p>
 
-This project was generated using [Angular CLI](https://github.com/angular/angular-cli) version 21.2.7.
+<p align="center">
+  Angular Single Page Application for library management, multi-platform search, and audio streaming.
+  <br>
+  <img src="https://img.shields.io/badge/Angular-v22-DD0031?style=flat-square&logo=angular&logoColor=white" alt="Angular">
+  <img src="https://img.shields.io/badge/TypeScript-v6-3178C6?style=flat-square&logo=typescript&logoColor=white" alt="TypeScript">
+  <img src="https://img.shields.io/badge/Vitest-Unit_Testing-6E9F18?style=flat-square&logo=vitest" alt="Vitest">
+</p>
 
-## Development server
+---
 
-To start a local development server, run:
+## Overview
 
-```bash
-ng serve
+The VortexDL frontend provides a web interface for the VortexDL core server. It features search across SoundCloud and YouTube, an interactive music player with Media Session integration, ADB device synchronization management, and library visualization.
+
+## Features
+
+- **State Management**: Reactive state management utilizing Angular Signals and RxAngular.
+- **Virtual Scrolling**: Rendering of large music collections via `@angular/cdk/scrolling`.
+- **Multi-Platform Discovery**: Search interface supporting both SoundCloud and YouTube tracks with live audio previews.
+- **Web Audio Player**: Global persistent audio player with Media Session API integration (lock screen metadata and controls), Fisher-Yates shuffle, and logarithmic volume.
+- **Client-Side Fuzzy Search**: Fast track search and filtering powered by `Fuse.js`.
+- **ADB Device Management**: Interface for monitoring connected Android devices, setting target music directories, and triggering synchronization.
+- **Analytics Dashboard**: Overview of library statistics and format distributions.
+
+---
+
+## Directory Structure
+
+```text
+frontend/src/
+├── app/
+│   ├── pages/
+│   │   ├── dashboard/                # Statistics & activity breakdown charts
+│   │   ├── music-tracks-view/        # Library management with virtual scroll
+│   │   ├── search-view/              # Multi-provider music discovery (YouTube / SoundCloud)
+│   │   │   └── components/search-toolbar/  # Filter tabs & search input
+│   │   └── settings-view/            # Network, ADB, backup, and storage settings
+│   ├── services/
+│   │   ├── player.service.ts         # Global audio streaming & player state
+│   │   ├── tracks.service.ts         # Local tracks CRUD operations
+│   │   └── adb.service.ts            # Device tracking & synchronization API
+│   └── app.component.ts              # Root navigation & persistent player bar
+└── shared/                           # Reusable UI components, dialogs, and models
 ```
 
-Once the server is running, open your browser and navigate to `http://localhost:4200/`. The application will
-automatically reload whenever you modify any of the source files.
+---
 
-## Code scaffolding
+## Development & Build Commands
 
-Angular CLI includes powerful code scaffolding tools. To generate a new component, run:
-
-```bash
-ng generate component component-name
-```
-
-For a complete list of available schematics (such as `components`, `directives`, or `pipes`), run:
+### Start Development Server
 
 ```bash
-ng generate --help
+yarn start
 ```
+Starts local dev server at `http://localhost:4200/` with live reload.
 
-## Building
-
-To build the project run:
+### Build Production Bundle
 
 ```bash
-ng build
+yarn build
 ```
+Compiles optimized distribution bundle into `dist/voltexdl`.
 
-This will compile your project and store the build artifacts in the `dist/` directory. By default, the production build
-optimizes your application for performance and speed.
-
-## Running unit tests
-
-To execute unit tests with the [Vitest](https://vitest.dev/) test runner, use the following command:
+### Run Unit Tests
 
 ```bash
-ng test
+yarn test
 ```
+Executes unit tests using [Vitest](https://vitest.dev/).
 
-## Running end-to-end tests
-
-For end-to-end (e2e) testing, run:
+### Lint Codebase
 
 ```bash
-ng e2e
+yarn lint
 ```
 
-Angular CLI does not come with an end-to-end testing framework by default. You can choose one that suits your needs.
+---
 
-## Additional Resources
+## License
 
-For more information on using the Angular CLI, including detailed command references, visit
-the [Angular CLI Overview and Command Reference](https://angular.dev/tools/cli) page.
+GPL-3.0-only License.

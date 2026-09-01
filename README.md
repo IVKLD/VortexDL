@@ -5,16 +5,15 @@
 <h3 align="center">VortexDL</h3>
 
 <p align="center">
-  Multi-threaded SoundCloud music downloader with a sleek web panel.
+  Multi-threaded music downloader & synchronization station for SoundCloud and YouTube with a sleek Angular web panel.
   <br>
   <a href="https://github.com/IVKLD/VortexDL/releases">
     <img src="https://img.shields.io/github/v/release/IVKLD/VortexDL?style=flat-square" alt="Release">
   </a>
   <img src="https://img.shields.io/badge/License-GPLv3-blue.svg?style=flat-square" alt="License">
-  <img src="https://img.shields.io/badge/Rust-stable-orange?style=flat-square&logo=rust" alt="Rust">
-  <img src="https://img.shields.io/badge/Angular-v21-DD0031?style=flat-square&logo=angular&logoColor=white" alt="Angular">
+  <img src="https://img.shields.io/badge/Rust-2024_Edition-orange?style=flat-square&logo=rust" alt="Rust">
+  <img src="https://img.shields.io/badge/Angular-v22-DD0031?style=flat-square&logo=angular&logoColor=white" alt="Angular">
 </p>
-
 
 ## Motivation
 Streaming services are a piece of shit with subscriptions and censorship, and modern phones without a 3.5mm jack are a technological failure. This project was written to download music in one click and listen to it like a human being on a proper player (e.g., **Cayin N3 Ultra**).
@@ -23,37 +22,42 @@ Read the full thoughts on this — [at the bottom of the page](#manifesto).
 
 ## How it works
 
-*   **Rust Backend:** Handles all the main work. It uses the `soundcloud-rs` library to access the API and downloads music in multiple threads so you don't have to wait forever.
-*   **Progress Display:** You can see the download progress everywhere: both in the console (CLI) and in the web panel. You'll always know exactly how much is left.
-*   **Web Panel:** Angular-based web interface for those who don't want to mess with the console. Just paste the link and manage your downloads visually.
-*   **Single Binary:** Everything is packed into one file, so there's no need to fuck around with installing dozens of libraries and dependencies.
+*   **High-Performance Rust Backend:** Uses native asynchronous clients (`soundcloud-rs` and `yt-audio-downloader`) for unthrottled concurrent multi-threaded track downloading, stream resolution, and automatic ID3 metadata tagging.
+*   **Dual Platform Discovery:** Search, stream previews, and download directly from both **SoundCloud** and **YouTube** (including playlists and direct URLs).
+*   **Real-time Progress:** Live progress tracking across CLI terminal bars and reactive WebSocket / HTTP server-sent events in the web UI.
+*   **Angular Web Panel:** Sleek, modern web panel with virtual scrolling, fuzzy search, statistics dashboard, and embedded web audio player.
+*   **Automatic ADB Device Synchronization:** Automatically detects USB-connected Android devices, computes library differences, synchronizes audio files into organized artist directories, and cleans orphaned folders.
+*   **Single Self-Contained Binary:** Complete web application and backend bundled into a single standalone executable.
 
 ## Features
 
-*   **Multi-threaded Concurrent Downloading:** Instantly downloads tracks from SoundCloud using multiple threads (configurable limits).
+*   **Multi-Platform High-Speed Downloading:**
+    *   **SoundCloud**: Concurrent progressive MP3 and HLS audio stream fetching.
+    *   **YouTube**: Unthrottled parallel chunked byte-range downloads bypassing YouTube CDN rate limits, with automatic Opus/AAC to MP3/FLAC/WAV conversion.
 *   **ADB Synchronization for Android Devices:**
     *   Tracks connected devices via USB/ADB in real time.
     *   Computes library diffs: pushes newly downloaded tracks and deletes files on the device that were removed from the local library.
     *   Structures target directories by artist: `[Music_Folder]/[Artist]/[Track_Name].mp3`.
     *   Cleans up empty artist folders on the remote device when no tracks are left.
     *   Sync locking (`SyncGuard`) prevents concurrent synchronization runs on the same device.
-*   **Background Watchdog & Auto-Indexing:** Monitors the downloads folder. Any manual changes (adding/deleting files) trigger an immediate library rescan, memory/DB update, and ADB synchronization.
-*   **Proxy Resilience & Fallbacks:** Bypasses regional blocks (SoundCloud geoblocks) by configuring primary and fallback proxies (`fallback_proxies`).
+*   **Background Watchdog & Auto-Indexing:** Monitors the downloads folder in real time. Manual additions or deletions instantly update the in-memory cache, database, and trigger automatic ADB sync.
+*   **Proxy Resilience & Fallbacks:** Bypasses regional geoblocks with primary and fallback racing proxy pools.
 *   **Feature-rich Angular Web Panel:**
-    *   **Dashboard:** Displays detailed statistics (total tracks, total size, active downloads), a 7-day activity graph, and a format breakdown chart (MP3, FLAC, WAV).
-    *   **SoundCloud Search:** Search tracks, preview audio streaming, and download them with a single click.
+    *   **Dashboard:** Displays detailed statistics (total tracks, library size, active download queue), 7-day activity graphs, and format breakdown charts.
+    *   **Multi-Provider Search:** Unified search toolbar with inverted curved tabs for fast toggling between YouTube and SoundCloud.
     *   **Library Management:**
-        *   High-performance virtual scrolling (`Virtual Scrolling`) for smooth rendering of thousands of tracks.
+        *   High-performance virtual scrolling (`@angular/cdk/scrolling`) for silky-smooth browsing of thousands of tracks.
         *   Local fuzzy search (`Fuse.js`) matching titles and artists.
-        *   Sorting options by name or date added.
-        *   Batch selection and bulk deletion of tracks.
-        *   Direct HTTP downloads from the server to your browser.
+        *   Sorting by title, artist, or date added.
+        *   Batch selection and bulk deletion.
+        *   Direct HTTP downloads from server to browser.
 *   **Built-in Web Audio Player:**
-    *   Listen to downloaded tracks or search previews.
-    *   System integration via the Media Session API (shows media controls, track title, artist, and artwork in notifications and lock screen).
-    *   Global hotkey: spacebar toggles playback (ignores when typing in input fields).
-    *   Fisher-Yates shuffle mode and logarithmic volume control, both persisting in local storage.
-*   **Embedded redb Database:** Light-weight key-value store database written in Rust. Stores settings, sync states, and cached metadata without external dependencies.
+    *   Listen to downloaded tracks or live search previews.
+    *   System integration via Media Session API (lock screen controls, title, artist, artwork).
+    *   Global keyboard shortcuts (spacebar toggle).
+    *   Fisher-Yates shuffle mode and logarithmic volume persistence.
+*   **Embedded redb Database:** Ultra-fast, zero-dependency key-value store for configuration, sync state, and cached metadata.
+*   **Backup & Cloud Sync:** Export and import library snapshots across Local Storage, URL endpoints, and WebDAV servers.
 
 ## Quick Start
 
@@ -65,12 +69,11 @@ curl -L https://github.com/IVKLD/VortexDL/releases/latest/download/vortex-dl -o 
 **2. Manually:**
 1. Go to the [Releases](https://github.com/IVKLD/VortexDL/releases) section.
 2. Download the `vortex-dl` binary.
-3. Give the file execution permissions: `chmod +x vortex-dl`.
-4. (Optional) Move the file to a directory in your `$PATH` (e.g., `/usr/local/bin`) to run it from anywhere.
+3. Make it executable: `chmod +x vortex-dl`.
+4. (Optional) Move to your `$PATH` (e.g., `/usr/local/bin`).
 
 ---
-*   Currently, only **Linux** is officially supported.
-*   Regarding **macOS** and **Windows**: I'm not a programmer and I have no clue how things work for Mac or Windows users. It should work in theory. If you really need support, open an Issue—I'll try to fix it or wait for contributors.
+*   Currently, **Linux** is officially supported.
 
 ### NixOS & Nix Flakes Setup
 
@@ -92,8 +95,6 @@ nix profile install github:IVKLD/VortexDL
 ```
 
 #### 4. NixOS System Configuration Example (`flake.nix`)
-
-Add `vortexdl` to your system `flake.nix` inputs and enable the systemd service:
 
 ```nix
 {
@@ -121,26 +122,20 @@ Add `vortexdl` to your system `flake.nix` inputs and enable the systemd service:
 }
 ```
 
-## Troubleshooting
-
-### "No available download options"
-If you see this error:
-1.  **99% of the time:** You have a shitty proxy or VPN. SoundCloud simply blocks downloads for your region. It's better to use decent residential IPs.
-2.  **The track really can't be downloaded:** This happens sometimes on SC's side, but it's rare. Usually, the issue is point #1.
-
 ## Usage
 
-**Download via link:**
+**Download via URL (SoundCloud or YouTube):**
 ```bash
 vortex-dl https://soundcloud.com/artist/track
+vortex-dl https://www.youtube.com/watch?v=dQw4w9WgXcQ
 ```
 
-**Run Web Interface:**
+**Launch Web Interface:**
 ```bash
 vortex-dl --serve
 ```
 
-**Specify output directory:**
+**Specify Output Directory:**
 ```bash
 vortex-dl [URL] --output /path/to/music
 ```
@@ -149,12 +144,10 @@ vortex-dl [URL] --output /path/to/music
 
 ### Requirements
 
-For development and building, the following dependencies are required:
-
-*   **Rust** (stable toolchain)
+*   **Rust** (2024 edition, stable)
 *   **Node.js** (18+) and **Yarn**
 *   **[Just](https://github.com/casey/just)** (task runner)
-*   **FFmpeg** (for audio processing)
+*   **FFmpeg** (for audio transcoding)
 
 ### Getting Started
 
@@ -163,47 +156,26 @@ For development and building, the following dependencies are required:
    git clone https://github.com/IVKLD/VortexDL.git
    cd VortexDL
    ```
-2. Install all dependencies for both backend and frontend:
+2. Install dependencies:
    ```bash
    just install
    ```
-3. Start the components for development:
+3. Run development servers:
    ```bash
-   # Terminal 1: Backend (runs with hot-reload watch mode)
+   # Terminal 1: Backend (with auto-reload watch mode)
    just backend
 
    # Terminal 2: Frontend
    just frontend
    ```
-   *The Web Panel (frontend) will be available at http://localhost:4200. The backend REST API is available at http://localhost:3200/api by default.*
+   *Web Panel: `http://localhost:4200` | REST API: `http://localhost:3200/api`*
 
+### Building
 
-For more details on project structure and technical implementation, see [Development.md](Development.md).
-
-## Building
-
-To create a fully optimized production binary with the embedded frontend:
+To build the self-contained production binary with the embedded Angular frontend:
 ```bash
 just dist
 ```
-
-To build only the backend (without the frontend embedded):
-```bash
-just build
-```
-
-## Futures & Roadmap (What can be implemented)
-
-*   [ ] **YouTube Support:** Downloading audio and video from YouTube tracks, playlists, or channels.
-*   [ ] **Native Android Client:** A dedicated lightweight music player app that fetches music from your VortexDL server automatically.
-*   [ ] **Global Web App:** A hosted version of the app to download tracks directly in the browser without installing a local server.
-*   [ ] **User Account System:** User authentication, personal settings, and custom sync profiles.
-*   [ ] **Metadata (ID3 Tag) Editor:** Editing track titles, artists, genre, and artwork directly from the track detail modal.
-*   [ ] **Audio Transcoding:** Automatically convert downloaded files to lighter formats (like Opus or AAC) to save storage space on portable devices.
-*   [ ] **Wi-Fi Synchronization:** Sync tracks wirelessly using ADB-over-Wi-Fi or a custom local networking protocol.
-*   [ ] **Web Panel Customization:** Custom skins, layout options, and light/dark mode switcher.
-
-For more details on future development plans, refer to [ROADMAP.md](ROADMAP.md).
 
 ## Manifesto
 
@@ -221,8 +193,8 @@ Sure, you can use those USB Type-C to 3.5mm jack adapters, but fuck that—my se
 
 I'm done tolerating it. I decided to show some balls—and here they are. Small, maybe, but at least they're real.
 
-In the end, I bought myself an awesome **Cayin N3 Ultra** player and wrote this crap to download everything from SoundCloud in one click, transfer it via cable, and listen to music like a human being, not a victim of marketing.
+In the end, I bought myself an awesome **Cayin N3 Ultra** player and wrote this crap to download everything from SoundCloud and YouTube in one click, automatically sync it to the device over ADB when plugged in, and listen to music like a human being, not a marketing victim.
 
 ## License
 
-This project is distributed under the GNU GPL v3 license.
+GNU General Public License v3.0 (`GPL-3.0-only`).
