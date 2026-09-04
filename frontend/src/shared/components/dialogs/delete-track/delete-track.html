@@ -1,0 +1,13 @@
+<mat-dialog-content>
+    <div>Delete <strong>{{ track.title }}</strong>?</div>
+</mat-dialog-content>
+
+<mat-dialog-actions align="end">
+    <button mat-dialog-close mat-button>
+        <mat-icon>cancel</mat-icon>
+    </button>
+
+    <button [mat-dialog-close]="true" mat-flat-button>
+        <mat-icon>Delete</mat-icon>
+    </button>
+</mat-dialog-actions>

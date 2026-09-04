@@ -1,0 +1,25 @@
+@let currentTrack = track();
+
+<button (click)="shuffleChange.emit()" [class.active]="shuffle()" mat-icon-button
+        matTooltip="Shuffle" matTooltipPosition="above">
+    <mat-icon>shuffle</mat-icon>
+</button>
+
+<button (click)="downloadTrack.emit(currentTrack)" mat-icon-button matTooltip="Download" matTooltipPosition="above">
+    <mat-icon>download</mat-icon>
+</button>
+
+@if (currentTrack.sourceUrl || currentTrack.permalinkUrl; as link) {
+    <button (click)="openSource.emit(link)" mat-icon-button matTooltip="Original source"
+            matTooltipPosition="above">
+        <mat-icon>open_in_new</mat-icon>
+    </button>
+}
+
+@if (isLocal()) {
+    <button (click)="deleteTrack.emit(currentTrack)" class="delete-btn" mat-icon-button
+            matTooltip="Delete from library"
+            matTooltipPosition="above">
+        <mat-icon>delete</mat-icon>
+    </button>
+}

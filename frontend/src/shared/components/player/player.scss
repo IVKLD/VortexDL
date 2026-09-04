@@ -9,6 +9,7 @@
   padding: 20px 16px;
   transition: padding-bottom 0.25s cubic-bezier(0.4, 0, 0.2, 1);
 
+  app-track-actions,
   app-player-volume {
     max-height: 0;
     opacity: 0;
@@ -20,6 +21,13 @@
   }
 
   &:hover {
+    app-track-actions {
+      max-height: 40px;
+      opacity: 1;
+      pointer-events: auto;
+      margin-top: 4px;
+    }
+
     app-player-volume {
       max-height: 48px;
       opacity: 1;

@@ -1,11 +1,11 @@
 import {Component, inject, OnInit, signal} from '@angular/core';
-import {MusicTracksViewService} from "@app/pages/music-tracks-view/music-tracks-view.service";
+import {MusicTracksService} from "@app/pages/music-tracks-view/music-tracks.service";
 import {DialogRef} from "@angular/cdk/dialog";
 import {form, FormField, required} from "@angular/forms/signals";
 import {downloadUrl} from "@shared/validators/form.validators";
 import {MatError, MatFormField, MatHint, MatInput, MatLabel} from "@angular/material/input";
 import {MatIcon} from "@angular/material/icon";
-import {MatDialogActions, MatDialogClose, MatDialogContent} from "@angular/material/dialog";
+import {MatDialogActions, MatDialogClose, MatDialogContent, MatDialogTitle} from "@angular/material/dialog";
 import {MatList, MatListItem} from "@angular/material/list";
 import {MatButton, MatIconButton} from "@angular/material/button";
 
@@ -32,6 +32,7 @@ const STORAGE_KEY = 'vortexdl_download_history';
         MatDialogActions,
         MatButton,
         MatDialogClose,
+        MatDialogTitle,
         PlatformChipComponent,
         PlatformPipe,
     ],
@@ -39,7 +40,7 @@ const STORAGE_KEY = 'vortexdl_download_history';
     styleUrl: './download-dialog.component.scss',
 })
 export class DownloadDialogComponent implements OnInit {
-    private readonly _trackService = inject(MusicTracksViewService);
+    private readonly _trackService = inject(MusicTracksService);
     private readonly _dialogRef = inject(DialogRef);
     private readonly _urlValue = signal('');
 

@@ -11,19 +11,22 @@
                 Profile URL
             </mat-label>
             <input [formField]="form().profileUrl" matInput
-                placeholder="https://soundcloud.com/your-username" />
+                   placeholder="https://soundcloud.com/your-username"/>
             <mat-hint>Used for quick discovery and "Sync All" features</mat-hint>
 
             @if (form().profileUrl().invalid()) {
-            <mat-error>{{ form().profileUrl().errors()[0]?.message }}</mat-error>
+                <mat-error>{{ form().profileUrl().errors()[0]?.message }}</mat-error>
             }
         </mat-form-field>
 
-        <button (click)="testSoundcloud.emit()"
-            [disabled]="!form().profileUrl().value() || hasFormatError(form().profileUrl) || isTesting()" mat-flat-button
-            type="button">
-            <mat-icon [class.rotating]="isTesting()">{{
-                isTesting() ? 'sync' : 'check_circle'
+        <button (click)="state.testUrl(form().profileUrl)"
+                [disabled]="!state.canTest(form().profileUrl)"
+                mat-flat-button
+                type="button"
+                matTooltip="Testing url"
+        >
+            <mat-icon [class.rotating]="state.isTesting()">{{
+                    state.isTesting() ? 'sync' : 'check_circle'
                 }}
             </mat-icon>
             Test
@@ -41,5 +44,5 @@
     </div>
 
     <app-settings-switch-card title="Background Sync" description="Enable background synchronization on startup"
-        [control]="form().autoSync" />
+                              [control]="form().autoSync"/>
 </div>

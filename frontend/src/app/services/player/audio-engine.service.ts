@@ -57,6 +57,14 @@ export class AudioEngineService {
         this._volume.set(value);
     }
 
+    public toggleMute(): void {
+        if (this._volume() > 0) {
+            this._volume.set(0);
+        } else {
+            this._volume.set(0.2);
+        }
+    }
+
     public seek(time: number): void {
         this._audio.currentTime = time;
     }

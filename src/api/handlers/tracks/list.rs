@@ -43,7 +43,7 @@ pub async fn get_tracks(
     tracks.sort_by(|a, b| {
         let cmp = match sort {
             "name" => a.title.to_lowercase().cmp(&b.title.to_lowercase()),
-            _ => b.created_at.cmp(&a.created_at),
+            _ => a.created_at.cmp(&b.created_at),
         };
 
         let cmp = cmp.then_with(|| a.id.cmp(&b.id));

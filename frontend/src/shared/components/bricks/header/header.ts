@@ -1,33 +1,33 @@
-import { Component, computed, inject, signal } from '@angular/core';
-import { ActivatedRoute, NavigationEnd, Router } from '@angular/router';
-import { HeaderFeature } from './header.types';
-import { filter, finalize } from 'rxjs';
-import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { MusicTracksViewState } from '@app/pages/music-tracks-view/music-tracks-view.state';
-import { HeaderService } from './header.service';
+import {Component, computed, inject, signal} from '@angular/core';
+import {ActivatedRoute, NavigationEnd, Router} from '@angular/router';
+import {HeaderFeature} from './header.types';
+import {filter, finalize} from 'rxjs';
+import {takeUntilDestroyed} from '@angular/core/rxjs-interop';
+import {MusicTracksViewState} from '@app/pages/music-tracks-view/music-tracks-view.state';
+import {HeaderService} from './header.service';
 
-import { MatFormField, MatPrefix } from '@angular/material/form-field';
-import { MatInput } from '@angular/material/input';
-import { MatIcon } from '@angular/material/icon';
-import { FormField } from '@angular/forms/signals';
-import { MatButton } from '@angular/material/button';
-import { MatMenu, MatMenuItem, MatMenuTrigger } from '@angular/material/menu';
-import { MatTooltip } from '@angular/material/tooltip';
-import { MatDivider } from '@angular/material/divider';
+import {MatFormField, MatPrefix} from '@angular/material/form-field';
+import {MatInput} from '@angular/material/input';
+import {MatIcon} from '@angular/material/icon';
+import {FormField} from '@angular/forms/signals';
+import {MatButton} from '@angular/material/button';
+import {MatMenu, MatMenuItem, MatMenuTrigger} from '@angular/material/menu';
+import {MatTooltip} from '@angular/material/tooltip';
+import {ButtonGroup} from '@shared/components/button-group/button-group';
 
-import { MatDialog } from '@angular/material/dialog';
-import { SettingsService } from '@app/pages/settings-view/settings.service';
-import { MusicTracksViewService } from '@app/pages/music-tracks-view/music-tracks-view.service';
-import { NotificationService } from '@app/services/notification.service';
-import { DownloadTrackingService } from '@app/services/download-tracking.service';
-import { DownloadDialogComponent } from './download-dialog/download-dialog.component';
+import {MatDialog} from '@angular/material/dialog';
+import {SettingsService} from '@app/pages/settings-view/settings.service';
+import {MusicTracksService} from '@app/pages/music-tracks-view/music-tracks.service';
+import {NotificationService} from '@app/services/notification.service';
+import {DownloadTrackingService} from '@app/services/download-tracking.service';
+import {DownloadDialogComponent} from './download-dialog/download-dialog.component';
 import packageJson from '@package';
 
 @Component({
     selector: 'app-header',
     imports: [
         MatFormField, MatInput, MatPrefix, MatIcon, FormField,
-        MatButton, MatMenu, MatMenuItem, MatMenuTrigger, MatDivider, MatTooltip
+        MatButton, MatMenu, MatMenuItem, MatMenuTrigger, MatTooltip, ButtonGroup
     ],
     templateUrl: './header.html',
     styleUrl: './header.scss',
@@ -40,7 +40,7 @@ export class Header {
 
     private readonly _dialog = inject(MatDialog);
     private readonly _settingsService = inject(SettingsService);
-    private readonly _trackService = inject(MusicTracksViewService);
+    private readonly _trackService = inject(MusicTracksService);
     private readonly _notification = inject(NotificationService);
     private readonly _downloadTracking = inject(DownloadTrackingService);
     protected readonly headerService = inject(HeaderService);

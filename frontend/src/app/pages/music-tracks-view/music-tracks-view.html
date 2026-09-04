@@ -58,11 +58,11 @@
             <mat-icon>{{ isSelected ? 'check_box' : 'check_box_outline_blank' }}</mat-icon>
             <span>{{ isSelected ? 'Deselect' : 'Select' }}</span>
         </button>
-        <button cdkMenuItem (click)="downloadTrack(trackData)">
+        <button cdkMenuItem (click)="actions.download(trackData)">
             <mat-icon>download</mat-icon>
             <span>Download</span>
         </button>
-        <button cdkMenuItem class="delete" (click)="deleteTrack(trackData)">
+        <button cdkMenuItem class="delete" (click)="actions.delete(trackData.id)">
             <mat-icon>delete</mat-icon>
             <span>Delete</span>
         </button>

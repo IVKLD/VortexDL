@@ -1,26 +1,26 @@
-import { Component, computed, inject } from '@angular/core';
-import { MatProgressSpinner } from '@angular/material/progress-spinner';
-import { NotificationService } from '@app/services/notification.service';
-import { DownloadTrackingService } from '@app/services/download-tracking.service';
-import { SearchViewService } from './search-view.service';
-import { SearchTrackItemRdo } from './models/search-view.model';
-import { PlayerService } from '@app/services/player.service';
-import { MusicTracksViewState } from '@app/pages/music-tracks-view/music-tracks-view.state';
-import { MusicTracksViewService } from '@app/pages/music-tracks-view/music-tracks-view.service';
-import { SearchSkeletonComponent } from './components/search-skeleton/search-skeleton';
-import { SearchHistoryPanelComponent } from './components/search-history-panel/search-history-panel';
-import { SearchResultItemComponent } from './components/search-result-item/search-result-item';
-import { EmptyPaneComponent } from '@shared/components/empty-pane/empty-pane';
-import { ListViewShellComponent } from '@shared/components/list-view-shell/list-view-shell';
+import {Component, computed, inject} from '@angular/core';
+import {MatProgressSpinner} from '@angular/material/progress-spinner';
+import {NotificationService} from '@app/services/notification.service';
+import {DownloadTrackingService} from '@app/services/download-tracking.service';
+import {SearchViewService} from './search-view.service';
+import {SearchTrackItemRdo} from './models/search-view.model';
+import {PlayerService} from '@app/services/player.service';
+import {MusicTracksViewState} from '@app/pages/music-tracks-view/music-tracks-view.state';
+import {MusicTracksService} from '@app/pages/music-tracks-view/music-tracks.service';
+import {SearchSkeletonComponent} from './components/search-skeleton/search-skeleton';
+import {SearchHistoryPanelComponent} from './components/search-history-panel/search-history-panel';
+import {SearchResultItemComponent} from './components/search-result-item/search-result-item';
+import {EmptyPaneComponent} from '@shared/components/empty-pane/empty-pane';
+import {ListViewShellComponent} from '@shared/components/list-view-shell/list-view-shell';
 import {
     FixedSizeVirtualScrollStrategy,
     RxVirtualFor,
     RxVirtualScrollViewportComponent,
     RxVirtualScrollWindowDirective
 } from '@rx-angular/template/virtual-scrolling';
-import { SearchToolbarComponent } from './components/search-toolbar/search-toolbar';
-import { SearchViewState } from './search-view.state';
-import { SearchHistoryService } from './search-history.service';
+import {SearchToolbarComponent} from './components/search-toolbar/search-toolbar';
+import {SearchViewState} from './search-view.state';
+import {SearchHistoryService} from './search-history.service';
 
 @Component({
     selector: 'app-search-view',
@@ -44,7 +44,7 @@ export class SearchView {
     private readonly _api = inject(SearchViewService);
     private readonly _notification = inject(NotificationService);
     private readonly _tracksState = inject(MusicTracksViewState);
-    private readonly _tracksService = inject(MusicTracksViewService);
+    private readonly _tracksService = inject(MusicTracksService);
     protected readonly tracking = inject(DownloadTrackingService);
     protected readonly player = inject(PlayerService);
     protected readonly history = inject(SearchHistoryService);

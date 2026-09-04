@@ -1,0 +1,8 @@
+@for (tmpl of templates(); track $index; let isFirst = $first; let isLast = $last) {
+    @if (!isFirst) {
+        <mat-divider vertical />
+    }
+    <div class="slot" [class.first]="isFirst" [class.last]="isLast">
+        <ng-container [ngTemplateOutlet]="tmpl" />
+    </div>
+}

@@ -65,6 +65,15 @@ pub struct SystemSettings {
     pub max_retries: u32,
 }
 
+#[derive(Serialize, Deserialize, Debug, Clone, Default, ToSchema)]
+#[serde(rename_all = "camelCase")]
+pub struct WebDavSettings {
+    pub base_url: String,
+    pub remote_dir: String,
+    pub username: String,
+    pub password: String,
+}
+
 #[derive(Serialize, Deserialize, Debug, Clone, ToSchema)]
 #[serde(rename_all = "camelCase")]
 pub struct UserSettings {
@@ -75,6 +84,8 @@ pub struct UserSettings {
     #[serde(default)]
     pub network: NetworkSettings,
     pub system: SystemSettings,
+    #[serde(default)]
+    pub webdav: WebDavSettings,
 }
 
 impl Default for UserSettings {
@@ -96,6 +107,12 @@ impl Default for UserSettings {
             system: SystemSettings {
                 limit_per_page: 100,
                 max_retries: 5,
+            },
+            webdav: WebDavSettings {
+                base_url: String::new(),
+                remote_dir: "vortexdl".to_string(),
+                username: String::new(),
+                password: String::new(),
             },
         }
     }

@@ -1,6 +1,5 @@
 import { effect, inject, Injectable, NgZone, signal } from '@angular/core';
 import { PlayableTrack } from '@shared/models/music-track.model';
-import { MusicTracksViewState } from '@app/pages/music-tracks-view/music-tracks-view.state';
 import { NotificationService } from './notification.service';
 import { AudioEngineService } from './player/audio-engine.service';
 import { PlayerQueueService } from './player/player-queue.service';
@@ -10,13 +9,13 @@ import { MediaSessionManagerService } from './player/media-session-manager.servi
     providedIn: 'root'
 })
 export class PlayerService {
-    private readonly _musicState = inject(MusicTracksViewState);
     private readonly _notification = inject(NotificationService);
     private readonly zone = inject(NgZone);
 
     private readonly audioEngine = new AudioEngineService();
     private readonly queueService = new PlayerQueueService();
     private readonly mediaSession = new MediaSessionManagerService();
+
 
     public readonly currentTrack = signal<PlayableTrack | null>(null);
     public readonly loadingTrackId = signal<number | null>(null);
@@ -94,9 +93,10 @@ export class PlayerService {
 
     private playSource(track: PlayableTrack, src: string): void {
         if (this.currentTrack()?.id !== track.id) {
-            this.loadingTrackId.set(null);
             return;
         }
+
+        this.loadingTrackId.set(track.id);
 
         this.audioEngine.playSource(src)
             .then(() => {
@@ -105,9 +105,11 @@ export class PlayerService {
                 }
             })
             .catch(err => {
-                this.loadingTrackId.set(null);
-                if (err?.name !== 'AbortError' && this.currentTrack()?.id === track.id) {
-                    this.handlePlaybackError(track, 'Playback failed');
+                if (this.currentTrack()?.id === track.id) {
+                    this.loadingTrackId.set(null);
+                    if (err?.name !== 'AbortError') {
+                        this.handlePlaybackError(track, 'Playback failed');
+                    }
                 }
             });
     }
@@ -119,6 +121,11 @@ export class PlayerService {
     public setVolume(value: number): void {
         this.audioEngine.setVolume(value);
     }
+
+    public toggleMute(): void {
+        this.audioEngine.toggleMute();
+    }
+
 
     public toggleShuffle(): void {
         this.queueService.toggleShuffle(this.currentTrack());
@@ -139,6 +146,9 @@ export class PlayerService {
 
     public async play(track: PlayableTrack): Promise<void> {
         if (this.currentTrack()?.id === track.id) {
+            if (this.loadingTrackId() === track.id) {
+                return;
+            }
             this.togglePlay();
             return;
         }
@@ -173,9 +183,9 @@ export class PlayerService {
     public isTrackPlaying(trackId?: number): boolean {
         const current = this.currentTrack();
         if (trackId !== undefined) {
-            return this.isPlaying() && current?.id === trackId;
+            return this.isPlaying() && current?.id === trackId && this.loadingTrackId() !== trackId;
         }
-        return this.isPlaying();
+        return this.isPlaying() && this.loadingTrackId() === null;
     }
 
     public seek(time: number): void {

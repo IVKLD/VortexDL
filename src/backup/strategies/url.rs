@@ -3,7 +3,7 @@ use std::path::Path;
 use reqwest::{Client, StatusCode};
 use tracing::{debug, instrument};
 
-use crate::backup::{error::SyncError, strategy::ISyncStrategy};
+use crate::backup::{error::BackupError, strategy::BackupStrategy};
 
 pub struct UrlStrategy {
     client: Client,
@@ -11,7 +11,7 @@ pub struct UrlStrategy {
 }
 
 impl UrlStrategy {
-    pub fn new(url: impl Into<String>) -> Result<Self, SyncError> {
+    pub fn new(url: impl Into<String>) -> Result<Self, BackupError> {
         let client = Client::builder().build()?;
         Ok(Self {
             client,
@@ -20,23 +20,23 @@ impl UrlStrategy {
     }
 }
 
-impl ISyncStrategy for UrlStrategy {
-    async fn upload(&self, _src: &Path) -> Result<(), SyncError> {
-        Err(SyncError::OperationNotSupported(
+impl BackupStrategy for UrlStrategy {
+    async fn upload(&self, _src: &Path) -> Result<(), BackupError> {
+        Err(BackupError::OperationNotSupported(
             "UrlStrategy does not support upload".to_string(),
         ))
     }
 
     #[instrument(skip(self), fields(url = %self.url))]
-    async fn download(&self, dest: &Path) -> Result<(), SyncError> {
+    async fn download(&self, dest: &Path) -> Result<(), BackupError> {
         debug!("URL download to {}", dest.display());
 
         let response = self.client.get(&self.url).send().await?;
 
         match response.status() {
-            StatusCode::UNAUTHORIZED | StatusCode::FORBIDDEN => Err(SyncError::Auth),
-            StatusCode::NOT_FOUND => Err(SyncError::NotFound),
-            s if !s.is_success() => Err(SyncError::HttpStatus(s)),
+            StatusCode::UNAUTHORIZED | StatusCode::FORBIDDEN => Err(BackupError::Auth),
+            StatusCode::NOT_FOUND => Err(BackupError::NotFound),
+            s if !s.is_success() => Err(BackupError::HttpStatus(s)),
             _ => {
                 let bytes = response.bytes().await?;
                 tokio::fs::write(dest, &bytes).await?;

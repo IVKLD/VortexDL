@@ -1,4 +1,4 @@
-use std::io;
+use std::{convert::Infallible, io};
 
 use anyhow::Error as AnyhowError;
 use axum::{
@@ -8,6 +8,10 @@ use axum::{
 };
 use serde::{Deserialize, Serialize};
 use serde_json::json;
+use soundcloud_rs::Error as SoundCloudError;
+use yt_audio_downloader::YoutubeAudioError;
+
+use crate::{adb::AdbError, backup::BackupError};
 
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(rename_all = "SCREAMING_SNAKE_CASE")]
@@ -111,8 +115,8 @@ impl From<reqwest::Error> for ApiError {
     }
 }
 
-impl From<yt_audio_downloader::YoutubeAudioError> for ApiError {
-    fn from(err: yt_audio_downloader::YoutubeAudioError) -> Self {
+impl From<YoutubeAudioError> for ApiError {
+    fn from(err: YoutubeAudioError) -> Self {
         Self::new(
             StatusCode::BAD_REQUEST,
             ErrorCode::NetworkError,
@@ -121,8 +125,8 @@ impl From<yt_audio_downloader::YoutubeAudioError> for ApiError {
     }
 }
 
-impl From<soundcloud_rs::Error> for ApiError {
-    fn from(err: soundcloud_rs::Error) -> Self {
+impl From<SoundCloudError> for ApiError {
+    fn from(err: SoundCloudError) -> Self {
         Self::new(
             StatusCode::BAD_REQUEST,
             ErrorCode::SoundCloudError,
@@ -137,26 +141,26 @@ impl From<HttpError> for ApiError {
     }
 }
 
-impl From<std::convert::Infallible> for ApiError {
-    fn from(err: std::convert::Infallible) -> Self {
+impl From<Infallible> for ApiError {
+    fn from(err: Infallible) -> Self {
         match err {}
     }
 }
 
-impl From<crate::adb::AdbError> for ApiError {
-    fn from(err: crate::adb::AdbError) -> Self {
+impl From<AdbError> for ApiError {
+    fn from(err: AdbError) -> Self {
         match err {
-            crate::adb::AdbError::AlreadyInProgress => Self::new(
+            AdbError::AlreadyInProgress => Self::new(
                 StatusCode::CONFLICT,
                 ErrorCode::AlreadyProcessing,
                 "Device is currently syncing",
             ),
-            crate::adb::AdbError::NotAvailable => Self::new(
+            AdbError::NotAvailable => Self::new(
                 StatusCode::INTERNAL_SERVER_ERROR,
                 ErrorCode::AdbError,
                 "ADB binary not found in PATH",
             ),
-            crate::adb::AdbError::Other(e) => Self::new(
+            AdbError::Other(e) => Self::new(
                 StatusCode::INTERNAL_SERVER_ERROR,
                 ErrorCode::AdbError,
                 format!("{:#}", e),
@@ -165,8 +169,8 @@ impl From<crate::adb::AdbError> for ApiError {
     }
 }
 
-impl From<crate::backup::SyncError> for ApiError {
-    fn from(err: crate::backup::SyncError) -> Self {
+impl From<BackupError> for ApiError {
+    fn from(err: BackupError) -> Self {
         Self::new(
             StatusCode::BAD_REQUEST,
             ErrorCode::DatabaseError,

@@ -1,0 +1,61 @@
+:host {
+  display: flex;
+  align-items: center;
+
+  --mat-button-filled-horizontal-padding: 0px;
+  --mat-button-filled-icon-spacing: 0px;
+  --mat-button-filled-icon-offset: 0px;
+
+  --mat-button-outlined-horizontal-padding: 0px;
+  --mat-button-outlined-icon-spacing: 0px;
+  --mat-button-outlined-icon-offset: 0px;
+
+  --mat-button-protected-horizontal-padding: 0px;
+  --mat-button-protected-icon-spacing: 0px;
+  --mat-button-protected-icon-offset: 0px;
+
+  --mat-button-tonal-horizontal-padding: 0px;
+  --mat-button-tonal-icon-spacing: 0px;
+  --mat-button-tonal-icon-offset: 0px;
+
+  --mat-button-text-horizontal-padding: 0px;
+  --mat-button-text-icon-spacing: 0px;
+  --mat-button-text-icon-offset: 0px;
+
+  mat-divider {
+    height: 2rem;
+  }
+}
+
+.slot {
+  display: contents;
+  --mat-button-filled-container-shape: 0;
+  --mat-button-outlined-container-shape: 0;
+  --mat-button-protected-container-shape: 0;
+  --mat-button-tonal-container-shape: 0;
+  --mat-button-text-container-shape: 0;
+
+  &.first {
+    --mat-button-filled-container-shape: 10em 0 0 10em;
+    --mat-button-outlined-container-shape: 10em 0 0 10em;
+    --mat-button-protected-container-shape: 10em 0 0 10em;
+    --mat-button-tonal-container-shape: 10em 0 0 10em;
+    --mat-button-text-container-shape: 10em 0 0 10em;
+  }
+
+  &.last {
+    --mat-button-filled-container-shape: 0 10em 10em 0;
+    --mat-button-outlined-container-shape: 0 10em 10em 0;
+    --mat-button-protected-container-shape: 0 10em 10em 0;
+    --mat-button-tonal-container-shape: 0 10em 10em 0;
+    --mat-button-text-container-shape: 0 10em 10em 0;
+  }
+
+  &.first.last {
+    --mat-button-filled-container-shape: 10em;
+    --mat-button-outlined-container-shape: 10em;
+    --mat-button-protected-container-shape: 10em;
+    --mat-button-tonal-container-shape: 10em;
+    --mat-button-text-container-shape: 10em;
+  }
+}

@@ -109,10 +109,7 @@ header {
       border-color: var(--mat-sys-outline);
     }
 
-    .icon {
-      font-size: 17px;
-      width: 17px;
-      height: 17px;
+    mat-icon {
       display: inline-flex;
       align-items: center;
       justify-content: center;
@@ -124,7 +121,6 @@ header {
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
-      line-height: 1;
     }
 
     .remove-btn {

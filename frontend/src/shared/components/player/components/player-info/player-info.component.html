@@ -1,8 +1,8 @@
-@let track = data();
+@let currentTrack = track();
 
-<div class="cover-wrapper" (click)="openDetailModal()" role="button" tabindex="0">
-    @if (track.artworkUrl) {
-    <img [ngSrc]="track.artworkUrl" alt="Artwork" height="160" width="160">
+<div class="cover-wrapper" (click)="openDetails.emit(currentTrack)" role="button" tabindex="0">
+    @if (currentTrack.artworkUrl) {
+    <img [ngSrc]="currentTrack.artworkUrl" alt="Artwork" height="160" width="160">
     } @else {
     <div class="placeholder">
         <mat-icon>music_note</mat-icon>
@@ -14,6 +14,6 @@
 </div>
 
 <div class="details">
-    <h3>{{ track.title }}</h3>
-    <p>{{ track.artist }}</p>
+    <h3>{{ currentTrack.title }}</h3>
+    <p>{{ currentTrack.artist }}</p>
 </div>

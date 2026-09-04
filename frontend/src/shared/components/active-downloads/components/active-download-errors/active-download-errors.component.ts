@@ -14,7 +14,7 @@ export class ActiveDownloadErrorsComponent implements OnInit {
     public readonly errors = input.required<string[]>();
 
     public readonly clear = output<void>();
-    public readonly openViewErrorsDialog = output<void>();
+    public readonly openErrorsDialog = output<void>();
     public readonly autoClose = output<void>();
 
     ngOnInit() {

@@ -1,9 +1,9 @@
-import { computed, inject, Injectable, signal } from '@angular/core';
-import { MusicTrack } from '@shared/models/music-track.model';
-import { Observable, tap } from 'rxjs';
+import {computed, inject, Injectable, signal} from '@angular/core';
+import {MusicTrack} from '@shared/models/music-track.model';
+import {Observable, tap} from 'rxjs';
 import Fuse from 'fuse.js';
-import { MusicTracksViewService } from '@app/pages/music-tracks-view/music-tracks-view.service';
-import { form, debounce } from '@angular/forms/signals';
+import {MusicTracksService} from '@app/pages/music-tracks-view/music-tracks.service';
+import {debounce, form} from '@angular/forms/signals';
 
 export enum MusicSortOption {
     NAME_ASC = 'name-asc',
@@ -14,7 +14,7 @@ export enum MusicSortOption {
 
 @Injectable({ providedIn: 'root' })
 export class MusicTracksViewState {
-    private readonly _api = inject(MusicTracksViewService);
+    private readonly _api = inject(MusicTracksService);
 
     private readonly _isLoading = signal<boolean>(true);
     private readonly _tracks = signal<MusicTrack[]>([]);
@@ -61,7 +61,7 @@ export class MusicTracksViewState {
         return [...this._tracks()].sort((a, b) => {
             const valA = sort === 'name' ? a.title.toLowerCase() : a.createdAt;
             const valB = sort === 'name' ? b.title.toLowerCase() : b.createdAt;
-            const cmp = typeof valA === 'string' ? valA.localeCompare(valB as string) : (valB as number) - (valA as number);
+            const cmp = typeof valA === 'string' ? valA.localeCompare(valB as string) : (valA as number) - (valB as number);
             return order === 'desc' ? -cmp : cmp;
         });
     });
@@ -73,6 +73,10 @@ export class MusicTracksViewState {
     private loadTracks(): void {
         this.startLoading();
         this._api.getAll().subscribe({ next: tracks => this.setTracks = tracks });
+    }
+
+    public isTrackLocal(id: number): boolean {
+        return this._tracks().some(t => t.id === id);
     }
 
     public set setTracks(value: MusicTrack[]) {

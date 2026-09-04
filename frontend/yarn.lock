@@ -207,6 +207,19 @@
     tslib "^2.3.0"
     zod "^4.0.10"
 
+"@angular/language-server@^22.1.4":
+  version "22.1.4"
+  resolved "https://registry.yarnpkg.com/@angular/language-server/-/language-server-22.1.4.tgz#ab756ab0de26626f8eb22d3053e32d894ef842e2"
+  integrity sha512-W9az6+CZGuRjTfN+z3yIDzgQ0d07BhFucov/uZ8YFnlp1Ss59xGcANnNO4uYYF1UcM1FzShlo+XzPgjxeLslfw==
+  dependencies:
+    "@angular/language-service" "22.1.4"
+    typescript "6.0.3"
+
+"@angular/language-service@22.1.4":
+  version "22.1.4"
+  resolved "https://registry.yarnpkg.com/@angular/language-service/-/language-service-22.1.4.tgz#a75ef03912824b1b42c9dae599be9bb2bf5f027b"
+  integrity sha512-ptl9fz3VKeZjv44Baps0NIkt91lkhTOQBBruGePqaBbInfU3KQWJoHasYPCUNl8NpyKm+EtMLMf5w/xOIDjk+Q==
+
 "@angular/material@^22.1.4":
   version "22.1.4"
   resolved "https://registry.yarnpkg.com/@angular/material/-/material-22.1.4.tgz#6116f90b5c70c3952e024dbc99c7f9837679794d"

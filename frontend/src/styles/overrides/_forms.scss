@@ -86,8 +86,7 @@ mat-form-field {
     padding-right: 0 !important;
 
     &.mdc-text-field--focused {
-      box-shadow: 0 0 0 3px color-mix(in srgb, var(--mat-sys-primary) 12%, transparent),
-        0 4px 20px rgba(0, 0, 0, 0.35);
+
     }
 
     &.mdc-text-field--invalid {
@@ -99,8 +98,7 @@ mat-form-field {
       --mdc-outlined-text-field-focus-label-text-color: var(--mat-sys-error, #f44336);
 
       &.mdc-text-field--focused {
-        box-shadow: 0 0 0 3px color-mix(in srgb, var(--mat-sys-error, #f44336) 15%, transparent),
-          0 4px 20px rgba(0, 0, 0, 0.35);
+
       }
 
       .mat-mdc-form-field-icon-prefix {

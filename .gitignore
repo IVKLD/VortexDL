@@ -7,18 +7,26 @@ rustc-ice-*.txt
 cargo-timing*.html
 plan-dist-manifest.json
 dist-manifest.json
+Cargo.lock.new
 
-# Frontend & Node
+# Frontend, Node & Angular
 node_modules/
 **/node_modules/
 dist/
 **/dist/
 .angular/
 **/.angular/
+coverage/
+**/coverage/
+out-tsc/
+**/out-tsc/
+.nx/
+**/.nx/
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 .pnpm-debug.log*
+yarn.lock.new
 
 # Database, Local Storage & Downloads
 *.redb
@@ -36,17 +44,21 @@ audio_output/
 # Environment & Config
 .env
 .env.*
+*.local
 cookies.txt
 
 # IDEs, Editors & OS
 .idea/
 .vscode/
 .zed/
+.fleet/
+.cursorrules
 *.swp
 *.swo
 *~
 .DS_Store
 Thumbs.db
+Desktop.ini
 
 # Nix / Direnv / Cargo local
 .direnv/

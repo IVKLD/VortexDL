@@ -1,8 +1,7 @@
-import {Component, computed, inject} from '@angular/core';
-import {MatIconButton} from '@angular/material/button';
-import {MatIcon} from '@angular/material/icon';
-import {MatSlider, MatSliderThumb} from '@angular/material/slider';
-import {PlayerService} from '@app/services/player.service';
+import { Component, computed, input, output } from '@angular/core';
+import { MatIconButton } from '@angular/material/button';
+import { MatIcon } from '@angular/material/icon';
+import { MatSlider, MatSliderThumb } from '@angular/material/slider';
 
 @Component({
     selector: 'app-player-volume',
@@ -16,28 +15,15 @@ import {PlayerService} from '@app/services/player.service';
     styleUrl: './player-volume.component.scss',
 })
 export class PlayerVolumeComponent {
-    protected readonly player = inject(PlayerService);
-
-    private prevVolume = this.player.volume();
+    public readonly volume = input.required<number>();
 
     protected readonly volumeIcon = computed(() => {
-        const vol = this.player.volume();
+        const vol = this.volume();
         if (vol === 0) return 'volume_off';
         if (vol < 0.5) return 'volume_down';
         return 'volume_up';
     });
 
-    protected onVolumeInput(value: string): void {
-        this.player.setVolume(+value);
-    }
-
-    protected mute(): void {
-        const currentVol = this.player.volume();
-        if (currentVol > 0) {
-            this.prevVolume = currentVol;
-            this.player.setVolume(0);
-        } else {
-            this.player.setVolume(this.prevVolume);
-        }
-    }
+    public readonly volumeChange = output<number>();
+    public readonly toggleMute = output<void>();
 }

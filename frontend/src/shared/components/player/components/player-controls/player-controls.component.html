@@ -1,17 +1,10 @@
-<div class="main-controls">
-    <button (click)="player.previous()" mat-icon-button>
-        <mat-icon>skip_previous</mat-icon>
-    </button>
+<button (click)="previous.emit()" mat-icon-button matTooltip="Previous track" matTooltipPosition="above">
+    <mat-icon>skip_previous</mat-icon>
+</button>
 
-    <app-player-dial />
+<app-player-dial/>
 
-    <button (click)="player.next()" mat-icon-button>
-        <mat-icon>skip_next</mat-icon>
-    </button>
-</div>
+<button (click)="next.emit()" mat-icon-button matTooltip="Next track" matTooltipPosition="above">
+    <mat-icon>skip_next</mat-icon>
+</button>
 
-<div class="sub-controls">
-    <button (click)="player.toggleShuffle()" [class.active]="player.shuffle()" mat-icon-button class="shuffle-btn">
-        <mat-icon>shuffle</mat-icon>
-    </button>
-</div>

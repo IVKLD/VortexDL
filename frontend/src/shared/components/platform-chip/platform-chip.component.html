@@ -1,11 +1,11 @@
-@let p = platform();
+@let currentPlatform = platform();
 
-@if (p === SupportedPlatform.YouTube) {
+@if (currentPlatform === SupportedPlatform.YouTube) {
     <span class="platform-chip youtube">
         <mat-icon class="chip-icon">play_circle_filled</mat-icon>
         <span class="chip-label">YouTube</span>
     </span>
-} @else if (p === SupportedPlatform.SoundCloud) {
+} @else if (currentPlatform === SupportedPlatform.SoundCloud) {
     <span class="platform-chip soundcloud">
         <mat-icon class="chip-icon">cloud</mat-icon>
         <span class="chip-label">SoundCloud</span>

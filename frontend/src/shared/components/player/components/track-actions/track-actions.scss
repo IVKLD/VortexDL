@@ -1,0 +1,24 @@
+:host {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 4px;
+  width: 100%;
+}
+
+button {
+  color: rgba(255, 255, 255, 0.6);
+  transition: color 0.2s ease;
+
+  &:hover {
+    color: #fff;
+  }
+
+  &.active {
+    color: var(--mat-sys-primary);
+  }
+
+  &.delete-btn:hover {
+    color: var(--mat-sys-error, #f87171);
+  }
+}

@@ -1,3 +1,23 @@
-<app-player-info [data]="track()"/>
-<app-player-controls/>
-<app-player-volume/>
+@let track = player.currentTrack()!;
+
+<app-player-info
+    [track]="track"
+    (openDetails)="actions.openDetails($event)"/>
+
+<app-player-controls
+    (previous)="player.previous()"
+    (next)="player.next()"/>
+
+<app-track-actions
+    [track]="track"
+    [shuffle]="player.shuffle()"
+    [isLocal]="tracksState.isTrackLocal(track.id)"
+    (shuffleChange)="player.toggleShuffle()"
+    (downloadTrack)="actions.download($event)"
+    (openSource)="actions.openSource($event)"
+    (deleteTrack)="actions.deleteWithDialog($event)"/>
+
+<app-player-volume
+    [volume]="player.volume()"
+    (volumeChange)="player.setVolume($event)"
+    (toggleMute)="player.toggleMute()"/>

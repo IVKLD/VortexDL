@@ -3,7 +3,7 @@ import {inject, Injectable} from '@angular/core';
 import {MusicTracks} from '@shared/models/music-track.model';
 
 @Injectable({ providedIn: 'root' })
-export class MusicTracksViewService {
+export class MusicTracksService {
     private readonly _http = inject(HttpClient);
 
     public getAll(sort = 'date', order = 'desc', limit?: number) {
@@ -19,7 +19,7 @@ export class MusicTracksViewService {
     }
 
     public indexing() {
-        return this._http.post('/library/reindex', {});
+        return this._http.post('/library/reindex', null);
     }
 
     public delete(id: number) {

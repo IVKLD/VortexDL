@@ -21,11 +21,11 @@
             }
         </mat-form-field>
 
-        <button (click)="testProxy.emit()"
-            [disabled]="!form().proxyUrl().value() || hasFormatError(form().proxyUrl) || isTesting()" mat-flat-button
+        <button (click)="state.testProxy(form().proxyUrl)"
+            [disabled]="!state.canTest(form().proxyUrl)" mat-flat-button
             type="button">
-            <mat-icon [class.rotating]="isTesting()">{{
-                isTesting() ? 'sync' : 'check_circle'
+            <mat-icon [class.rotating]="state.isTesting()">{{
+                state.isTesting() ? 'sync' : 'check_circle'
                 }}
             </mat-icon>
             Test

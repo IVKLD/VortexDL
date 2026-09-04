@@ -1,27 +1,24 @@
-import { ChangeDetectionStrategy, Component, inject, input, output, signal } from '@angular/core';
+import { Component, inject, input, output, signal } from '@angular/core';
 import { MatIcon } from '@angular/material/icon';
 import { MatIconButton } from '@angular/material/button';
 import { MatSlideToggle } from '@angular/material/slide-toggle';
 import { MatFormField, MatLabel } from '@angular/material/form-field';
 import { MatOption, MatSelect } from '@angular/material/select';
 import { FieldTree, FormField, submit } from '@angular/forms/signals';
-import { AdbDeviceSettings, StorageInfo } from '@app/pages/settings-view/models/settings-form.model';
+import { AdbDeviceSettings } from '@app/pages/settings-view/models/settings-form.model';
+import { StorageInfo } from '@app/pages/settings-view/models/adb-storage.model';
 import { SettingsService } from "@app/pages/settings-view/settings.service";
 import { AsyncPipe } from "@angular/common";
 import { finalize, Observable, shareReplay } from "rxjs";
-import { NotificationService } from "@app/services/notification.service";
-import { parseErrorMessage } from "@shared/error-utils";
 
 @Component({
     selector: 'app-adb-device-list',
     imports: [MatIcon, MatIconButton, MatSlideToggle, MatFormField, MatLabel, FormField, MatSelect, MatOption, AsyncPipe],
     templateUrl: './adb-device-list.component.html',
     styleUrl: './adb-device-list.component.scss',
-    changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class AdbDeviceListComponent {
     private readonly settingsService = inject(SettingsService);
-    private readonly notificationService = inject(NotificationService);
 
     public readonly form = input.required<FieldTree<AdbDeviceSettings[]>>();
     public readonly connectedDevices = input<string[]>([]);
@@ -64,12 +61,7 @@ export class AdbDeviceListComponent {
 
         this.settingsService.syncDevice(deviceId).pipe(
             finalize(() => this.toggleSyncing(deviceId, false))
-        ).subscribe({
-            next: () => this.notificationService.success(`Device ${deviceId} synced successfully`),
-            error: (err) => this.notificationService.error(
-                parseErrorMessage(err, `Failed to sync device ${deviceId}`)
-            )
-        });
+        ).subscribe();
     }
 
     protected triggerSave<T>(field: FieldTree<T>) {

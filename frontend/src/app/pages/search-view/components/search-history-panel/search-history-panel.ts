@@ -1,8 +1,8 @@
-import { Component, output, inject } from '@angular/core';
-import { MatIcon } from '@angular/material/icon';
-import { MatIconButton } from '@angular/material/button';
-import { MatTooltip } from '@angular/material/tooltip';
-import { SearchHistoryService } from '../../search-history.service';
+import {Component, inject, output} from '@angular/core';
+import {MatIcon} from '@angular/material/icon';
+import {MatIconButton} from '@angular/material/button';
+import {MatTooltip} from '@angular/material/tooltip';
+import {SearchHistoryService} from '../../search-history.service';
 
 @Component({
     selector: 'app-search-history-panel',
@@ -12,9 +12,5 @@ import { SearchHistoryService } from '../../search-history.service';
 })
 export class SearchHistoryPanelComponent {
     protected readonly history = inject(SearchHistoryService);
-    readonly selectItem = output<string>();
-
-    protected onSelect(item: string): void {
-        this.selectItem.emit(item);
-    }
+    protected readonly selectItem = output<string>();
 }

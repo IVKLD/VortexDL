@@ -1,4 +1,4 @@
-<header>
+<header mat-dialog-title>
     <div>
         <span class="info-label">Music Track</span>
         <h2>{{ track.title }}</h2>
@@ -8,7 +8,7 @@
     </button>
 </header>
 
-<main>
+<mat-dialog-content>
     <figure>
         @if (track.artworkUrl) {
             <img [alt]="track.title" [ngSrc]="track.artworkUrl" height="240" width="240"/>
@@ -42,13 +42,26 @@
             </div>
         }
     </section>
-</main>
+</mat-dialog-content>
 
-<footer>
-    @if (track.sourceUrl) {
-        <a [href]="track.sourceUrl" class="source-btn" mat-button target="_blank">
+<mat-dialog-actions align="end">
+    <button (click)="player.play(track)" [matTooltip]="isPlaying() ? 'Pause' : 'Play'" mat-icon-button>
+        <mat-icon>{{ isPlaying() ? 'pause' : 'play_arrow' }}</mat-icon>
+    </button>
+
+    <button (click)="actions.download(track)" mat-icon-button matTooltip="Download">
+        <mat-icon>download</mat-icon>
+    </button>
+
+    @if (track.sourceUrl || track.permalinkUrl; as link) {
+        <button (click)="actions.openSource(link)" mat-icon-button matTooltip="Original source">
             <mat-icon>open_in_new</mat-icon>
-            Open Original
-        </a>
+        </button>
     }
-</footer>
+
+    @if (isLocalTrack()) {
+        <button (click)="actions.delete(track.id)" mat-dialog-close mat-icon-button matTooltip="Delete from library">
+            <mat-icon>delete</mat-icon>
+        </button>
+    }
+</mat-dialog-actions>

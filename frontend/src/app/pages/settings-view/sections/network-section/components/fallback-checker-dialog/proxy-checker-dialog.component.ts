@@ -31,7 +31,7 @@ export interface ProxyStatus {
     styleUrl: './proxy-checker-dialog.component.scss',
 })
 export class ProxyCheckerDialogComponent {
-    private readonly _testing = inject(SettingsTestingService);
+    private readonly _testingService = inject(SettingsTestingService);
 
     protected readonly importStatuses = signal<ProxyStatus[]>([]);
     protected readonly workingProxies = signal<string[]>([]);
@@ -63,7 +63,7 @@ export class ProxyCheckerDialogComponent {
         this.workingProxies.set([]);
         this.importStatuses.set(proxies.map(url => ({ url, loading: true })));
 
-        this._testing.testProxy(proxies)
+        this._testingService.testProxy(proxies)
             .pipe(finalize(() => this.isTesting.set(false)))
             .subscribe({
                 next: (result) => {

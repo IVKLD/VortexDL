@@ -8,3 +8,9 @@ app-player {
 .mat-icon {
   font-variation-settings: 'wght' 300;
 }
+
+.mat-mdc-tooltip-panel,
+.mat-mdc-tooltip,
+.cdk-overlay-pane:has(.mat-mdc-tooltip) {
+  pointer-events: none !important;
+}

@@ -1,0 +1,126 @@
+<header>
+    <h2>
+        <mat-icon>cloud_sync</mat-icon>
+        Backup & Restore
+    </h2>
+
+    <mat-button-toggle-group [(value)]="syncState.selectedProvider" hideSingleSelectionIndicator>
+        <mat-button-toggle [value]="SyncProviderType.WebDav">
+            <mat-icon>cloud</mat-icon>
+            WebDAV
+        </mat-button-toggle>
+        <mat-button-toggle [value]="SyncProviderType.Local">
+            <mat-icon>folder</mat-icon>
+            Local Path
+        </mat-button-toggle>
+        <mat-button-toggle [value]="SyncProviderType.Url">
+            <mat-icon>link</mat-icon>
+            Direct URL
+        </mat-button-toggle>
+    </mat-button-toggle-group>
+</header>
+
+<div class="fields">
+    @switch (syncState.selectedProvider()) {
+        @case (SyncProviderType.WebDav) {
+            <div class="row">
+                <mat-form-field class="grow">
+                    <mat-label>
+                        <mat-icon>dns</mat-icon>
+                        WebDAV Server URL
+                    </mat-label>
+                    <input [formField]="form().baseUrl" matInput placeholder="https://webdav.pcloud.com" />
+                    <mat-hint>Server address (e.g. https://webdav.pcloud.com or https://ewebdav.pcloud.com)</mat-hint>
+
+                    @if (form().baseUrl().invalid()) {
+                        <mat-error>{{ form().baseUrl().errors()[0]?.message }}</mat-error>
+                    }
+                </mat-form-field>
+
+                <mat-form-field class="dir-field">
+                    <mat-label>
+                        <mat-icon>folder</mat-icon>
+                        Remote Directory
+                    </mat-label>
+                    <input [formField]="form().remoteDir" matInput placeholder="vortexdl" />
+                    <mat-hint>Folder on WebDAV server</mat-hint>
+                </mat-form-field>
+            </div>
+
+            <div class="row">
+                <mat-form-field>
+                    <mat-label>
+                        <mat-icon>person</mat-icon>
+                        Username / Email
+                    </mat-label>
+                    <input [formField]="form().username" matInput placeholder="account@example.com" />
+                </mat-form-field>
+
+                <mat-form-field>
+                    <mat-label>
+                        <mat-icon>key</mat-icon>
+                        Password / App Token
+                    </mat-label>
+                    <input #pwd="passwordToggle" [formField]="form().password" appPasswordToggle matInput />
+                    <button (click)="pwd.toggle()" mat-icon-button matSuffix type="button"
+                            [matTooltip]="pwd.hide() ? 'Show password' : 'Hide password'">
+                        <mat-icon>{{ pwd.hide() ? 'visibility_off' : 'visibility' }}</mat-icon>
+                    </button>
+                    <mat-hint>Password or application token</mat-hint>
+                </mat-form-field>
+            </div>
+        }
+
+        @case (SyncProviderType.Local) {
+            <div class="row">
+                <mat-form-field class="grow">
+                    <mat-label>
+                        <mat-icon>folder_open</mat-icon>
+                        Local Snapshot File Path
+                    </mat-label>
+                    <input [formField]="syncState.localPathForm" matInput
+                           placeholder="./backup/vortexdl.db" />
+                    <mat-hint>Absolute or relative file path for database snapshot backup/restore</mat-hint>
+                </mat-form-field>
+            </div>
+        }
+
+        @case (SyncProviderType.Url) {
+            <div class="row">
+                <mat-form-field class="grow">
+                    <mat-label>
+                        <mat-icon>http</mat-icon>
+                        Remote Snapshot Download URL
+                    </mat-label>
+                    <input [formField]="syncState.restoreUrlForm" matInput
+                           placeholder="https://example.com/backup/snapshot.db" />
+                    <mat-hint>Direct HTTP/HTTPS link to database snapshot (Restore only)</mat-hint>
+                </mat-form-field>
+            </div>
+        }
+    }
+
+    <div class="actions-row">
+        @if (syncState.selectedProvider() !== SyncProviderType.Url) {
+            <button (click)="syncState.exportBackup()"
+                    [disabled]="!syncState.canExport()"
+                    mat-flat-button
+                    type="button"
+                    matTooltip="Save database snapshot">
+                <mat-icon [class.rotating]="syncState.isExporting()">{{ syncState.isExporting() ? 'sync' : 'cloud_upload' }}</mat-icon>
+                {{ syncState.selectedProvider() === SyncProviderType.Local ? 'Backup to File' : 'Backup to Cloud' }}
+            </button>
+        }
+
+        <button (click)="syncState.importBackup()"
+                [disabled]="!syncState.canImport()"
+                mat-stroked-button
+                type="button"
+                matTooltip="Restore database from snapshot">
+            <mat-icon [class.rotating]="syncState.isImporting()">{{ syncState.isImporting() ? 'sync' : 'cloud_download' }}</mat-icon>
+            {{ syncState.selectedProvider() === SyncProviderType.Local ? 'Restore from File' : 'Restore from Cloud' }}
+        </button>
+    </div>
+</div>
+
+

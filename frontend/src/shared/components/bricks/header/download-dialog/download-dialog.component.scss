@@ -1,71 +1,58 @@
 :host {
-  header {
-    display: flex;
-    justify-content: space-between;
-    padding: 24px;
-    background: linear-gradient(to bottom, rgba(255, 255, 255, 0.02), transparent);
-
-    h2 {
-      font-size: 1.5rem;
-      font-weight: 600;
-
-      letter-spacing: -0.02em;
-    }
-  }
 }
 
 mat-dialog-content {
-  >mat-form-field {
-    width: 100%;
-  }
-
-  .history-section {
-    margin-top: 24px;
-
-    h3 {
-      font-size: 0.9rem;
-      color: rgba(255, 255, 255, 0.6);
-      margin-bottom: 8px;
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
+    > mat-form-field {
+        width: 100%;
     }
 
-    mat-list {
-      max-height: 200px;
-      overflow-y: scroll;
-      scrollbar-width: thin;
-      background: rgba(255, 255, 255, 0.05);
-      padding: .6em;
-      border-radius: 2em;
+    .history-section {
+        margin-top: 24px;
 
-      mat-list-item {
-        cursor: pointer;
-        transition: background 0.2s;
-        border-radius: 20em;
-        padding: 1em .4em 1em 1em;
-
-        &:hover {
-          background: rgba(255, 255, 255, 0.1);
+        h3 {
+            font-size: 0.9rem;
+            color: rgba(255, 255, 255, 0.6);
+            margin-bottom: 8px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
         }
 
-        &.active {
-          background: rgba(255, 255, 255, 0.1);
-        }
+        mat-list {
+            max-height: 200px;
+            overflow-y: scroll;
+            scrollbar-width: thin;
+            background: rgba(255, 255, 255, 0.05);
+            padding: 0.6em;
+            border-radius: 2em;
 
-        .item {
-          display: flex;
-          align-items: center;
-          gap: 10px;
-          width: 100%;
+            mat-list-item {
+                cursor: pointer;
+                transition: background 0.2s;
+                border-radius: 20em;
+                padding: 1em 0.4em 1em 1em;
 
-          .url-text {
-            flex: 1;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            white-space: nowrap;
-          }
+                &:hover {
+                    background: rgba(255, 255, 255, 0.1);
+                }
+
+                &.active {
+                    background: rgba(255, 255, 255, 0.1);
+                }
+
+                .item {
+                    display: flex;
+                    align-items: center;
+                    gap: 10px;
+                    width: 100%;
+
+                    .url-text {
+                        flex: 1;
+                        overflow: hidden;
+                        text-overflow: ellipsis;
+                        white-space: nowrap;
+                    }
+                }
+            }
         }
-      }
     }
-  }
 }

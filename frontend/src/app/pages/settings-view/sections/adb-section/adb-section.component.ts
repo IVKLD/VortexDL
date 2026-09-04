@@ -1,4 +1,4 @@
-import { Component, input, output } from '@angular/core';
+import { Component, inject, input } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { MatIcon } from '@angular/material/icon';
 import { MatIconButton } from '@angular/material/button';
@@ -7,6 +7,7 @@ import { FieldTree } from '@angular/forms/signals';
 import { SettingsFormModel } from '../../models/settings-form.model';
 import { SettingsSwitchCardComponent } from '../../components/settings-switch-card/settings-switch-card.component';
 import { AdbDeviceListComponent } from './components/adb-device-list/adb-device-list.component';
+import { AdbState } from './adb.state';
 
 @Component({
     selector: 'app-adb-section',
@@ -16,16 +17,20 @@ import { AdbDeviceListComponent } from './components/adb-device-list/adb-device-
         MatIconButton,
         MatDivider,
         SettingsSwitchCardComponent,
-        AdbDeviceListComponent
+        AdbDeviceListComponent,
     ],
+    providers: [AdbState],
     templateUrl: './adb-section.component.html',
-    styleUrl: './adb-section.component.scss'
+    styleUrl: './adb-section.component.scss',
 })
 export class AdbSectionComponent {
-    public readonly form = input.required<FieldTree<SettingsFormModel['adb']>>();
-    public readonly connectedDevices = input.required<string[]>();
-    public readonly isRefreshing = input.required<boolean>();
+    protected readonly state = inject(AdbState);
 
-    public readonly refresh = output<void>();
-    public readonly removeDevice = output<number>();
+    public readonly form = input.required<FieldTree<SettingsFormModel['adb']>>();
+
+    // constructor() {
+    //     effect(() => {
+    //         this.state.syncDevicesWithConfig(this.form());
+    //     });
+    // }
 }

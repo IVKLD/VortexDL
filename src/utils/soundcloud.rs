@@ -74,23 +74,61 @@ impl<'a> ClientBuilder<'a> {
     }
 }
 
-pub async fn resolve_stream_url(client: &Client, id: i64) -> Result<(String, StreamType)> {
-    let track = client.get_track(&Identifier::Id(id)).await?;
+pub trait SoundcloudExt {
+    fn resolve_stream_from_track(
+        &self,
+        track: &soundcloud_rs::Track,
+    ) -> impl std::future::Future<Output = Result<(String, StreamType)>> + Send;
 
-    if let Ok(url) = client
-        .resolve_stream_url_from_track(&track, Some(&StreamType::Progressive))
-        .await
-    {
-        return Ok((url, StreamType::Progressive));
-    }
-    if let Ok(url) = client
-        .resolve_stream_url_from_track(&track, Some(&StreamType::Hls))
-        .await
-    {
-        return Ok((url, StreamType::Hls));
+    fn resolve_stream(
+        &self,
+        id: i64,
+    ) -> impl std::future::Future<Output = Result<(String, StreamType)>> + Send;
+
+    fn resolve_stream_url(
+        &self,
+        track: Option<&soundcloud_rs::Track>,
+        id: i64,
+    ) -> impl std::future::Future<Output = Result<String>> + Send;
+}
+
+impl SoundcloudExt for Client {
+    async fn resolve_stream_from_track(
+        &self,
+        track: &soundcloud_rs::Track,
+    ) -> Result<(String, StreamType)> {
+        if let Ok(url) = self
+            .resolve_stream_url_from_track(track, Some(&StreamType::Progressive))
+            .await
+        {
+            return Ok((url, StreamType::Progressive));
+        }
+        if let Ok(url) = self
+            .resolve_stream_url_from_track(track, Some(&StreamType::Hls))
+            .await
+        {
+            return Ok((url, StreamType::Hls));
+        }
+
+        anyhow::bail!("No playable stream URL found for track")
     }
 
-    anyhow::bail!("No playable stream URL found for track {id}")
+    async fn resolve_stream(&self, id: i64) -> Result<(String, StreamType)> {
+        let track = self.get_track(&Identifier::Id(id)).await?;
+        self.resolve_stream_from_track(&track).await
+    }
+
+    async fn resolve_stream_url(
+        &self,
+        track: Option<&soundcloud_rs::Track>,
+        id: i64,
+    ) -> Result<String> {
+        let (url, _) = match track {
+            Some(t) => self.resolve_stream_from_track(t).await?,
+            None => self.resolve_stream(id).await?,
+        };
+        Ok(url)
+    }
 }
 
 pub fn resize_artwork_url(mut url: Url, size: &str) -> Url {

@@ -13,7 +13,7 @@ pub async fn resolve_stream_url(
     id: i64,
     url_param: Option<String>,
 ) -> Result<String, ApiError> {
-    if let Some((cached_url, instant)) = state.stream_cache.read().await.get(&id)
+    if let Some((cached_url, instant)) = state.cache.streams.read().await.get(&id)
         && instant.elapsed() < Duration::from_secs(3 * 3600)
     {
         return Ok(cached_url.clone());
@@ -21,7 +21,7 @@ pub async fn resolve_stream_url(
 
     let target_url = if let Some(u) = url_param {
         Some(u)
-    } else if let Some(vid) = state.youtube_cache.read().await.get(&id) {
+    } else if let Some(vid) = state.cache.youtube_ids.read().await.get(&id) {
         Some(format!("https://www.youtube.com/watch?v={vid}"))
     } else {
         state
@@ -42,7 +42,8 @@ pub async fn resolve_stream_url(
     };
 
     state
-        .stream_cache
+        .cache
+        .streams
         .write()
         .await
         .insert(id, (stream_url.clone(), Instant::now()));

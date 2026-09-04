@@ -107,7 +107,7 @@ pub async fn search_tracks(
     let mut has_more = false;
 
     if let Some(yt_videos) = yt_res {
-        let mut yt_cache = state.youtube_cache.write().await;
+        let mut yt_cache = state.cache.youtube_ids.write().await;
         for meta in yt_videos {
             let matches_duration = match yt_duration_filter {
                 SearchDurationFilter::Short => meta.duration_seconds < 120,
@@ -134,8 +134,10 @@ pub async fn search_tracks(
 
     if let Some(sc_results) = sc_res {
         has_more = sc_results.next_href.is_some();
+        let mut sc_cache = state.cache.soundcloud_tracks.write().await;
         let sc_tracks = sc_results.collection.into_iter().filter_map(|track| {
             let id = track.id?;
+            sc_cache.insert(id, track.clone());
             let artist = track
                 .user
                 .as_ref()

@@ -1,11 +1,11 @@
 use thiserror::Error;
 
 #[derive(Debug, Error)]
-pub enum SyncError {
+pub enum BackupError {
     #[error("Network error: {0}")]
     Network(#[from] reqwest::Error),
 
-    #[error("Authentication failed")]
+    #[error("Authentication failed: invalid credentials or unauthorized")]
     Auth,
 
     #[error("Remote resource not found")]

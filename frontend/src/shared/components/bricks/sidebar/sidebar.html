@@ -14,8 +14,8 @@
             </div>
 
             <div class="support-block">
-                @if (player.currentTrack(); as track) {
-                    <app-player [track]="track"/>
+                @if (player.currentTrack()) {
+                    <app-player/>
                 }
 
                 @if (tracking.errors().length > 0) {
@@ -23,7 +23,7 @@
                             class="leave-container"
                             animate.leave="leaving"
                             (clear)="tracking.clearError()"
-                            (openViewErrorsDialog)="openErrorsDialog()"
+                            (openErrorsDialog)="openErrorsDialog()"
                             [errors]="tracking.errors()"
                             (autoClose)="tracking.clearError()"
                     />

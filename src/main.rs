@@ -47,7 +47,7 @@ async fn main() -> Result<()> {
         .await?;
     pb.finish_with_message("SoundCloud ready");
 
-    let state = AppState::from_parts(client, storage.clone(), settings_manager);
+    let state = AppState::new(client, storage.clone(), settings_manager);
 
     let pb_idx = create_standalone_spinner("Indexing local library...");
     let tracks = MusicStorage::scan_library(&output_dir).await;

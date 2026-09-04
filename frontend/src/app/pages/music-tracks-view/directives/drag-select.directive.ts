@@ -1,6 +1,7 @@
 import { Directive, inject, input, output } from '@angular/core';
 import { MusicTrack } from '@shared/models/music-track.model';
 import { MusicTracksViewState } from '../music-tracks-view.state';
+import { DragSelectService } from './drag-select.service';
 
 @Directive({
     selector: '[appDragSelect]',
@@ -13,21 +14,14 @@ import { MusicTracksViewState } from '../music-tracks-view.state';
     },
 })
 export class DragSelectDirective {
-    private static isMouseDown = false;
-    private static isDragActive = false;
-    private static dragAction: 'select' | 'deselect' = 'select';
-    private static longPressTimer?: ReturnType<typeof setTimeout>;
-    private static pressStartX = 0;
-    private static pressStartY = 0;
-    private static justFinishedDrag = false;
-
+    private readonly _dragService = inject(DragSelectService);
     private readonly _state = inject(MusicTracksViewState);
 
     public readonly track = input.required<MusicTrack>({ alias: 'appDragSelect' });
     public readonly itemClick = output<MusicTrack>();
 
     private applyAction(): void {
-        if (DragSelectDirective.dragAction === 'deselect') {
+        if (this._dragService.dragAction === 'deselect') {
             this._state.deselectTrack(this.track());
         } else {
             this._state.selectTrack(this.track());
@@ -38,24 +32,15 @@ export class DragSelectDirective {
         if (event.button !== 0) return;
 
         const isSelected = this._state.selectedIds().has(this.track().id);
-        DragSelectDirective.isMouseDown = true;
-        DragSelectDirective.isDragActive = false;
-        DragSelectDirective.dragAction = isSelected ? 'deselect' : 'select';
-        DragSelectDirective.pressStartX = event.clientX;
-        DragSelectDirective.pressStartY = event.clientY;
-        DragSelectDirective.justFinishedDrag = false;
-
-        clearTimeout(DragSelectDirective.longPressTimer);
+        this._dragService.startPress(event.clientX, event.clientY, isSelected ? 'deselect' : 'select');
 
         if (this._state.hasSelection()) {
-            DragSelectDirective.isDragActive = true;
-            DragSelectDirective.justFinishedDrag = true;
+            this._dragService.startDrag();
             this.applyAction();
         } else {
-            DragSelectDirective.longPressTimer = setTimeout(() => {
-                if (DragSelectDirective.isMouseDown) {
-                    DragSelectDirective.isDragActive = true;
-                    DragSelectDirective.justFinishedDrag = true;
+            this._dragService.longPressTimer = setTimeout(() => {
+                if (this._dragService.isMouseDown()) {
+                    this._dragService.startDrag();
                     this.applyAction();
                 }
             }, 250);
@@ -63,38 +48,35 @@ export class DragSelectDirective {
     }
 
     protected onMouseEnter(): void {
-        if (DragSelectDirective.isMouseDown) {
-            DragSelectDirective.isDragActive = true;
-            DragSelectDirective.justFinishedDrag = true;
+        if (this._dragService.isMouseDown()) {
+            this._dragService.startDrag();
             this.applyAction();
         }
     }
 
     protected onMouseMove(event: MouseEvent): void {
         if (
-            DragSelectDirective.isMouseDown &&
-            !DragSelectDirective.isDragActive &&
+            this._dragService.isMouseDown() &&
+            !this._dragService.isDragActive() &&
             !this._state.hasSelection()
         ) {
-            const dx = Math.abs(event.clientX - DragSelectDirective.pressStartX);
-            const dy = Math.abs(event.clientY - DragSelectDirective.pressStartY);
+            const dx = Math.abs(event.clientX - this._dragService.pressStartX);
+            const dy = Math.abs(event.clientY - this._dragService.pressStartY);
             if (dx > 8 || dy > 8) {
-                clearTimeout(DragSelectDirective.longPressTimer);
+                this._dragService.clearTimer();
             }
         }
     }
 
     protected onWindowMouseUp(): void {
-        clearTimeout(DragSelectDirective.longPressTimer);
-        DragSelectDirective.isMouseDown = false;
-        DragSelectDirective.isDragActive = false;
+        this._dragService.endDrag();
     }
 
     protected onClick(event: MouseEvent): void {
-        if (DragSelectDirective.justFinishedDrag) {
+        if (this._dragService.justFinishedDrag) {
             event.preventDefault();
             event.stopPropagation();
-            DragSelectDirective.justFinishedDrag = false;
+            this._dragService.justFinishedDrag = false;
             return;
         }
 

@@ -15,6 +15,7 @@
         {
           packages.default = import ./nix/package.nix { inherit pkgs; };
           devShells.default = import ./nix/devshell.nix { inherit pkgs; };
+          devShells.frontend = import ./nix/devshell-frontend.nix { inherit pkgs; };
         }
       );
     in

@@ -18,8 +18,8 @@ export const downloadUrl = (path: SchemaPath<string>) => {
     });
 };
 
-export const englishOnly = (path: SchemaPath<string>) => {
+export const latinOnly = (path: SchemaPath<string>) => {
     pattern(path, /^[a-zA-Z0-9\s\-_.:/]*$/, {
-        message: 'Only English letters, numbers and basic symbols are allowed'
+        message: 'Only Latin letters, numbers and basic symbols are allowed'
     });
 };

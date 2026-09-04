@@ -34,22 +34,18 @@ export type AdbSettings = {
     devices: AdbDeviceSettings[];
 }
 
+export type WebDavSettings = {
+    baseUrl: string;
+    remoteDir: string;
+    username: string;
+    password: string;
+}
+
 export type SettingsFormModel = {
     soundcloud: SoundcloudSettings;
     downloads: DownloadSettings;
     system: SystemSettings;
     network: NetworkSettings;
     adb: AdbSettings;
+    webdav: WebDavSettings;
 }
-
-export enum StorageType {
-    Internal = 'Internal',
-    SdCard = 'SDCard',
-}
-
-export type StorageInfo = {
-    name: string;
-    path: string;
-    storageType: StorageType;
-}
-

@@ -3,8 +3,8 @@
         <mat-icon>android</mat-icon>
         Android Debug Bridge (ADB)
     </h2>
-    <button (click)="refresh.emit()" [disabled]="isRefreshing()" mat-icon-button type="button">
-        <mat-icon [class.spinning]="isRefreshing()">sync</mat-icon>
+    <button (click)="state.refreshDevices()" [disabled]="state.isRefreshing()" mat-icon-button type="button">
+        <mat-icon [class.spinning]="state.isRefreshing()">sync</mat-icon>
     </button>
 </header>
 
@@ -22,6 +22,6 @@
 
 <section [class.disabled]="!form().enabled().value()" class="devices-list">
     <h3>Connected & Configured Devices</h3>
-    <app-adb-device-list [form]="form().devices" [connectedDevices]="connectedDevices()"
-        (remove)="removeDevice.emit($event)" />
+    <app-adb-device-list [form]="form().devices" [connectedDevices]="state.connectedDevices()"
+        (remove)="state.removeDevice(form(), $event)" />
 </section>

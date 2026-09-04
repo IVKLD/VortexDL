@@ -2,8 +2,7 @@
 
     <div class="left">
         <div>
-            <span class="label-text">Vortex v.{{ version }}</span>
-            <span>{{ headerService.config()?.title || 'System' }}</span>
+            <span class="label-text">v.{{ version }}</span>
         </div>
 
         @if (headerService.hasFeature(Feature.Stats)) {
@@ -21,9 +20,7 @@
             <mat-icon matPrefix>search</mat-icon>
             <input [formField]="searchBind.formField" matInput
                 [placeholder]="headerService.config()?.searchPlaceholder || 'Search...'"
-                (focus)="searchBind.onFocus?.()"
-                (click)="searchBind.onFocus?.()"
-                (blur)="searchBind.onBlur?.()"
+                (focus)="searchBind.onFocus?.()" (click)="searchBind.onFocus?.()" (blur)="searchBind.onBlur?.()"
                 (keydown)="onSearchKeydown($event)" />
         </mat-form-field>
     </div>
@@ -50,18 +47,20 @@
         </div>
         }
 
-        <div class="sync-download-block">
-            <button (click)="syncAll()" [disabled]="isSyncing()" [matTooltip]="isSyncing() ? 'Syncing' : 'Sync'"
-                mat-flat-button>
-                <mat-icon [class.rotating]="isSyncing()">sync</mat-icon>
-            </button>
+        <app-button-group>
+            <ng-template>
+                <button (click)="syncAll()" [disabled]="isSyncing()" [matTooltip]="isSyncing() ? 'Syncing' : 'Sync'"
+                    mat-flat-button>
+                    <mat-icon [class.rotating]="isSyncing()">sync</mat-icon>
+                </button>
+            </ng-template>
 
-            <mat-divider vertical />
-
-            <button (click)="openDownloadDialog()" mat-flat-button matTooltip="Download">
-                <mat-icon>download</mat-icon>
-            </button>
-        </div>
+            <ng-template>
+                <button (click)="openDownloadDialog()" mat-flat-button matTooltip="Download">
+                    <mat-icon>download</mat-icon>
+                </button>
+            </ng-template>
+        </app-button-group>
     </div>
 
 </header>

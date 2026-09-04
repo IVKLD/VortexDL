@@ -20,6 +20,9 @@ export interface PlayableTrack {
     sourceUrl?: string;
     permalinkUrl?: string;
     streamUrl?: string;
+    format?: AudioFormat;
+    createdAt?: number;
+    size?: number;
 }
 
 export interface MusicTrack extends PlayableTrack {

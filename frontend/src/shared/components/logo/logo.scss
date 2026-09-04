@@ -1,15 +1,11 @@
 :host {
-  display: block;
-  width: 100%;
-}
-
-.logo-container {
   display: flex;
   justify-content: center;
   align-items: center;
   gap: 12px;
   padding: 1.5rem 1rem;
   user-select: none;
+  width: 100%;
 }
 
 .logo-text {

@@ -25,7 +25,7 @@ import {parseErrorMessage} from '@shared/error-utils';
     })
 export class FallbackProxiesComponent {
 
-    private readonly _testing = inject(SettingsTestingService);
+    private readonly _testingService = inject(SettingsTestingService);
     private readonly _dialog = inject(MatDialog);
     public readonly form = input.required<FieldTree<NetworkSettings>>();
 
@@ -80,7 +80,7 @@ export class FallbackProxiesComponent {
             [proxy]: {loading: true}
         }));
 
-        this._testing.testProxy([proxy]).subscribe({
+        this._testingService.testProxy([proxy]).subscribe({
             next: (result) => {
                 this.proxyStatuses.update(prev => ({
                     ...prev,
@@ -109,7 +109,7 @@ export class FallbackProxiesComponent {
             }));
         }
 
-        this._testing.testProxy(proxies).subscribe({
+        this._testingService.testProxy(proxies).subscribe({
             next: (result) => {
                 this.proxyStatuses.update(prev => ({
                     ...prev,

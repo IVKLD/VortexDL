@@ -1,4 +1,4 @@
-import {AdbSettings, DownloadSettings, SoundcloudSettings, NetworkSettings, SystemSettings} from "@app/pages/settings-view/models/settings-form.model";
+import { AdbSettings, DownloadSettings, SoundcloudSettings, NetworkSettings, SystemSettings, WebDavSettings } from '@app/pages/settings-view/models/settings-form.model';
 
 export interface UserSettingsRdo {
     soundcloud: SoundcloudSettings;
@@ -6,4 +6,5 @@ export interface UserSettingsRdo {
     adb: AdbSettings;
     network: NetworkSettings;
     system: SystemSettings;
+    webdav: WebDavSettings;
 }

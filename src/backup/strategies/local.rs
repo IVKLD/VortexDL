@@ -2,7 +2,7 @@ use std::path::{Path, PathBuf};
 
 use tracing::{debug, instrument};
 
-use crate::backup::{error::SyncError, strategy::ISyncStrategy};
+use crate::backup::{error::BackupError, strategy::BackupStrategy};
 
 pub struct LocalStrategy {
     remote_path: PathBuf,
@@ -16,9 +16,9 @@ impl LocalStrategy {
     }
 }
 
-impl ISyncStrategy for LocalStrategy {
+impl BackupStrategy for LocalStrategy {
     #[instrument(skip(self), fields(remote = %self.remote_path.display()))]
-    async fn upload(&self, src: &Path) -> Result<(), SyncError> {
+    async fn upload(&self, src: &Path) -> Result<(), BackupError> {
         debug!(
             "Local upload: {} -> {}",
             src.display(),
@@ -35,7 +35,7 @@ impl ISyncStrategy for LocalStrategy {
     }
 
     #[instrument(skip(self), fields(remote = %self.remote_path.display()))]
-    async fn download(&self, dest: &Path) -> Result<(), SyncError> {
+    async fn download(&self, dest: &Path) -> Result<(), BackupError> {
         debug!(
             "Local download: {} -> {}",
             self.remote_path.display(),
@@ -43,7 +43,7 @@ impl ISyncStrategy for LocalStrategy {
         );
 
         if !self.remote_path.exists() {
-            return Err(SyncError::NotFound);
+            return Err(BackupError::NotFound);
         }
 
         tokio::fs::copy(&self.remote_path, dest).await?;

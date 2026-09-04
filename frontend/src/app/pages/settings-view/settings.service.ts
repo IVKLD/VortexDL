@@ -6,7 +6,9 @@ import { UserSettingsRdo } from './models/user-settings.rdo';
 import { UserSettingsDto } from './models/user-settings.dto';
 import { ProxyTestResultRdo } from './models/proxy-test.rdo';
 import { parseErrorMessage } from '@shared/error-utils';
-import { StorageInfo } from './models/settings-form.model';
+import { WebDavSettings } from './models/settings-form.model';
+import { StorageInfo } from './models/adb-storage.model';
+import { SyncAction, SyncProviderPayload, SyncSnapshotResponse } from './models/sync.model';
 
 @Injectable({ providedIn: 'root' })
 export class SettingsService {
@@ -36,7 +38,44 @@ export class SettingsService {
     }
 
     public syncDevice(deviceId: string) {
-        return this._http.post(`/devices/${deviceId}/sync`, {});
+        return this._http.post(`/devices/${deviceId}/sync`, {}).pipe(
+            tap(() => this._notification.success(`Device ${deviceId} synced successfully`)),
+            catchError((error) => {
+                this._notification.error(parseErrorMessage(error, `Failed to sync device ${deviceId}`));
+                return throwError(() => error);
+            })
+        );
+    }
+
+    public syncBackup(action: SyncAction, provider: SyncProviderPayload) {
+        const actionLabel = action === SyncAction.Export ? 'exported' : 'imported';
+        const failActionLabel = action === SyncAction.Export ? 'export' : 'import';
+
+        return this._http.post('/settings/sync', {
+            action,
+            provider,
+        }).pipe(
+            tap(() => this._notification.success(`Database snapshot ${actionLabel} successfully`)),
+            catchError((error) => {
+                this._notification.error(parseErrorMessage(error, `Failed to ${failActionLabel} backup`));
+                return throwError(() => error);
+            })
+        );
+    }
+
+    public syncWebDav(action: SyncAction, webdav: WebDavSettings) {
+        return this.syncBackup(action, {
+            webDav: {
+                baseUrl: webdav.baseUrl,
+                remoteDir: webdav.remoteDir,
+                username: webdav.username,
+                password: webdav.password,
+            },
+        });
+    }
+
+    public getSyncSnapshot() {
+        return this._http.get<SyncSnapshotResponse>('/settings/sync/snapshot');
     }
 }
 
@@ -51,6 +90,23 @@ export class SettingsTestingService {
             tap(() => this._notification.success('SoundCloud URL is valid')),
             catchError((error) => {
                 this._notification.error(parseErrorMessage(error, 'Invalid configuration'));
+                return throwError(() => error);
+            })
+        );
+    }
+
+    public testSingleProxy(proxyUrl: string): Observable<ProxyTestResultRdo> {
+        return this.testProxy([proxyUrl]).pipe(
+            tap((res) => {
+                if (res.valid) {
+                    this._notification.success('Proxy connection successful');
+                } else {
+                    const err = res.error || 'Proxy is not able to reach SoundCloud API';
+                    this._notification.error(err);
+                }
+            }),
+            catchError((error) => {
+                this._notification.error(parseErrorMessage(error, 'Proxy verification failed'));
                 return throwError(() => error);
             })
         );

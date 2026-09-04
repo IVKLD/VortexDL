@@ -6,7 +6,7 @@ use reqwest::{
 };
 use tracing::{debug, instrument};
 
-use crate::backup::{error::SyncError, strategy::ISyncStrategy};
+use crate::backup::{error::BackupError, strategy::BackupStrategy};
 
 const SNAPSHOT_FILENAME: &str = "state.json";
 
@@ -23,7 +23,7 @@ impl WebDavStrategy {
         remote_dir: impl AsRef<str>,
         username: impl AsRef<str>,
         password: impl AsRef<str>,
-    ) -> Result<Self, SyncError> {
+    ) -> Result<Self, BackupError> {
         use base64::{Engine as _, engine::general_purpose::STANDARD};
 
         let client = Client::builder().build()?;
@@ -44,7 +44,7 @@ impl WebDavStrategy {
         })
     }
 
-    async fn ensure_dir(&self) -> Result<(), SyncError> {
+    async fn ensure_dir(&self) -> Result<(), BackupError> {
         let response = self
             .client
             .request(Method::from_bytes(b"MKCOL").unwrap(), &self.dir_url)
@@ -59,18 +59,18 @@ impl WebDavStrategy {
         }
     }
 
-    fn map_status(status: StatusCode) -> SyncError {
+    fn map_status(status: StatusCode) -> BackupError {
         match status {
-            StatusCode::UNAUTHORIZED | StatusCode::FORBIDDEN => SyncError::Auth,
-            StatusCode::NOT_FOUND => SyncError::NotFound,
-            other => SyncError::HttpStatus(other),
+            StatusCode::UNAUTHORIZED | StatusCode::FORBIDDEN => BackupError::Auth,
+            StatusCode::NOT_FOUND => BackupError::NotFound,
+            other => BackupError::HttpStatus(other),
         }
     }
 }
 
-impl ISyncStrategy for WebDavStrategy {
+impl BackupStrategy for WebDavStrategy {
     #[instrument(skip(self), fields(url = %self.file_url))]
-    async fn upload(&self, src: &Path) -> Result<(), SyncError> {
+    async fn upload(&self, src: &Path) -> Result<(), BackupError> {
         self.ensure_dir().await?;
 
         let body = tokio::fs::read(src).await?;
@@ -93,7 +93,7 @@ impl ISyncStrategy for WebDavStrategy {
     }
 
     #[instrument(skip(self), fields(url = %self.file_url))]
-    async fn download(&self, dest: &Path) -> Result<(), SyncError> {
+    async fn download(&self, dest: &Path) -> Result<(), BackupError> {
         let response = self
             .client
             .get(&self.file_url)

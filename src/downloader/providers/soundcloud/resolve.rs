@@ -9,6 +9,7 @@ use crate::{
     downloader::Context,
     utils::{http::build_http_client, proxy::race_proxies, soundcloud},
 };
+use crate::utils::soundcloud::SoundcloudExt;
 
 #[derive(Debug, Clone)]
 pub enum StreamSource {
@@ -62,7 +63,7 @@ async fn resolve_with_client(
     id: i64,
     proxy_url: Option<&str>,
 ) -> Result<StreamSource> {
-    let (url, stype) = soundcloud::resolve_stream_url(client, id).await?;
+    let (url, stype) = client.resolve_stream(id).await?;
     let proxy_url = proxy_url.map(String::from);
     match stype {
         StreamType::Hls => Ok(StreamSource::Hls { url, proxy_url }),

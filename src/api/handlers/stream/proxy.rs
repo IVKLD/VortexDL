@@ -3,10 +3,7 @@ use axum::{
     response::Response,
 };
 
-use crate::{
-    api::{errors::ApiError, handlers::stream::resolve::resolve_stream_url, state::AppState},
-    utils::http::build_http_client,
-};
+use crate::api::{errors::ApiError, handlers::stream::resolve::resolve_stream_url, state::AppState};
 
 pub async fn proxy_audio_stream(
     state: &AppState,
@@ -15,16 +12,15 @@ pub async fn proxy_audio_stream(
     range_header: Option<HeaderValue>,
 ) -> Result<Response, ApiError> {
     let stream_url = resolve_stream_url(state, id, url_param.clone()).await?;
-
     let settings = state.settings.read().await.clone();
     let proxy_url = settings.network.get_proxy_url();
-    let client = build_http_client(proxy_url, 10, 30);
+    let client = yt_audio_downloader::create_http_client_with_proxy(proxy_url);
 
     let mut upstream_res =
         send_upstream_request(&client, &stream_url, range_header.as_ref()).await?;
 
     if upstream_res.status().is_client_error() {
-        state.stream_cache.write().await.remove(&id);
+        state.cache.streams.write().await.remove(&id);
         if let Ok(fresh_url) = resolve_stream_url(state, id, url_param).await
             && let Ok(res) = send_upstream_request(&client, &fresh_url, range_header.as_ref()).await
             && (res.status().is_success() || res.status().as_u16() == 206)
