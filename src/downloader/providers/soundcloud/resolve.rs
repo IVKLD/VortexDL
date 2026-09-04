@@ -7,9 +7,8 @@ use url::Url;
 
 use crate::{
     downloader::Context,
-    utils::{http::build_http_client, proxy::race_proxies, soundcloud},
+    utils::{http::build_http_client, proxy::race_proxies, soundcloud, soundcloud::SoundcloudExt},
 };
-use crate::utils::soundcloud::SoundcloudExt;
 
 #[derive(Debug, Clone)]
 pub enum StreamSource {

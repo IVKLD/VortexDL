@@ -3,7 +3,9 @@ use axum::{
     response::Response,
 };
 
-use crate::api::{errors::ApiError, handlers::stream::resolve::resolve_stream_url, state::AppState};
+use crate::api::{
+    errors::ApiError, handlers::stream::resolve::resolve_stream_url, state::AppState,
+};
 
 pub async fn proxy_audio_stream(
     state: &AppState,
@@ -37,9 +39,10 @@ async fn send_upstream_request(
     url: &str,
     range_header: Option<&HeaderValue>,
 ) -> Result<reqwest::Response, ApiError> {
-    let mut req = client
-        .get(url)
-        .header(reqwest::header::USER_AGENT, yt_audio_downloader::select_user_agent_for_url(url));
+    let mut req = client.get(url).header(
+        reqwest::header::USER_AGENT,
+        yt_audio_downloader::select_user_agent_for_url(url),
+    );
 
     if let Some(range) = range_header
         && let Ok(range_str) = range.to_str()

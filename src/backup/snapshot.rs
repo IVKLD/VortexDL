@@ -44,9 +44,8 @@ impl BackupSnapshot {
     #[instrument(skip(self))]
     pub fn apply_to_database(mut self) -> Result<(), BackupError> {
         if self.settings.webdav.password.is_empty() {
-            if let Ok(existing) = database::get_settings() {
-                self.settings.webdav.password = existing.webdav.password;
-            }
+            let current = database::get_settings()?;
+            self.settings.webdav.password = current.webdav.password;
         }
 
         database::update_settings(&self.settings)?;
