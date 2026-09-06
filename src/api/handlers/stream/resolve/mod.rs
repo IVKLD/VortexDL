@@ -1,8 +1,6 @@
 pub mod soundcloud;
 pub mod youtube;
 
-use std::time::{Duration, Instant};
-
 pub use soundcloud::resolve_soundcloud_stream;
 pub use youtube::resolve_youtube_stream;
 
@@ -13,15 +11,13 @@ pub async fn resolve_stream_url(
     id: i64,
     url_param: Option<String>,
 ) -> Result<String, ApiError> {
-    if let Some((cached_url, instant)) = state.cache.streams.read().await.get(&id)
-        && instant.elapsed() < Duration::from_secs(3 * 3600)
-    {
-        return Ok(cached_url.clone());
+    if let Some(cached_url) = state.cache.get_stream(id).await {
+        return Ok(cached_url);
     }
 
     let target_url = if let Some(u) = url_param {
         Some(u)
-    } else if let Some(vid) = state.cache.youtube_ids.read().await.get(&id) {
+    } else if let Some(vid) = state.cache.get_youtube_id(id).await {
         Some(format!("https://www.youtube.com/watch?v={vid}"))
     } else {
         state
@@ -41,12 +37,7 @@ pub async fn resolve_stream_url(
         resolve_soundcloud_stream(state, id).await?
     };
 
-    state
-        .cache
-        .streams
-        .write()
-        .await
-        .insert(id, (stream_url.clone(), Instant::now()));
+    state.cache.insert_stream(id, stream_url.clone()).await;
 
     Ok(stream_url)
 }

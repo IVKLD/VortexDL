@@ -5,7 +5,7 @@ use axum::{
 };
 use soundcloud_rs::TracksQuery;
 use url::Url;
-use yt_audio_downloader::{YoutubeAudioDownloader, search_youtube};
+use yt_audio_downloader::{YoutubeAudioDownloader, search_youtube_page_with_client};
 
 use super::types::{
     SearchDurationFilter, SearchProviderParam, SearchQuery, SearchResponse, SearchTrackItem,
@@ -56,37 +56,52 @@ pub async fn search_tracks(
     Query(params): Query<SearchQuery>,
 ) -> Result<impl IntoResponse, ApiError> {
     let trimmed = params.query.trim();
-    if trimmed.is_empty() {
-        return Err(
-            ApiError::bad_request("Search query cannot be empty").with_code(ErrorCode::EmptyUrl)
-        );
-    }
+
+    let query = (!trimmed.is_empty())
+        .then_some(trimmed)
+        .ok_or_else(|| ApiError::bad_request("Search query cannot be empty").with_code(ErrorCode::EmptyUrl))?;
 
     let limit = params.limit.unwrap_or(20) as usize;
     let offset = params.offset.unwrap_or(0) as usize;
     let provider = params.provider.unwrap_or(SearchProviderParam::Soundcloud);
     let allow_yt = provider == SearchProviderParam::Youtube;
     let allow_sc = provider == SearchProviderParam::Soundcloud;
-
     let yt_duration_filter = params.duration.unwrap_or(SearchDurationFilter::Any);
 
+    let client = state.http_client().await;
+
     let yt_fut = async {
-        if allow_yt && offset == 0 {
-            if yt_audio_downloader::is_youtube_url(trimmed)
-                && let Ok(meta) = YoutubeAudioDownloader::new().fetch_metadata(trimmed).await
-            {
-                return Some(vec![meta]);
-            }
-            let yt_fetch_count = if yt_duration_filter != SearchDurationFilter::Any {
-                40
-            } else {
-                limit
-            };
-            search_youtube(trimmed, yt_fetch_count).await.ok()
+        if !allow_yt {
+            return None;
+        }
+
+        if offset == 0
+            && yt_audio_downloader::is_youtube_url(query)
+            && let Ok(meta) = YoutubeAudioDownloader::new()
+                .client(client.clone())
+                .fetch_metadata(query)
+                .await
+        {
+            return Some((vec![meta], false));
+        }
+
+        let continuation = if offset > 0 {
+            state.cache.get_continuation(query).await
         } else {
             None
-        }
+        };
+
+        let (videos, next_token) =
+            search_youtube_page_with_client(query, continuation.as_deref(), client)
+                .await
+                .ok()?;
+
+        let has_more = next_token.is_some();
+        state.cache.set_continuation(query, next_token).await;
+
+        Some((videos, has_more))
     };
+
     let sc_fut = async {
         if allow_sc {
             let sc_query = TracksQuery {
@@ -106,8 +121,8 @@ pub async fn search_tracks(
     let mut combined_tracks = Vec::new();
     let mut has_more = false;
 
-    if let Some(yt_videos) = yt_res {
-        let mut yt_cache = state.cache.youtube_ids.write().await;
+    if let Some((yt_videos, yt_has_more)) = yt_res {
+        has_more = yt_has_more;
         for meta in yt_videos {
             let matches_duration = match yt_duration_filter {
                 SearchDurationFilter::Short => meta.duration_seconds < 120,
@@ -123,8 +138,9 @@ pub async fn search_tracks(
             if !matches_duration {
                 continue;
             }
+
             let (id, vid, item) = youtube_meta_to_item(&meta);
-            yt_cache.insert(id, vid);
+            state.cache.insert_youtube_id(id, vid).await;
             combined_tracks.push(item);
             if combined_tracks.len() >= limit {
                 break;
@@ -134,10 +150,9 @@ pub async fn search_tracks(
 
     if let Some(sc_results) = sc_res {
         has_more = sc_results.next_href.is_some();
-        let mut sc_cache = state.cache.soundcloud_tracks.write().await;
-        let sc_tracks = sc_results.collection.into_iter().filter_map(|track| {
-            let id = track.id?;
-            sc_cache.insert(id, track.clone());
+        for track in sc_results.collection {
+            let Some(id) = track.id else { continue };
+            state.cache.insert_soundcloud_track(id, track.clone()).await;
             let artist = track
                 .user
                 .as_ref()
@@ -148,7 +163,7 @@ pub async fn search_tracks(
                 .and_then(|url| Url::parse(&url).ok())
                 .map(|url| soundcloud::resize_artwork_url(url, "-t200x200").to_string());
 
-            Some(SearchTrackItem {
+            combined_tracks.push(SearchTrackItem {
                 id,
                 title: track.title.unwrap_or_default(),
                 artist,
@@ -157,9 +172,8 @@ pub async fn search_tracks(
                 playback_count: track.playback_count,
                 permalink_url: track.permalink_url,
                 genre: track.genre,
-            })
-        });
-        combined_tracks.extend(sc_tracks);
+            });
+        }
     }
 
     Ok(Json(SearchResponse {

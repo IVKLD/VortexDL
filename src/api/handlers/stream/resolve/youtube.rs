@@ -6,7 +6,7 @@ use crate::{
 pub async fn resolve_youtube_stream(state: &AppState, target: &str) -> Result<String, ApiError> {
     let settings = state.settings.read().await.clone();
     let proxy_url = settings.network.get_proxy_url();
-    let client = yt_audio_downloader::create_http_client_with_proxy(proxy_url);
+    let client = state.http_client().await;
 
     if let Ok(info) = yt_audio_downloader::get_stream_info_with_client(
         target,

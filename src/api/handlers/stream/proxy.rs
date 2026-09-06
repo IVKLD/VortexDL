@@ -14,15 +14,13 @@ pub async fn proxy_audio_stream(
     range_header: Option<HeaderValue>,
 ) -> Result<Response, ApiError> {
     let stream_url = resolve_stream_url(state, id, url_param.clone()).await?;
-    let settings = state.settings.read().await.clone();
-    let proxy_url = settings.network.get_proxy_url();
-    let client = yt_audio_downloader::create_http_client_with_proxy(proxy_url);
+    let client = state.http_client().await;
 
     let mut upstream_res =
         send_upstream_request(&client, &stream_url, range_header.as_ref()).await?;
 
     if upstream_res.status().is_client_error() {
-        state.cache.streams.write().await.remove(&id);
+        state.cache.remove_stream(id).await;
         if let Ok(fresh_url) = resolve_stream_url(state, id, url_param).await
             && let Ok(res) = send_upstream_request(&client, &fresh_url, range_header.as_ref()).await
             && (res.status().is_success() || res.status().as_u16() == 206)

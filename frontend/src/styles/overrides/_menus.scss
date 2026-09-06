@@ -71,6 +71,16 @@
   }
 }
 
+.mat-mdc-menu-item.active-item {
+  background-color: color-mix(in srgb, var(--mat-sys-primary) 12%, transparent) !important;
+  color: var(--mat-sys-primary) !important;
+  font-weight: 600 !important;
+
+  .mat-icon {
+    color: var(--mat-sys-primary) !important;
+  }
+}
+
 [cdkMenu] {
   background: rgba(30, 30, 30, 0.75);
   backdrop-filter: blur(20px) saturate(160%);

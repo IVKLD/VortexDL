@@ -1,81 +1,53 @@
 <div class="provider-filters">
-    <button
-            mat-button
-            type="button"
-            class="filter-chip youtube"
-            [class.active]="state.provider() === SearchProvider.YouTube"
-            (click)="setProvider(SearchProvider.YouTube)"
-    >
+    <button mat-button type="button" class="filter-chip youtube"
+        [class.active]="state.config().provider === SearchProvider.YouTube"
+        (click)="state.setProvider(SearchProvider.YouTube)">
         <mat-icon class="chip-icon">play_circle_filled</mat-icon>
-        <span>YouTube</span>
+        YouTube
     </button>
 
-    <button
-            mat-button
-            type="button"
-            class="filter-chip soundcloud"
-            [class.active]="state.provider() === SearchProvider.SoundCloud"
-            (click)="setProvider(SearchProvider.SoundCloud)"
-    >
+    <button mat-button type="button" class="filter-chip soundcloud"
+        [class.active]="state.config().provider === SearchProvider.SoundCloud"
+        (click)="state.setProvider(SearchProvider.SoundCloud)">
         <mat-icon class="chip-icon">cloud</mat-icon>
-        <span>SoundCloud</span>
+        SoundCloud
     </button>
 </div>
 
-@if (state.provider() === SearchProvider.YouTube) {
-    <div class="sort-actions">
-        <button [cdkMenuTriggerFor]="durationMenu" type="button" class="sort-button">
-            <mat-icon>schedule</mat-icon>
-            <span>
-                    @switch (state.duration()) {
-                        @case (SearchDurationFilter.Short) {
-                            Short (&lt; 2m)
-                        }
-                        @case (SearchDurationFilter.Medium) {
-                            Medium (2-10m)
-                        }
-                        @case (SearchDurationFilter.Long) {
-                            Long (10-30m)
-                        }
-                        @case (SearchDurationFilter.Epic) {
-                            Mixes (&gt; 30m)
-                        }
-                        @default {
-                            Any length
-                        }
-                    }
-                </span>
-            <mat-icon>arrow_drop_down</mat-icon>
-        </button>
+<mat-divider vertical />
 
-        <ng-template #durationMenu>
-            <div cdkMenu>
-                <button cdkMenuItem (click)="setDuration(SearchDurationFilter.Any)"
-                        [class.active-item]="state.duration() === SearchDurationFilter.Any">
-                    <mat-icon>all_inclusive</mat-icon>
-                    <span>Any length</span>
-                </button>
-                <button cdkMenuItem (click)="setDuration(SearchDurationFilter.Short)"
-                        [class.active-item]="state.duration() === SearchDurationFilter.Short">
-                    <mat-icon>timer</mat-icon>
-                    <span>Short (&lt; 2 min)</span>
-                </button>
-                <button cdkMenuItem (click)="setDuration(SearchDurationFilter.Medium)"
-                        [class.active-item]="state.duration() === SearchDurationFilter.Medium">
-                    <mat-icon>schedule</mat-icon>
-                    <span>Medium (2 – 10 min)</span>
-                </button>
-                <button cdkMenuItem (click)="setDuration(SearchDurationFilter.Long)"
-                        [class.active-item]="state.duration() === SearchDurationFilter.Long">
-                    <mat-icon>timelapse</mat-icon>
-                    <span>Long (10 – 30 min)</span>
-                </button>
-                <button cdkMenuItem (click)="setDuration(SearchDurationFilter.Epic)"
-                        [class.active-item]="state.duration() === SearchDurationFilter.Epic">
-                    <mat-icon>queue_music</mat-icon>
-                    <span>Mixes / Sets (&gt; 30 min)</span>
-                </button>
-            </div>
-        </ng-template>
-    </div>
-}
+<div class="sort-actions">
+    <button mat-button type="button" class="filter-chip sort-chip"
+        [class.active]="state.config().duration !== SearchDurationFilter.Any" [matMenuTriggerFor]="durationMenu">
+        <mat-icon class="chip-icon">schedule</mat-icon>
+        {{ state.durationLabel() }}
+        <mat-icon class="arrow-icon">arrow_drop_down</mat-icon>
+    </button>
+
+    <mat-menu #durationMenu="matMenu">
+        @for (option of durationOptions; track option.value) {
+        <button mat-menu-item [class.active-item]="state.config().duration === option.value"
+            (click)="state.setDuration(option.value)">
+            <mat-icon>{{ option.icon }}</mat-icon>
+            {{ option.label }}
+        </button>
+        }
+    </mat-menu>
+
+    <button mat-button type="button" class="filter-chip sort-chip"
+        [class.active]="state.config().sort !== SearchSortOption.Relevance" [matMenuTriggerFor]="sortMenu">
+        <mat-icon class="chip-icon">sort</mat-icon>
+        {{ state.sortLabel() }}
+        <mat-icon class="arrow-icon">arrow_drop_down</mat-icon>
+    </button>
+
+    <mat-menu #sortMenu="matMenu">
+        @for (option of sortOptions; track option.value) {
+        <button mat-menu-item [class.active-item]="state.config().sort === option.value"
+            (click)="state.setSortOption(option.value)">
+            <mat-icon>{{ option.icon }}</mat-icon>
+            {{ option.label }}
+        </button>
+        }
+    </mat-menu>
+</div>

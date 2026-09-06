@@ -7,7 +7,7 @@ use crate::{
 };
 
 pub async fn resolve_soundcloud_stream(state: &AppState, id: i64) -> Result<String, ApiError> {
-    let cached_track = state.cache.soundcloud_tracks.read().await.get(&id).cloned();
+    let cached_track = state.cache.get_soundcloud_track(id).await;
 
     if let Ok(url) = state
         .client

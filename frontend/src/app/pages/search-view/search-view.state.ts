@@ -1,72 +1,83 @@
-import { Injectable, inject, signal } from '@angular/core';
-import { SearchViewService } from './search-view.service';
-import { SearchDurationFilter, SearchProvider, SearchSettingsModel, SearchTrackItemRdo } from './models/search-view.model';
-import { finalize } from 'rxjs';
+import { Injectable, computed, inject, signal } from '@angular/core';
+import { Observable, finalize } from 'rxjs';
 import { NotificationService } from '@app/services/notification.service';
-import { SearchHistoryService } from './search-history.service';
 import { SettingsState } from '@app/pages/settings-view/settings.state';
-
-const SEARCH_SETTINGS_KEY = 'vortexdl_search_settings';
+import {
+    DEFAULT_SEARCH_SETTINGS,
+    DURATION_OPTIONS,
+    SORT_OPTIONS,
+    SearchDurationFilter,
+    SearchProvider,
+    SearchRdo,
+    SearchSettingsModel,
+    SearchSortOption,
+    SearchTrackItemRdo,
+} from './models';
+import { SearchHistoryService } from './search-history.service';
+import { SearchFilterService } from './search-filter.service';
+import { SearchViewService } from './search-view.service';
 
 @Injectable({ providedIn: 'root' })
 export class SearchViewState {
     private readonly _api = inject(SearchViewService);
-    private readonly _notification = inject(NotificationService);
+    private readonly _filter = inject(SearchFilterService);
     private readonly _history = inject(SearchHistoryService);
+    private readonly _notification = inject(NotificationService);
     private readonly _settingsState = inject(SettingsState);
 
     public readonly query = signal<string>('');
-    public readonly provider = signal<SearchProvider>(SearchProvider.SoundCloud);
-    public readonly duration = signal<SearchDurationFilter>(SearchDurationFilter.Any);
-
     public readonly hasSearched = signal<boolean>(false);
     public readonly showHistory = signal<boolean>(false);
     public readonly rawTracks = signal<SearchTrackItemRdo[]>([]);
-    public readonly loading = signal(false);
-    public readonly hasMore = signal(false);
+    public readonly loading = signal<boolean>(false);
+    public readonly hasMore = signal<boolean>(false);
 
-    public readonly results = this.rawTracks.asReadonly();
+    public readonly config = signal<SearchSettingsModel>(DEFAULT_SEARCH_SETTINGS);
 
-    constructor() {
-        this.loadSavedSettings();
-    }
+    public readonly durationLabel = computed(() => {
+        const dur = this.config().duration;
+        return DURATION_OPTIONS.find((o) => o.value === dur)?.shortLabel ?? 'Duration';
+    });
 
-    private loadSavedSettings(): void {
-        try {
-            const raw = localStorage.getItem(SEARCH_SETTINGS_KEY);
-            if (raw) {
-                const parsed = JSON.parse(raw) as SearchSettingsModel;
-                if (parsed.provider) this.provider.set(parsed.provider);
-                if (parsed.duration) this.duration.set(parsed.duration);
-            }
-        } catch {
-            // ignore
-        }
-    }
+    public readonly sortLabel = computed(() => {
+        const sort = this.config().sort;
+        return SORT_OPTIONS.find((o) => o.value === sort)?.shortLabel ?? 'Sort';
+    });
 
-    private saveSettings(): void {
-        localStorage.setItem(
-            SEARCH_SETTINGS_KEY,
-            JSON.stringify({ provider: this.provider(), duration: this.duration() })
-        );
+    public readonly results = computed(() => {
+        const { duration, sort } = this.config();
+        return this._filter.apply(this.rawTracks(), duration, sort);
+    });
+
+    private requestTracks(query: string, offset: number): Observable<SearchRdo> {
+        this.loading.set(true);
+        const limit = this._settingsState.settingsModel().system?.limitPerPage ?? 20;
+        const { provider, duration } = this.config();
+        const dur = provider === SearchProvider.YouTube ? duration : undefined;
+
+        return this._api
+            .searchTracks(query, limit, offset, provider, dur)
+            .pipe(finalize(() => this.loading.set(false)));
     }
 
     public setProvider(provider: SearchProvider): void {
-        if (this.provider() === provider) return;
-        this.provider.set(provider);
-        this.saveSettings();
+        if (this.config().provider === provider) return;
+        this.config.update((c) => ({ ...c, provider }));
         if (this.hasSearched() && this.query()) {
             this.search(this.query());
         }
     }
 
     public setDuration(duration: SearchDurationFilter): void {
-        if (this.duration() === duration) return;
-        this.duration.set(duration);
-        this.saveSettings();
-        if (this.hasSearched() && this.query()) {
+        if (this.config().duration === duration) return;
+        this.config.update((c) => ({ ...c, duration }));
+        if (this.config().provider === SearchProvider.YouTube && this.hasSearched() && this.query()) {
             this.search(this.query());
         }
+    }
+
+    public setSortOption(sort: SearchSortOption): void {
+        this.config.update((c) => ({ ...c, sort }));
     }
 
     public clear(): void {
@@ -91,38 +102,28 @@ export class SearchViewState {
         this._history.add(trimmed);
         this.rawTracks.set([]);
 
-        this.loading.set(true);
-        const limit = this._settingsState.settingsModel().system?.limitPerPage ?? 20;
-        const dur = this.provider() === SearchProvider.YouTube ? this.duration() : undefined;
-        this._api
-            .searchTracks(trimmed, limit, 0, this.provider(), dur)
-            .pipe(finalize(() => this.loading.set(false)))
-            .subscribe({
-                next: (res) => {
-                    this.rawTracks.set(res.tracks);
-                    this.hasMore.set(res.hasMore);
-                },
-                error: () => this._notification.error('Search failed. Try again.'),
-            });
+        this.requestTracks(trimmed, 0).subscribe({
+            next: (res) => {
+                this.rawTracks.set(res.tracks);
+                this.hasMore.set(res.hasMore);
+            },
+            error: () => {
+                this._notification.error('Search failed. Try again.');
+            },
+        });
     }
 
     public loadMore(): void {
         const q = this.query().trim();
         if (!q || this.loading() || !this.hasMore() || this.rawTracks().length === 0) return;
 
-        this.loading.set(true);
-        const limit = this._settingsState.settingsModel().system?.limitPerPage ?? 20;
-        const dur = this.provider() === SearchProvider.YouTube ? this.duration() : undefined;
-        this._api
-            .searchTracks(q, limit, this.rawTracks().length, this.provider(), dur)
-            .pipe(finalize(() => this.loading.set(false)))
-            .subscribe({
-                next: (res) => {
-                    const existingIds = new Set(this.rawTracks().map((t) => t.id));
-                    const uniqueNewTracks = res.tracks.filter((t) => !existingIds.has(t.id));
-                    this.rawTracks.update((prev) => [...prev, ...uniqueNewTracks]);
-                    this.hasMore.set(res.hasMore);
-                },
-            });
+        this.requestTracks(q, this.rawTracks().length).subscribe({
+            next: (res) => {
+                const existingIds = new Set(this.rawTracks().map((t) => t.id));
+                const unique = res.tracks.filter((t) => !existingIds.has(t.id));
+                this.rawTracks.update((prev) => [...prev, ...unique]);
+                this.hasMore.set(res.hasMore);
+            },
+        });
     }
 }
