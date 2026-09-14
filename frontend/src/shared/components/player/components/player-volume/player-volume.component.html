@@ -3,8 +3,7 @@
 </button>
 
 <mat-slider max="1" min="0" step="0.01">
-    <input (valueChange)="volumeChange.emit($event)"
+    <input (input)="onSliderMove($event)"
            [value]="volume()"
            matSliderThumb>
 </mat-slider>
-

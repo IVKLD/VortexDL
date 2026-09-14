@@ -57,9 +57,9 @@ pub async fn search_tracks(
 ) -> Result<impl IntoResponse, ApiError> {
     let trimmed = params.query.trim();
 
-    let query = (!trimmed.is_empty())
-        .then_some(trimmed)
-        .ok_or_else(|| ApiError::bad_request("Search query cannot be empty").with_code(ErrorCode::EmptyUrl))?;
+    let query = (!trimmed.is_empty()).then_some(trimmed).ok_or_else(|| {
+        ApiError::bad_request("Search query cannot be empty").with_code(ErrorCode::EmptyUrl)
+    })?;
 
     let limit = params.limit.unwrap_or(20) as usize;
     let offset = params.offset.unwrap_or(0) as usize;
