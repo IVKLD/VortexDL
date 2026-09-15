@@ -11,8 +11,10 @@ import { MatSlider, MatSliderThumb } from "@angular/material/slider";
 })
 export class PlayerVolumeComponent {
   public readonly volume = input.required<number>();
+  public readonly volumeChange = output<number>();
+  public readonly toggleMute = output<void>();
 
-  protected readonly volumeIcon = computed(() => {
+  public readonly volumeIcon = computed(() => {
     const vol = this.volume();
     if (vol === 0) return "volume_off";
     if (vol < 0.5) return "volume_down";
@@ -21,9 +23,7 @@ export class PlayerVolumeComponent {
 
   protected onSliderMove(event: InputEvent) {
     const input = event.target as HTMLInputElement;
-    this.volumeChange.emit(Number(input.value))
+    this.volumeChange.emit(Number(input.value));
   }
 
-  public readonly volumeChange = output<number>();
-  public readonly toggleMute = output<void>();
 }
