@@ -6,7 +6,7 @@ use soundcloud_rs::{Client, Identifier, ResolvedResource, UserTrackLikesQuery};
 use url::Url;
 
 use crate::{
-    api::download_manager::{MessageLevel, ServerEvent},
+    download_manager::{MessageLevel, ServerEvent},
     downloader::Context,
     types::DiscoveredMusicTrack,
     ui::create_standalone_spinner,
@@ -145,9 +145,7 @@ pub async fn resolve_tracks_from_url(
                 }
             })
             .await
-            .map_err(|proxy_err| {
-                anyhow::anyhow!("SoundCloud discovery failed: {e} (proxies: {proxy_err})")
-            })
+            .map_err(|proxy_err| anyhow!("SoundCloud discovery failed: {e} (proxies: {proxy_err})"))
         }
     };
 
@@ -158,26 +156,24 @@ pub async fn resolve_tracks_from_url(
 async fn discover_tracks_from_url(
     ctx: &Context,
     url: &Url,
-    client: &soundcloud_rs::Client,
+    client: &Client,
 ) -> Result<Vec<DiscoveredMusicTrack>> {
     let res = client.resolve_url(url).await?;
 
     let all_tracks = match res {
         ResolvedResource::User(user) => {
-            let id = user
-                .id
-                .ok_or_else(|| anyhow::anyhow!("User ID is missing"))?;
+            let id = user.id.ok_or_else(|| anyhow!("User ID is missing"))?;
             discover_liked_tracks(ctx, client, id).await?
         }
         ResolvedResource::Playlist(playlist) => {
             let id = playlist
                 .id
-                .ok_or_else(|| anyhow::anyhow!("Playlist ID is missing"))?;
+                .ok_or_else(|| anyhow!("Playlist ID is missing"))?;
             discover_playlist_tracks(ctx, client, id).await?
         }
         ResolvedResource::Track(track) => {
             let discovered = DiscoveredMusicTrack::from_track(track)
-                .ok_or_else(|| anyhow::anyhow!("Track missing required ID"))?;
+                .ok_or_else(|| anyhow!("Track missing required ID"))?;
             vec![discovered]
         }
     };

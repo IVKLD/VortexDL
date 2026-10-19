@@ -5,17 +5,26 @@ pub use soundcloud::resolve_soundcloud_stream;
 pub use youtube::resolve_youtube_stream;
 
 use crate::{
-    api::{errors::ApiError, state::AppState},
+    api::{
+        errors::ApiError,
+        state::{AppState, cache::CachedStream},
+    },
     types::SourcePlatform,
 };
+
+#[derive(Debug, Clone)]
+pub struct ResolvedStreamInfo {
+    pub stream_url: String,
+    pub proxy_used: Option<String>,
+}
 
 pub async fn resolve_stream_url(
     state: &AppState,
     id: i64,
     url_param: Option<String>,
-) -> Result<String, ApiError> {
-    if let Some(cached_url) = state.cache.get_stream(id).await {
-        return Ok(cached_url);
+) -> Result<CachedStream, ApiError> {
+    if let Some(cached) = state.cache.get_stream(id).await {
+        return Ok(cached);
     }
 
     let target_url = if let Some(u) = url_param {
@@ -27,12 +36,11 @@ pub async fn resolve_stream_url(
             .storage
             .read()
             .await
-            .tracks
-            .get(&id)
+            .get_track(id)
             .and_then(|t| t.metadata.source_url.clone())
     };
 
-    let stream_url = match target_url
+    let resolved = match target_url
         .as_deref()
         .map(SourcePlatform::detect_from_url_str)
     {
@@ -43,7 +51,14 @@ pub async fn resolve_stream_url(
         _ => resolve_soundcloud_stream(state, id).await?,
     };
 
-    state.cache.insert_stream(id, stream_url.clone()).await;
+    state
+        .cache
+        .insert_stream(id, resolved.stream_url.clone(), resolved.proxy_used.clone())
+        .await;
 
-    Ok(stream_url)
+    state
+        .cache
+        .get_stream(id)
+        .await
+        .ok_or_else(|| ApiError::internal("Failed to cache stream"))
 }

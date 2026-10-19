@@ -1,7 +1,7 @@
 use std::time::Duration;
 
-use anyhow::Result;
-use soundcloud_rs::StreamType;
+use anyhow::{Result, anyhow};
+use soundcloud_rs::{Client, StreamType};
 use tokio::task::JoinHandle;
 use url::Url;
 
@@ -55,7 +55,7 @@ pub async fn resolve_stream_source(ctx: &Context, id: i64) -> Result<StreamSourc
                 .await
                 .map_err(|e| {
                     tracing::error!("All fallback proxies failed resolving track {id}: {e}");
-                    anyhow::anyhow!("All fallback proxies failed: {e}")
+                    anyhow!("All fallback proxies failed: {e}")
                 })?;
 
             Ok(StreamSource::new(stype, url, proxy_url))
@@ -64,7 +64,7 @@ pub async fn resolve_stream_source(ctx: &Context, id: i64) -> Result<StreamSourc
 }
 
 async fn resolve_with_client(
-    client: &soundcloud_rs::Client,
+    client: &Client,
     id: i64,
     proxy_url: Option<&str>,
 ) -> Result<StreamSource> {

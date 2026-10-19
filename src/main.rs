@@ -2,6 +2,7 @@ use std::{fs, sync::Arc};
 
 use anyhow::Result;
 use clap::Parser;
+use mimalloc::MiMalloc;
 use tokio::sync::RwLock;
 
 use crate::{
@@ -15,6 +16,7 @@ mod backup;
 mod cli;
 mod constants;
 mod database;
+mod download_manager;
 mod downloader;
 mod settings;
 mod storage;
@@ -24,7 +26,7 @@ mod utils;
 mod watchdog;
 
 #[global_allocator]
-static ALLOC: mimalloc::MiMalloc = mimalloc::MiMalloc;
+static ALLOC: MiMalloc = MiMalloc;
 
 #[tokio::main]
 async fn main() -> Result<()> {

@@ -6,6 +6,7 @@ use axum::{
     http::{Error as HttpError, StatusCode},
     response::{IntoResponse, Response},
 };
+use reqwest::Error as ReqwestError;
 use serde::{Deserialize, Serialize};
 use serde_json::json;
 use soundcloud_rs::Error as SoundCloudError;
@@ -101,8 +102,8 @@ impl From<io::Error> for ApiError {
     }
 }
 
-impl From<reqwest::Error> for ApiError {
-    fn from(err: reqwest::Error) -> Self {
+impl From<ReqwestError> for ApiError {
+    fn from(err: ReqwestError) -> Self {
         let status = if err.is_timeout() {
             StatusCode::GATEWAY_TIMEOUT
         } else if err.is_connect() {

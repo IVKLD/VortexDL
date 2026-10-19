@@ -1,15 +1,18 @@
 use std::sync::Arc;
 
+use reqwest::Client as HttpClient;
+use soundcloud_rs::Client as SoundcloudClient;
 use tokio::sync::RwLock;
 
 use super::cache::AppCache;
 use crate::{
-    api::download_manager::DownloadManager, settings::SettingsManager, storage::MusicStorage,
+    download_manager::DownloadManager, downloader::Context, settings::SettingsManager,
+    storage::MusicStorage,
 };
 
 #[derive(Clone)]
 pub struct AppState {
-    pub client: Arc<soundcloud_rs::Client>,
+    pub client: Arc<SoundcloudClient>,
     pub storage: Arc<RwLock<MusicStorage>>,
     pub download_manager: Arc<DownloadManager>,
     pub settings: SettingsManager,
@@ -18,7 +21,7 @@ pub struct AppState {
 
 impl AppState {
     pub fn new(
-        client: soundcloud_rs::Client,
+        client: SoundcloudClient,
         storage: Arc<RwLock<MusicStorage>>,
         settings: SettingsManager,
     ) -> Self {
@@ -31,7 +34,16 @@ impl AppState {
         }
     }
 
-    pub async fn http_client(&self) -> reqwest::Client {
+    pub fn downloader_context(&self) -> Context {
+        Context::new(
+            self.storage.clone(),
+            self.client.clone(),
+            Some(self.download_manager.clone()),
+            self.settings.clone(),
+        )
+    }
+
+    pub async fn http_client(&self) -> HttpClient {
         let proxy = self
             .settings
             .read()

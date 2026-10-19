@@ -1,12 +1,15 @@
 use std::{path::Path, sync::Arc, time::Duration};
 
 use anyhow::Result;
-use notify::{RecommendedWatcher, RecursiveMode, Watcher};
-use tokio::sync::RwLock;
+use notify::{
+    Config as WatcherConfig, Event, RecommendedWatcher, RecursiveMode, Result as NotifyResult,
+    Watcher,
+};
+use tokio::sync::{RwLock, mpsc::unbounded_channel};
 
 use crate::{
     adb,
-    api::download_manager::{DownloadManager, MessageLevel, ServerEvent},
+    download_manager::{DownloadManager, MessageLevel, ServerEvent},
     settings::SettingsManager,
     storage::MusicStorage,
     types::AudioFormat,
@@ -21,15 +24,15 @@ pub async fn init(
     settings: SettingsManager,
     dm: Arc<DownloadManager>,
 ) -> Result<()> {
-    let (tx, mut rx) = tokio::sync::mpsc::unbounded_channel();
+    let (tx, mut rx) = unbounded_channel();
 
     let mut watcher = RecommendedWatcher::new(
-        move |res: Result<notify::Event, notify::Error>| {
+        move |res: NotifyResult<Event>| {
             if let Ok(event) = res {
                 let _ = tx.send(event);
             }
         },
-        notify::Config::default(),
+        WatcherConfig::default(),
     )?;
 
     let path_to_watch = settings.read().await.downloads.output_path.clone();
@@ -107,7 +110,7 @@ pub async fn init(
     Ok(())
 }
 
-fn is_relevant(event: &notify::Event) -> bool {
+fn is_relevant(event: &Event) -> bool {
     let is_mutation = event.kind.is_create() || event.kind.is_modify() || event.kind.is_remove();
     if !is_mutation {
         return false;

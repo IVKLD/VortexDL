@@ -5,6 +5,7 @@ use std::{
 };
 
 use id3::{Tag, TagLike};
+use yt_audio_downloader::{extract_video_id, is_youtube_url, youtube_id_to_i64};
 
 use super::id3::{get_txxx, get_txxx_with_legacy};
 use crate::{
@@ -25,10 +26,10 @@ fn extract_track_id(tag: Option<&Tag>, source_url: Option<&str>, path: &Path) ->
     }
 
     if let Some(url) = source_url
-        && yt_audio_downloader::is_youtube_url(url)
-        && let Ok(video_id) = yt_audio_downloader::extract_video_id(url)
+        && is_youtube_url(url)
+        && let Ok(video_id) = extract_video_id(url)
     {
-        return yt_audio_downloader::youtube_id_to_i64(&video_id);
+        return youtube_id_to_i64(&video_id);
     }
 
     let mut hasher = DefaultHasher::new();
@@ -111,8 +112,7 @@ mod tests {
 
     use id3::Version;
 
-    use super::*;
-    use crate::storage::metadata::id3::set_txxx;
+    use super::{super::id3::set_txxx, *};
 
     #[test]
     fn test_extract_track_metadata_without_tags() {
@@ -155,7 +155,7 @@ mod tests {
         let _ = tag.write_to_path(&file_path, Version::Id3v23);
 
         let meta = extract_track_metadata(&file_path).unwrap();
-        let expected_id = yt_audio_downloader::youtube_id_to_i64("dQw4w9WgXcQ");
+        let expected_id = youtube_id_to_i64("dQw4w9WgXcQ");
         assert_eq!(meta.id, expected_id);
 
         let _ = std::fs::remove_file(&file_path);

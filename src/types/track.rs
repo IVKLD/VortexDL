@@ -1,5 +1,6 @@
 use serde::{Deserialize, Serialize};
 use url::Url;
+use yt_audio_downloader::{models::VideoMetadata, youtube_id_to_i64};
 
 use super::platform::SourcePlatform;
 use crate::utils::{filename::parse_track_metadata, soundcloud::resize_artwork_url};
@@ -86,9 +87,9 @@ impl DiscoveredMusicTrack {
     }
 }
 
-impl From<&yt_audio_downloader::models::VideoMetadata> for DiscoveredMusicTrack {
-    fn from(meta: &yt_audio_downloader::models::VideoMetadata) -> Self {
-        let id = yt_audio_downloader::youtube_id_to_i64(&meta.id);
+impl From<&VideoMetadata> for DiscoveredMusicTrack {
+    fn from(meta: &VideoMetadata) -> Self {
+        let id = youtube_id_to_i64(&meta.id);
         let permalink_url =
             Url::parse(&format!("https://www.youtube.com/watch?v={}", meta.id)).ok();
         let artwork_url = meta

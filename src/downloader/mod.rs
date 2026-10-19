@@ -1,5 +1,4 @@
 mod complete;
-mod download;
 mod parallel;
 mod pipeline;
 pub mod providers;

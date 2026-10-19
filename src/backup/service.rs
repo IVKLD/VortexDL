@@ -1,5 +1,6 @@
 use std::path::Path;
 
+use serde_json::{from_slice, to_string_pretty};
 use tracing::{debug, instrument};
 
 use super::{BackupAction, BackupError, BackupSnapshot, strategy::BackupStrategy};
@@ -44,7 +45,7 @@ impl<S: BackupStrategy> BackupService<S> {
     async fn do_export(&self, tmp: &Path) -> Result<(), BackupError> {
         let snapshot = BackupSnapshot::from_database()?;
 
-        let json = serde_json::to_string_pretty(&snapshot)?;
+        let json = to_string_pretty(&snapshot)?;
         tokio::fs::write(tmp, json.as_bytes()).await?;
         debug!("Snapshot written ({} bytes)", json.len());
 
@@ -59,7 +60,7 @@ impl<S: BackupStrategy> BackupService<S> {
         let bytes = tokio::fs::read(tmp).await?;
         debug!("Snapshot received ({} bytes)", bytes.len());
 
-        let snapshot: BackupSnapshot = serde_json::from_slice(&bytes)?;
+        let snapshot: BackupSnapshot = from_slice(&bytes)?;
         snapshot.apply_to_database()?;
         Ok(())
     }
@@ -85,7 +86,7 @@ mod tests {
             synced_ids,
         };
 
-        let json = serde_json::to_string_pretty(&snapshot).unwrap();
+        let json = to_string_pretty(&snapshot).unwrap();
         assert!(json.contains("\"version\": 1"));
         assert!(json.contains("\"syncedIds\": [\n    12345\n  ]"));
         assert!(!json.contains("secret123"));

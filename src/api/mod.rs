@@ -1,4 +1,3 @@
-pub mod download_manager;
 pub mod errors;
 pub mod handlers;
 pub mod state;
@@ -12,7 +11,6 @@ use axum::{
     routing::{delete, get, post},
     serve,
 };
-use download_manager::{DownloadItem, DownloadStatus, MessageLevel};
 use handlers::{
     devices::{
         devices_ws, get_device_storage_info, list_adb_devices, scan_adb_device, sync_adb_device,
@@ -43,6 +41,7 @@ use crate::{
     api::state::AppState,
     backup::{BackupAction, BackupProvider, WebDavBackupConfig},
     cli::Args,
+    download_manager::{DownloadItem, DownloadStatus, MessageLevel},
     settings::{
         AdbDeviceSettings, AdbSettings, DownloadSettings, NetworkSettings, SoundcloudSettings,
         SystemSettings, UserSettings, WebDavSettings,

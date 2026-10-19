@@ -1,7 +1,12 @@
-use std::{collections::HashSet, time::SystemTime};
+use std::{
+    collections::{HashMap, HashSet},
+    time::SystemTime,
+};
 
+use anyhow::{Error as AnyhowError, Result};
 use colored::Colorize;
-use tokio::task::JoinHandle;
+use indicatif::ProgressBar;
+use tokio::task::{JoinHandle, spawn_blocking};
 use url::Url;
 
 use super::DownloadTask;
@@ -17,7 +22,7 @@ use crate::{
     utils::{soundcloud, system_time_to_secs},
 };
 
-pub async fn finalize_pipeline_sync(context: &Context, _url: &Url) -> anyhow::Result<()> {
+pub async fn finalize_pipeline_sync(context: &Context, _url: &Url) -> Result<()> {
     adb::sync_connected(context.storage.clone(), context.settings.clone()).await;
 
     soundcloud::update_cached_client_id(&context.client, &context.settings).await;
@@ -62,7 +67,7 @@ pub async fn finalize_single_track(
     let artwork_url = task.track.artwork_url.clone();
     let metadata_clone = metadata.clone();
 
-    tokio::task::spawn_blocking(move || {
+    spawn_blocking(move || {
         let sc_id = track_id.to_string();
         if let Err(err) = save_track_info(SaveTrackArgs {
             path: &file_path,
@@ -76,7 +81,7 @@ pub async fn finalize_single_track(
             tracing::warn!(track_id, "Failed to save track metadata: {err:#}");
         }
 
-        let mut to_update = std::collections::HashMap::new();
+        let mut to_update = HashMap::new();
         to_update.insert(
             path_str,
             CachedMusicTrack {
@@ -119,8 +124,8 @@ pub async fn finalize_single_track(
 pub async fn handle_track_failure(
     context: &Context,
     task: &DownloadTask,
-    err: anyhow::Error,
-    pb: &indicatif::ProgressBar,
+    err: AnyhowError,
+    pb: &ProgressBar,
 ) {
     let full_err_msg = format!("{:#}", err);
     let mut short_err = full_err_msg;

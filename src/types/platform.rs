@@ -1,6 +1,9 @@
+use std::fmt::{Display, Formatter, Result as FmtResult};
+
 use serde::{Deserialize, Serialize};
 use url::Url;
 use utoipa::ToSchema;
+use yt_audio_downloader::is_youtube_url;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, ToSchema)]
 #[serde(rename_all = "lowercase")]
@@ -29,7 +32,7 @@ impl SourcePlatform {
     }
 
     pub fn detect_from_url_str(url: &str) -> Self {
-        if yt_audio_downloader::is_youtube_url(url) {
+        if is_youtube_url(url) {
             Self::YouTube
         } else if Self::is_soundcloud_url(url) {
             Self::SoundCloud
@@ -51,8 +54,8 @@ impl SourcePlatform {
     }
 }
 
-impl std::fmt::Display for SourcePlatform {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+impl Display for SourcePlatform {
+    fn fmt(&self, f: &mut Formatter<'_>) -> FmtResult {
         write!(f, "{}", self.as_str())
     }
 }

@@ -5,10 +5,11 @@ use futures::{
     stream::{self, StreamExt},
 };
 use indicatif::{MultiProgress, ProgressBar};
+use tokio::task::JoinHandle;
 
 use super::{
     complete,
-    download::{download_track, spawn_artwork_fetch},
+    providers::{download_track, spawn_artwork_fetch},
     task::{Context, DownloadTask},
 };
 use crate::{
@@ -17,7 +18,7 @@ use crate::{
 };
 
 pub enum TrackOutcome {
-    Success(tokio::task::JoinHandle<()>),
+    Success(JoinHandle<()>),
     Failed,
     Canceled,
 }

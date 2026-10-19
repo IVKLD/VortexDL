@@ -1,30 +1,15 @@
 use anyhow::Result;
 use url::Url;
 
-use super::{
-    complete,
-    parallel::run_parallel_downloads,
-    providers::{soundcloud, youtube},
-    task::Context,
-};
-use crate::types::{DiscoveredMusicTrack, SourcePlatform};
+use super::{complete, parallel::run_parallel_downloads, providers, task::Context};
+use crate::types::DiscoveredMusicTrack;
 
 /// What: End-to-end pipeline that takes a URL (SoundCloud/YouTube) and processes all tracks to completion.
 /// Flow: Top-level entry point called by background download tasks from the API queue and CLI `download` command.
 /// Why:  Coordinates 5 key stages: (1) platform detection, (2) track discovery, (3) filtering out already-downloaded
 ///       tracks, (4) concurrent downloads with rate-limiting, and (5) playlist ID sync and ADB sync.
 pub async fn run_download_pipeline(ctx: &Context, url: &Url) -> Result<()> {
-    let platform = SourcePlatform::detect_from_url_str(url.as_str());
-
-    let all_tracks = match platform {
-        SourcePlatform::YouTube => youtube::discover_youtube_tracks(url).await?,
-        SourcePlatform::SoundCloud => soundcloud::resolve_tracks_from_url(ctx, url).await?,
-        SourcePlatform::Local => {
-            anyhow::bail!(
-                "Unsupported music URL: '{url}'. Supported platforms: SoundCloud and YouTube."
-            );
-        }
-    };
+    let all_tracks = providers::discover_tracks(ctx, url).await?;
 
     let to_download = exclude_already_downloaded_tracks(ctx, all_tracks).await;
 
@@ -53,10 +38,7 @@ async fn exclude_already_downloaded_tracks(
     tracks
         .into_iter()
         .filter(|track| {
-            let exists = storage
-                .tracks
-                .get(&track.id)
-                .is_some_and(|d| d.path.exists() && !d.is_archived);
+            let exists = storage.is_track_downloaded(track.id);
             if exists {
                 tracing::info!(
                     "Skipping {} - {} (already downloaded)",

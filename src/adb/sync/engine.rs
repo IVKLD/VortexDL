@@ -35,7 +35,7 @@ fn diff_local_and_remote(storage: &MusicStorage, remote_files: &HashSet<String>)
         remote_lower.insert(rf.to_lowercase());
     }
 
-    for track in storage.tracks.values() {
+    for track in storage.values() {
         if track.is_archived {
             continue;
         }
@@ -100,7 +100,7 @@ pub async fn sync_device(
 
     let diff = {
         let storage_read = storage.read().await;
-        if storage_read.tracks.is_empty() {
+        if storage_read.is_empty() {
             return Ok(());
         }
         diff_local_and_remote(&storage_read, &remote_files)

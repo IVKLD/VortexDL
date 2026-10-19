@@ -1,13 +1,13 @@
 use std::{collections::HashSet, net::IpAddr, path::PathBuf};
 
-use anyhow::Result;
+use anyhow::{Result, anyhow};
 use clap::Parser;
 use url::Url;
 
 use crate::{
-    adb,
+    adb::{self, AdbError},
     api::state::AppState,
-    downloader::{self, Context},
+    downloader,
     settings::UserSettings,
 };
 
@@ -91,13 +91,13 @@ async fn list_connected_devices() -> Result<Option<HashSet<String>>> {
             Ok(None)
         }
         Ok(devices) => Ok(Some(devices)),
-        Err(adb::AdbError::NotAvailable) => {
+        Err(AdbError::NotAvailable) => {
             println!(
                 "adb binary not found in PATH. Please install adb and ensure it is accessible."
             );
             Ok(None)
         }
-        Err(e) => Err(anyhow::anyhow!(e)),
+        Err(e) => Err(anyhow!(e)),
     }
 }
 
@@ -150,7 +150,7 @@ pub async fn run_sync_player(state: &AppState) -> Result<()> {
 }
 
 pub async fn run_download(state: &AppState, url: &Url, proxies: &[String]) -> Result<()> {
-    let ctx = Context::from_state(state);
+    let ctx = state.downloader_context();
 
     if !proxies.is_empty() {
         let mut current_settings = ctx.settings.read().await.clone();

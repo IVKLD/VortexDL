@@ -5,14 +5,16 @@ use axum::{
     },
     response::IntoResponse,
 };
+use serde_json::to_string;
+use tokio::sync::broadcast::error::RecvError;
 
-use crate::api::{
+use crate::{
+    api::state::AppState,
     download_manager::{MessageLevel, ServerEvent},
-    state::AppState,
 };
 
 async fn send_event(socket: &mut WebSocket, event: &ServerEvent) -> bool {
-    if let Ok(msg_str) = serde_json::to_string(event) {
+    if let Ok(msg_str) = to_string(event) {
         socket.send(Message::Text(msg_str.into())).await.is_ok()
     } else {
         true
@@ -47,7 +49,7 @@ async fn handle_download_events(mut socket: WebSocket, state: AppState) {
                     break;
                 }
             }
-            Err(tokio::sync::broadcast::error::RecvError::Lagged(_)) => {
+            Err(RecvError::Lagged(_)) => {
                 let queue = state.download_manager.get_queue();
                 for item in queue {
                     let update = ServerEvent::TrackUpdate {

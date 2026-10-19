@@ -36,8 +36,7 @@ pub async fn stream_audio(
         .storage
         .read()
         .await
-        .tracks
-        .get(&id)
+        .get_track(id)
         .map(|t| t.path.clone())
         && path.exists()
     {

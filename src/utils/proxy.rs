@@ -1,7 +1,7 @@
 use std::{future::Future, sync::Arc};
 
-use anyhow::Result;
-use tokio::sync::Semaphore;
+use anyhow::{Result, anyhow, bail};
+use tokio::{sync::Semaphore, task::JoinSet};
 
 use crate::settings::UserSettings;
 
@@ -17,7 +17,7 @@ where
 {
     let proxies = &settings.network.fallback_proxies;
     if proxies.is_empty() {
-        anyhow::bail!("No fallback proxies configured");
+        bail!("No fallback proxies configured");
     }
 
     let max_concurrent = settings.network.max_concurrent_proxies.max(1);
@@ -25,7 +25,7 @@ where
     tracing::debug!("Racing {total} proxies (max {max_concurrent} concurrent)...");
 
     let semaphore = Arc::new(Semaphore::new(max_concurrent));
-    let mut tasks = tokio::task::JoinSet::new();
+    let mut tasks = JoinSet::new();
     let settings_arc = Arc::new(settings.clone());
 
     for proxy in proxies {
@@ -35,7 +35,7 @@ where
             let _permit = permit
                 .acquire()
                 .await
-                .map_err(|_| anyhow::anyhow!("Semaphore closed"))?;
+                .map_err(|_| anyhow!("Semaphore closed"))?;
             fut.await
         });
     }
@@ -52,10 +52,10 @@ where
                 last_err = Some(e);
             }
             Err(e) => {
-                last_err = Some(anyhow::anyhow!("Task join error: {e}"));
+                last_err = Some(anyhow!("Task join error: {e}"));
             }
         }
     }
 
-    Err(last_err.unwrap_or_else(|| anyhow::anyhow!("All proxies failed")))
+    Err(last_err.unwrap_or_else(|| anyhow!("All proxies failed")))
 }

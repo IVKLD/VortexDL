@@ -1,11 +1,12 @@
-use std::sync::Arc;
+use std::{future::Future, sync::Arc};
 
-use anyhow::Result;
+use anyhow::{Result, anyhow, bail};
 use soundcloud_rs::{
-    Client, ClientBuilder as RawClientBuilder, Identifier, ProxyUrlProvider, StreamType,
+    Client, ClientBuilder as RawClientBuilder, Identifier, ProxyUrlProvider, StreamType, Track,
 };
 use url::Url;
 
+use super::proxy::race_proxies;
 use crate::settings::{SettingsManager, UserSettings};
 
 pub async fn update_cached_client_id(client: &Client, settings: &SettingsManager) {
@@ -63,7 +64,7 @@ impl<'a> ClientBuilder<'a> {
         let client = builder
             .build()
             .await
-            .map_err(|e| anyhow::anyhow!("Failed to build SoundCloud client: {e}"))?;
+            .map_err(|e| anyhow!("Failed to build SoundCloud client: {e}"))?;
 
         if let Some(mgr) = self.settings_manager {
             let provider = ProxyUrlProvider(Arc::new(move || mgr.get_proxy_url_sync()));
@@ -77,26 +78,20 @@ impl<'a> ClientBuilder<'a> {
 pub trait SoundcloudExt {
     fn resolve_stream_from_track(
         &self,
-        track: &soundcloud_rs::Track,
-    ) -> impl std::future::Future<Output = Result<(String, StreamType)>> + Send;
+        track: &Track,
+    ) -> impl Future<Output = Result<(String, StreamType)>> + Send;
 
-    fn resolve_stream(
-        &self,
-        id: i64,
-    ) -> impl std::future::Future<Output = Result<(String, StreamType)>> + Send;
+    fn resolve_stream(&self, id: i64) -> impl Future<Output = Result<(String, StreamType)>> + Send;
 
     fn resolve_stream_url(
         &self,
-        track: Option<&soundcloud_rs::Track>,
+        track: Option<&Track>,
         id: i64,
-    ) -> impl std::future::Future<Output = Result<String>> + Send;
+    ) -> impl Future<Output = Result<String>> + Send;
 }
 
 impl SoundcloudExt for Client {
-    async fn resolve_stream_from_track(
-        &self,
-        track: &soundcloud_rs::Track,
-    ) -> Result<(String, StreamType)> {
+    async fn resolve_stream_from_track(&self, track: &Track) -> Result<(String, StreamType)> {
         if let Ok(url) = self
             .resolve_stream_url_from_track(track, Some(&StreamType::Progressive))
             .await
@@ -110,7 +105,7 @@ impl SoundcloudExt for Client {
             return Ok((url, StreamType::Hls));
         }
 
-        anyhow::bail!("No playable stream URL found for track")
+        bail!("No playable stream URL found for track")
     }
 
     async fn resolve_stream(&self, id: i64) -> Result<(String, StreamType)> {
@@ -120,7 +115,7 @@ impl SoundcloudExt for Client {
 
     async fn resolve_stream_url(
         &self,
-        track: Option<&soundcloud_rs::Track>,
+        track: Option<&Track>,
         id: i64,
     ) -> Result<String> {
         let (url, _) = match track {
@@ -135,7 +130,7 @@ pub async fn resolve_soundcloud_stream_with_fallback(
     settings: &UserSettings,
     id: i64,
 ) -> Result<(String, StreamType, Option<String>)> {
-    crate::utils::proxy::race_proxies(settings, move |s, proxy| async move {
+    race_proxies(settings, move |s, proxy| async move {
         let client = ClientBuilder::new(&s)
             .with_proxy(Some(&proxy))
             .build()

@@ -3,31 +3,34 @@ use std::{
     sync::Arc,
 };
 
+use soundcloud_rs::Client;
 use tokio::sync::RwLock;
 
 use crate::{
-    api::{download_manager::DownloadManager, state::AppState},
-    settings::SettingsManager,
-    storage::MusicStorage,
-    types::DiscoveredMusicTrack,
-    utils::filename::clean_filename,
+    download_manager::DownloadManager, settings::SettingsManager, storage::MusicStorage,
+    types::DiscoveredMusicTrack, utils::filename::clean_filename,
 };
 
 #[derive(Clone)]
 pub struct Context {
     pub storage: Arc<RwLock<MusicStorage>>,
-    pub client: Arc<soundcloud_rs::Client>,
+    pub client: Arc<Client>,
     pub dm: Option<Arc<DownloadManager>>,
     pub settings: SettingsManager,
 }
 
 impl Context {
-    pub fn from_state(state: &AppState) -> Self {
+    pub fn new(
+        storage: Arc<RwLock<MusicStorage>>,
+        client: Arc<Client>,
+        dm: Option<Arc<DownloadManager>>,
+        settings: SettingsManager,
+    ) -> Self {
         Self {
-            storage: state.storage.clone(),
-            client: state.client.clone(),
-            dm: Some(state.download_manager.clone()),
-            settings: state.settings.clone(),
+            storage,
+            client,
+            dm,
+            settings,
         }
     }
 }

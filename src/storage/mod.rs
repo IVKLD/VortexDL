@@ -10,16 +10,38 @@ use std::{
 
 use anyhow::Result;
 pub use model::LocalMusicTrack;
-use tokio::task::spawn_blocking;
+use tokio::{fs::remove_file, task::spawn_blocking};
 
 use crate::database::cache::{remove_cached_track, update_cached_tracks_batch};
 
 #[derive(Default)]
 pub struct MusicStorage {
-    pub tracks: HashMap<i64, LocalMusicTrack>,
+    tracks: HashMap<i64, LocalMusicTrack>,
 }
 
 impl MusicStorage {
+    pub fn get_track(&self, id: i64) -> Option<&LocalMusicTrack> {
+        self.tracks.get(&id)
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.tracks.is_empty()
+    }
+
+    pub fn values(&self) -> impl Iterator<Item = &LocalMusicTrack> {
+        self.tracks.values()
+    }
+
+    pub fn iter(&self) -> impl Iterator<Item = (&i64, &LocalMusicTrack)> {
+        self.tracks.iter()
+    }
+
+    pub fn is_track_downloaded(&self, id: i64) -> bool {
+        self.tracks
+            .get(&id)
+            .is_some_and(|d| d.path.exists() && !d.is_archived)
+    }
+
     pub fn update_track(&mut self, id: i64, data: LocalMusicTrack) {
         self.tracks.insert(id, data);
     }
@@ -72,7 +94,7 @@ impl MusicStorage {
 
 async fn delete_track_file(path: &Path) -> Result<(), io::Error> {
     if path.exists() {
-        tokio::fs::remove_file(path).await?;
+        remove_file(path).await?;
     }
     Ok(())
 }

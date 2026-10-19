@@ -4,21 +4,19 @@ use axum::{
     http::StatusCode,
     response::IntoResponse,
 };
+use url::Url;
 
 use crate::{
     api::{
-        download_manager::{DownloadItem, ServerEvent},
         errors::{ApiError, ErrorCode},
         state::AppState,
         types::{ApiStatus, DownloadRequest, DownloadStartResponse},
     },
+    download_manager::{DownloadItem, DownloadManager, ServerEvent},
     downloader,
 };
 
-struct ReleaseUrlGuard<'a>(
-    &'a crate::api::download_manager::DownloadManager,
-    &'a url::Url,
-);
+struct ReleaseUrlGuard<'a>(&'a DownloadManager, &'a Url);
 
 impl Drop for ReleaseUrlGuard<'_> {
     fn drop(&mut self) {
@@ -29,9 +27,9 @@ impl Drop for ReleaseUrlGuard<'_> {
     }
 }
 
-async fn run_pipeline_bg(state: AppState, url: url::Url) {
+async fn run_pipeline_bg(state: AppState, url: Url) {
     let _guard = ReleaseUrlGuard(&state.download_manager, &url);
-    let ctx = downloader::Context::from_state(&state);
+    let ctx = state.downloader_context();
 
     if let Err(e) = downloader::run_download_pipeline(&ctx, &url).await {
         state.download_manager.broadcast_event(ServerEvent::Error {

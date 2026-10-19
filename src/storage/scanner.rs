@@ -8,6 +8,7 @@ use tokio::task::spawn_blocking;
 
 use super::{MusicStorage, metadata::extract_track_metadata, model::LocalMusicTrack};
 use crate::{
+    constants::ARCHIVE_DIR,
     database::cache::{CachedMusicTrack, get_cached_music_tracks, update_cached_tracks_batch},
     types::AudioFormat,
     utils::system_time_to_secs,
@@ -80,7 +81,7 @@ impl MusicStorage {
 
                     let is_archived = path
                         .strip_prefix(&root)
-                        .map(|rel| rel.iter().any(|c| c == crate::constants::ARCHIVE_DIR))
+                        .map(|rel| rel.iter().any(|c| c == ARCHIVE_DIR))
                         .unwrap_or(false);
 
                     if let Some(cached_track) = cached

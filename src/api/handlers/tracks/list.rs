@@ -32,7 +32,6 @@ pub async fn get_tracks(
     let storage = state.storage.read().await;
 
     let mut tracks = storage
-        .tracks
         .iter()
         .map(|(id, data)| MusicTrackRecord::from_local_track(*id, data))
         .collect::<Vec<_>>();

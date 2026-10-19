@@ -1,6 +1,7 @@
 use std::sync::Arc;
 
-use tokio::sync::{RwLock, watch};
+use anyhow::Result;
+use tokio::sync::{RwLock, RwLockReadGuard, watch};
 
 use super::model::UserSettings;
 use crate::database::update_settings;
@@ -20,7 +21,7 @@ impl SettingsManager {
         }
     }
 
-    pub async fn read(&self) -> tokio::sync::RwLockReadGuard<'_, UserSettings> {
+    pub async fn read(&self) -> RwLockReadGuard<'_, UserSettings> {
         self.inner.read().await
     }
 
@@ -31,7 +32,7 @@ impl SettingsManager {
             .and_then(|s| s.network.get_proxy_url().map(String::from))
     }
 
-    pub async fn update(&self, new_settings: UserSettings) -> anyhow::Result<()> {
+    pub async fn update(&self, new_settings: UserSettings) -> Result<()> {
         update_settings(&new_settings)?;
         *self.inner.write().await = new_settings;
         let _ = self.change_tx.send(());

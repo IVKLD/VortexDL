@@ -1,8 +1,10 @@
 use axum::{
+    Json,
     http::{StatusCode, Uri, header},
     response::{Html, IntoResponse, Response},
 };
 use rust_embed::RustEmbed;
+use serde_json::json;
 
 #[derive(RustEmbed)]
 #[folder = "frontend/dist/voltexdl/browser/"]
@@ -14,7 +16,7 @@ pub async fn static_handler(uri: Uri) -> impl IntoResponse {
     if path.starts_with("api/") || path == "api" {
         return (
             StatusCode::NOT_FOUND,
-            axum::Json(serde_json::json!({
+            Json(json!({
                 "status": "error",
                 "message": format!("Endpoint not found: {}", uri.path())
             })),
