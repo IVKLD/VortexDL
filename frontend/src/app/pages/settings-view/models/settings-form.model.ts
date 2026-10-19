@@ -20,6 +20,7 @@ export type NetworkSettings = {
     useProxy: boolean;
     proxyUrl: string;
     fallbackProxies: string[];
+    maxConcurrentProxies?: number;
 }
 
 export type AdbDeviceSettings = {

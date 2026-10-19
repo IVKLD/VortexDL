@@ -1,3 +1,4 @@
+import { Injectable } from '@angular/core';
 import { PlayableTrack } from '@shared/models/music-track.model';
 import {
     setMediaSessionPlaybackState,
@@ -5,6 +6,9 @@ import {
     updateMediaSessionMetadata,
 } from '@shared/utils/media-session.utils';
 
+@Injectable({
+    providedIn: 'root'
+})
 export class MediaSessionManagerService {
     public initHandlers(callbacks: {
         onPlay: () => void;

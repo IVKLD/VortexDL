@@ -58,11 +58,11 @@ pub async fn search_tracks(
     let trimmed = params.query.trim();
 
     let query = (!trimmed.is_empty()).then_some(trimmed).ok_or_else(|| {
-        ApiError::bad_request("Search query cannot be empty").with_code(ErrorCode::EmptyUrl)
+        ApiError::bad_request("Search query cannot be empty").with_code(ErrorCode::BadRequest)
     })?;
 
-    let limit = params.limit.unwrap_or(20) as usize;
-    let offset = params.offset.unwrap_or(0) as usize;
+    let limit = (params.limit.unwrap_or(20).max(1) as usize).min(100);
+    let offset = params.offset.unwrap_or(0).max(0) as usize;
     let provider = params.provider.unwrap_or(SearchProviderParam::Soundcloud);
     let allow_yt = provider == SearchProviderParam::Youtube;
     let allow_sc = provider == SearchProviderParam::Soundcloud;
@@ -105,9 +105,9 @@ pub async fn search_tracks(
     let sc_fut = async {
         if allow_sc {
             let sc_query = TracksQuery {
-                q: Some(params.query.clone()),
-                limit: params.limit,
-                offset: params.offset,
+                q: Some(query.to_string()),
+                limit: Some(limit as i32),
+                offset: Some(offset as i32),
                 ..Default::default()
             };
             state.client.search_tracks(Some(&sc_query)).await.ok()

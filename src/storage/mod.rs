@@ -1,7 +1,6 @@
 pub mod metadata;
 mod model;
 mod scanner;
-pub mod sync;
 
 use std::{
     collections::{HashMap, HashSet},

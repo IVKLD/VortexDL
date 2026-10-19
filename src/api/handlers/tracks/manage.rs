@@ -4,18 +4,11 @@ use axum::{
     http::StatusCode,
     response::IntoResponse,
 };
-use serde::Deserialize;
-use utoipa::ToSchema;
 
 use crate::api::{
     errors::{ApiError, ErrorCode},
     state::AppState,
 };
-
-#[derive(Deserialize, ToSchema)]
-pub struct DeleteTracksPayload {
-    pub ids: Vec<i64>,
-}
 
 #[utoipa::path(
     method(delete),
@@ -42,16 +35,16 @@ pub async fn remove_track(
 #[utoipa::path(
     method(delete),
     path = "/api/downloads",
-    request_body = DeleteTracksPayload,
+    request_body = Vec<i64>,
     responses(
         (status = 200, description = "Tracks deleted successfully")
     )
 )]
 pub async fn remove_tracks(
     State(state): State<AppState>,
-    Json(payload): Json<DeleteTracksPayload>,
+    Json(ids): Json<Vec<i64>>,
 ) -> Result<impl IntoResponse, ApiError> {
     let mut storage = state.storage.write().await;
-    storage.remove_tracks_batch(payload.ids).await?;
+    storage.remove_tracks_batch(ids).await?;
     Ok(StatusCode::OK)
 }

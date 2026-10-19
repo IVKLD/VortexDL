@@ -5,49 +5,50 @@ use std::{
 
 use tokio::sync::watch;
 
+use crate::utils::MutexExt;
+
+#[derive(Default)]
+struct CancellationInner {
+    senders: HashMap<i64, watch::Sender<bool>>,
+    canceled_ids: HashSet<i64>,
+}
+
 /// CancellationRegistry manages task cancellation channels using tokio watch signals.
 #[derive(Default)]
 pub struct CancellationRegistry {
-    senders: Mutex<HashMap<i64, watch::Sender<bool>>>,
-    canceled_ids: Mutex<HashSet<i64>>,
+    inner: Mutex<CancellationInner>,
 }
 
 impl CancellationRegistry {
     pub fn register(&self, id: i64) -> watch::Receiver<bool> {
-        let mut senders = self.senders.lock().unwrap_or_else(|e| e.into_inner());
-        let canceled = self.canceled_ids.lock().unwrap_or_else(|e| e.into_inner());
-        let initial = canceled.contains(&id);
+        let mut inner = self.inner.lock_unpoisoned();
+        let initial = inner.canceled_ids.contains(&id);
         let (tx, rx) = watch::channel(initial);
-        senders.insert(id, tx);
+        inner.senders.insert(id, tx);
         rx
     }
 
     pub fn get_receiver(&self, id: i64) -> Option<watch::Receiver<bool>> {
-        let canceled = self.canceled_ids.lock().unwrap_or_else(|e| e.into_inner());
-        if canceled.contains(&id) {
+        let inner = self.inner.lock_unpoisoned();
+        if inner.canceled_ids.contains(&id) {
             let (_tx, rx) = watch::channel(true);
             return Some(rx);
         }
-        let senders = self.senders.lock().unwrap_or_else(|e| e.into_inner());
-        senders.get(&id).map(|tx| tx.subscribe())
+        inner.senders.get(&id).map(|tx| tx.subscribe())
     }
 
     pub fn trigger_cancel(&self, id: i64) {
-        {
-            let mut canceled = self.canceled_ids.lock().unwrap_or_else(|e| e.into_inner());
-            canceled.insert(id);
-        }
-        let senders = self.senders.lock().unwrap_or_else(|e| e.into_inner());
-        if let Some(tx) = senders.get(&id) {
+        let mut inner = self.inner.lock_unpoisoned();
+        inner.canceled_ids.insert(id);
+        if let Some(tx) = inner.senders.get(&id) {
             let _ = tx.send(true);
         }
     }
 
     pub fn unregister(&self, id: i64) {
-        let mut senders = self.senders.lock().unwrap_or_else(|e| e.into_inner());
-        senders.remove(&id);
-        let mut canceled = self.canceled_ids.lock().unwrap_or_else(|e| e.into_inner());
-        canceled.remove(&id);
+        let mut inner = self.inner.lock_unpoisoned();
+        inner.senders.remove(&id);
+        inner.canceled_ids.remove(&id);
     }
 }
 

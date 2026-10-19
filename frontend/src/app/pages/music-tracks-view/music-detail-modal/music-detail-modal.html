@@ -60,7 +60,7 @@
     }
 
     @if (isLocalTrack()) {
-        <button (click)="actions.delete(track.id)" mat-dialog-close mat-icon-button matTooltip="Delete from library">
+        <button (click)="actions.delete([track.id])" mat-dialog-close mat-icon-button matTooltip="Delete from library">
             <mat-icon>delete</mat-icon>
         </button>
     }

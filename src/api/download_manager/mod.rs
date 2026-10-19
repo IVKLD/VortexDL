@@ -10,7 +10,7 @@ use tokio::sync::{broadcast, watch};
 pub use types::*;
 use url::Url;
 
-use crate::{api::types::AudioFormat, types::DiscoveredMusicTrack};
+use crate::types::{AudioFormat, DiscoveredMusicTrack};
 
 /// DownloadManager acts as a Facade combining TaskQueue (state), CancellationRegistry (cancellation), and EventBus (messaging).
 #[derive(Default)]
@@ -81,7 +81,7 @@ impl DownloadManager {
             item.status = DownloadStatus::Finished;
             item.format = Some(format);
             item.created_at = Some(created_at);
-            item.details.source_url = source_url.cloned();
+            item.source_url = source_url.cloned();
             item.progress = Some(100.0);
             item.size = Some(size);
             self.events.notify_track_update(item);
@@ -104,6 +104,7 @@ impl DownloadManager {
             item.error = None;
             self.events.notify_track_update(item);
         }
+        self.cancellation.unregister(id);
     }
 
     pub fn broadcast_event(&self, event: ServerEvent) {

@@ -2,7 +2,7 @@ import { Component, input, output } from '@angular/core';
 import { MatIcon } from '@angular/material/icon';
 import { MatIconButton } from '@angular/material/button';
 import { MatProgressSpinner } from '@angular/material/progress-spinner';
-import { CdkMenuModule } from '@angular/cdk/menu';
+import { MatMenuModule } from '@angular/material/menu';
 import { MusicCard } from '@shared/components/music-card/music-card';
 import { DurationPipe } from '@shared/pipes/duration.pipe';
 import { CompactNumberPipe } from '@shared/pipes/compact-number.pipe';
@@ -19,7 +19,7 @@ import { SearchTrackItemRdo } from '../../models/search-view.model';
         MatProgressSpinner,
         DurationPipe,
         CompactNumberPipe,
-        CdkMenuModule,
+        MatMenuModule,
         PlatformChipComponent,
         PlatformPipe,
     ],

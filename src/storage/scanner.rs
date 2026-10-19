@@ -31,6 +31,10 @@ fn get_file_timestamps(metadata: &fs::Metadata) -> (u64, u64) {
 }
 
 impl MusicStorage {
+    /// What: Scans the local music directory on disk and populates the in-memory `MusicStorage` cache.
+    /// Flow: Runs at application startup and when the user requests a manual library re-index via API.
+    /// Why:  Reading audio tags on thousands of files is slow. This checks file modification times against
+    ///       the SQLite cache table to skip files that haven't changed since the last scan.
     pub async fn scan_library(base_path: impl AsRef<Path>) -> HashMap<i64, LocalMusicTrack> {
         let root = base_path.as_ref().to_path_buf();
 
@@ -39,13 +43,13 @@ impl MusicStorage {
             let mut insert_track = |id: i64, data: LocalMusicTrack| {
                 if tracks
                     .get(&id)
-                    .is_some_and(|existing| !existing.is_archived() && data.is_archived())
+                    .is_some_and(|existing| !existing.is_archived && data.is_archived)
                 {
                     return;
                 }
                 tracks.insert(id, data);
             };
-            let mut stack = vec![root];
+            let mut stack = vec![root.clone()];
             let cached = get_cached_music_tracks().unwrap_or_default();
             let mut visited = HashSet::new();
             let mut to_update = HashMap::new();
@@ -74,18 +78,23 @@ impl MusicStorage {
                     let (mtime, created_at) = get_file_timestamps(&metadata);
                     let path_str = path.to_string_lossy().into_owned();
 
+                    let is_archived = path
+                        .strip_prefix(&root)
+                        .map(|rel| rel.iter().any(|c| c == crate::constants::ARCHIVE_DIR))
+                        .unwrap_or(false);
+
                     if let Some(cached_track) = cached
                         .get(&path_str)
                         .filter(|c| c.size == size && c.mtime == mtime)
                     {
                         visited.insert(path_str);
-                        let data = LocalMusicTrack::from_cached(path, cached_track);
+                        let data = LocalMusicTrack::from_cached(path, cached_track, is_archived);
                         insert_track(data.metadata.id, data);
                     } else if let Some(new_cached) =
                         parse_file_metadata(&path, size, mtime, created_at)
                     {
                         visited.insert(path_str.clone());
-                        let data = LocalMusicTrack::from_cached(path, &new_cached);
+                        let data = LocalMusicTrack::from_cached(path, &new_cached, is_archived);
                         insert_track(data.metadata.id, data);
                         to_update.insert(path_str, new_cached);
                     }

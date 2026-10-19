@@ -1,17 +1,17 @@
-<app-list-view-shell [loading]="state.isLoading() || state.isSearching()" [hasResults]="tracks().length > 0"
-    [empty]="state.searchQuery().trim().length > 0 && tracks().length === 0"
-    [initial]="state.searchQuery().trim().length === 0 && tracks().length === 0">
+<app-list-view-shell [loading]="state.isLoading() || state.search.isSearching()" [hasResults]="tracks().length > 0"
+    [empty]="state.search.hasQuery() && tracks().length === 0"
+    [initial]="state.search.isEmpty() && tracks().length === 0">
 
     <app-search-skeleton skeleton />
 
     <ng-container results>
         <rx-virtual-scroll-viewport [itemSize]="82" scrollWindow>
-            <app-music-card *rxVirtualFor="let track of tracks(); trackBy: 'id'"
-                [appDragSelect]="track" (itemClick)="handleCardClick($event)"
+            <app-music-card #card *rxVirtualFor="let track of tracks(); trackBy: 'id'"
+                [appDragSelect]="track" [selection]="state.selection" (itemClick)="handleCardClick($event)"
                 [isActive]="activeTrackId() === track.id" [isPlaying]="player.isTrackPlaying(track.id)"
                 [isLoadingStream]="player.loadingTrackId() === track.id"
-                [isSelected]="state.selectedIds().has(track.id)" [track]="track" (playTrack)="playTrack(track)"
-                [cdkContextMenuTriggerFor]="cardMenu" [cdkContextMenuTriggerData]="{ $implicit: track }">
+                [isSelected]="state.selection.has(track.id)" [track]="track" (playTrack)="playTrack(track)"
+                [matContextMenuTriggerFor]="cardMenu">
                 <aside meta>
                     @if ((track.sourceUrl || track.permalinkUrl) | platform; as platform) {
                         <app-platform-chip [platform]="platform" />
@@ -24,11 +24,29 @@
 
                 <div actions class="actions-wrapper">
                     <menu role="presentation">
-                        <button [cdkMenuTriggerFor]="cardMenu" [cdkMenuTriggerData]="{ $implicit: track }"
-                            (click)="$event.stopPropagation()" mat-icon-button>
+                        <button [matMenuTriggerFor]="cardMenu" (click)="$event.stopPropagation()" mat-icon-button>
                             <mat-icon>more_vert</mat-icon>
                         </button>
                     </menu>
+
+                    <mat-menu #cardMenu="matMenu">
+                        <button mat-menu-item (click)="playTrack(track)">
+                            <mat-icon>{{ card.isPlaying() ? 'pause' : 'play_arrow' }}</mat-icon>
+                            <span>{{ card.isPlaying() ? 'Pause' : 'Play' }}</span>
+                        </button>
+                        <button mat-menu-item (click)="state.selection.toggle(track.id)">
+                            <mat-icon>{{ card.isSelected() ? 'check_box' : 'check_box_outline_blank' }}</mat-icon>
+                            <span>{{ card.isSelected() ? 'Deselect' : 'Select' }}</span>
+                        </button>
+                        <button mat-menu-item (click)="actions.download(track)">
+                            <mat-icon>download</mat-icon>
+                            <span>Download</span>
+                        </button>
+                        <button mat-menu-item class="delete-menu-item" (click)="actions.delete([track.id])">
+                            <mat-icon>delete</mat-icon>
+                            <span>Delete</span>
+                        </button>
+                    </mat-menu>
                 </div>
             </app-music-card>
         </rx-virtual-scroll-viewport>
@@ -40,31 +58,7 @@
         description="Your library is empty. Go to Dashboard to start downloading music." [accent]="true" />
 </app-list-view-shell>
 
-@if (state.hasSelection()) {
-<app-selection-bar [count]="state.selectedIds().size" (deleteSelected)="deleteSelected()"
-    (clearSelection)="state.clearSelection()" />
+@if (state.selection.hasSelection()) {
+<app-selection-bar [count]="state.selection.count()" (deleteSelected)="deleteSelected()"
+    (clearSelection)="state.selection.clear()" />
 }
-
-<ng-template #cardMenu let-trackData>
-    @let isPlaying = player.isTrackPlaying(trackData.id);
-    @let isSelected = state.selectedIds().has(trackData.id);
-
-    <div cdkMenu>
-        <button cdkMenuItem (click)="playTrack(trackData)">
-            <mat-icon>{{ isPlaying ? 'pause' : 'play_arrow' }}</mat-icon>
-            <span>{{ isPlaying ? 'Pause' : 'Play' }}</span>
-        </button>
-        <button cdkMenuItem (click)="state.toggleSelect(trackData)">
-            <mat-icon>{{ isSelected ? 'check_box' : 'check_box_outline_blank' }}</mat-icon>
-            <span>{{ isSelected ? 'Deselect' : 'Select' }}</span>
-        </button>
-        <button cdkMenuItem (click)="actions.download(trackData)">
-            <mat-icon>download</mat-icon>
-            <span>Download</span>
-        </button>
-        <button cdkMenuItem class="delete" (click)="actions.delete(trackData.id)">
-            <mat-icon>delete</mat-icon>
-            <span>Delete</span>
-        </button>
-    </div>
-</ng-template>

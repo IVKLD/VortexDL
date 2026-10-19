@@ -7,7 +7,10 @@ use url::Url;
 
 use crate::{
     downloader::Context,
-    utils::{http::build_http_client, proxy::race_proxies, soundcloud, soundcloud::SoundcloudExt},
+    utils::{
+        http::build_http_client,
+        soundcloud::{SoundcloudExt, resolve_soundcloud_stream_with_fallback},
+    },
 };
 
 #[derive(Debug, Clone)]
@@ -23,6 +26,13 @@ pub enum StreamSource {
 }
 
 impl StreamSource {
+    pub fn new(stream_type: StreamType, url: String, proxy_url: Option<String>) -> Self {
+        match stream_type {
+            StreamType::Hls => Self::Hls { url, proxy_url },
+            _ => Self::Progressive { url, proxy_url },
+        }
+    }
+
     pub fn url(&self) -> &str {
         match self {
             Self::Progressive { url, .. } | Self::Hls { url, .. } => url,
@@ -41,18 +51,14 @@ pub async fn resolve_stream_source(ctx: &Context, id: i64) -> Result<StreamSourc
                 return Err(direct_err);
             }
 
-            race_proxies(&settings, move |s, proxy| async move {
-                let client = soundcloud::ClientBuilder::new(&s)
-                    .with_proxy(Some(&proxy))
-                    .build()
-                    .await?;
-                resolve_with_client(&client, id, Some(&proxy)).await
-            })
-            .await
-            .map_err(|e| {
-                tracing::error!("All fallback proxies failed resolving track {id}: {e}");
-                anyhow::anyhow!("All fallback proxies failed: {e}")
-            })
+            let (url, stype, proxy_url) = resolve_soundcloud_stream_with_fallback(&settings, id)
+                .await
+                .map_err(|e| {
+                    tracing::error!("All fallback proxies failed resolving track {id}: {e}");
+                    anyhow::anyhow!("All fallback proxies failed: {e}")
+                })?;
+
+            Ok(StreamSource::new(stype, url, proxy_url))
         }
     }
 }
@@ -63,11 +69,7 @@ async fn resolve_with_client(
     proxy_url: Option<&str>,
 ) -> Result<StreamSource> {
     let (url, stype) = client.resolve_stream(id).await?;
-    let proxy_url = proxy_url.map(String::from);
-    match stype {
-        StreamType::Hls => Ok(StreamSource::Hls { url, proxy_url }),
-        _ => Ok(StreamSource::Progressive { url, proxy_url }),
-    }
+    Ok(StreamSource::new(stype, url, proxy_url.map(String::from)))
 }
 
 pub fn spawn_artwork_fetch(

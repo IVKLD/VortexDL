@@ -5,14 +5,14 @@ use tokio::sync::Semaphore;
 
 use crate::settings::UserSettings;
 
-/// Maximum number of proxy connections to attempt simultaneously.
-/// Keeps file descriptor usage bounded (each attempt opens sockets + reads TLS certs).
-const MAX_CONCURRENT_PROXIES: usize = 10;
-
+/// What: Concurrently tests an async operation across multiple fallback proxies and returns the first success.
+/// Flow: Used during stream resolution and metadata retrieval when direct connections fail.
+/// Why:  Instead of waiting sequentially for slow or dead proxies to timeout, this races them concurrently
+///       using a JoinSet with a concurrency Semaphore, aborting all remaining tasks as soon as one succeeds.
 pub async fn race_proxies<T, F, Fut>(settings: &UserSettings, op: F) -> Result<T>
 where
     T: Send + 'static,
-    F: Fn(UserSettings, String) -> Fut,
+    F: Fn(Arc<UserSettings>, String) -> Fut,
     Fut: Future<Output = Result<T>> + Send + 'static,
 {
     let proxies = &settings.network.fallback_proxies;
@@ -20,15 +20,17 @@ where
         anyhow::bail!("No fallback proxies configured");
     }
 
+    let max_concurrent = settings.network.max_concurrent_proxies.max(1);
     let total = proxies.len();
-    tracing::debug!("Racing {total} proxies (max {MAX_CONCURRENT_PROXIES} concurrent)...");
+    tracing::debug!("Racing {total} proxies (max {max_concurrent} concurrent)...");
 
-    let semaphore = Arc::new(Semaphore::new(MAX_CONCURRENT_PROXIES));
+    let semaphore = Arc::new(Semaphore::new(max_concurrent));
     let mut tasks = tokio::task::JoinSet::new();
+    let settings_arc = Arc::new(settings.clone());
 
     for proxy in proxies {
         let permit = semaphore.clone();
-        let fut = op(settings.clone(), proxy.clone());
+        let fut = op(settings_arc.clone(), proxy.clone());
         tasks.spawn(async move {
             let _permit = permit
                 .acquire()

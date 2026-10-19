@@ -1,0 +1,70 @@
+use anyhow::Result;
+use url::Url;
+
+use super::{
+    complete,
+    parallel::run_parallel_downloads,
+    providers::{soundcloud, youtube},
+    task::Context,
+};
+use crate::types::{DiscoveredMusicTrack, SourcePlatform};
+
+/// What: End-to-end pipeline that takes a URL (SoundCloud/YouTube) and processes all tracks to completion.
+/// Flow: Top-level entry point called by background download tasks from the API queue and CLI `download` command.
+/// Why:  Coordinates 5 key stages: (1) platform detection, (2) track discovery, (3) filtering out already-downloaded
+///       tracks, (4) concurrent downloads with rate-limiting, and (5) playlist ID sync and ADB sync.
+pub async fn run_download_pipeline(ctx: &Context, url: &Url) -> Result<()> {
+    let platform = SourcePlatform::detect_from_url_str(url.as_str());
+
+    let all_tracks = match platform {
+        SourcePlatform::YouTube => youtube::discover_youtube_tracks(url).await?,
+        SourcePlatform::SoundCloud => soundcloud::resolve_tracks_from_url(ctx, url).await?,
+        SourcePlatform::Local => {
+            anyhow::bail!(
+                "Unsupported music URL: '{url}'. Supported platforms: SoundCloud and YouTube."
+            );
+        }
+    };
+
+    let to_download = exclude_already_downloaded_tracks(ctx, all_tracks).await;
+
+    if !to_download.is_empty() {
+        if let Some(ref m) = ctx.dm {
+            for track in &to_download {
+                m.add_task(track.clone());
+            }
+        }
+        run_parallel_downloads(ctx, to_download).await;
+    } else {
+        tracing::info!("Everything synced!");
+    }
+
+    complete::finalize_pipeline_sync(ctx, url).await?;
+
+    Ok(())
+}
+
+async fn exclude_already_downloaded_tracks(
+    ctx: &Context,
+    tracks: Vec<DiscoveredMusicTrack>,
+) -> Vec<DiscoveredMusicTrack> {
+    let storage = ctx.storage.read().await;
+
+    tracks
+        .into_iter()
+        .filter(|track| {
+            let exists = storage
+                .tracks
+                .get(&track.id)
+                .is_some_and(|d| d.path.exists() && !d.is_archived);
+            if exists {
+                tracing::info!(
+                    "Skipping {} - {} (already downloaded)",
+                    track.artist,
+                    track.title
+                );
+            }
+            !exists
+        })
+        .collect()
+}

@@ -1,10 +1,8 @@
 use serde::{Deserialize, Serialize};
 use url::Url;
 
-use crate::{
-    storage::metadata::detect_platform_str,
-    utils::{filename::parse_track_metadata, soundcloud::resize_artwork_url},
-};
+use super::platform::SourcePlatform;
+use crate::utils::{filename::parse_track_metadata, soundcloud::resize_artwork_url};
 
 #[derive(Default, Clone, Debug, Serialize, Deserialize, PartialEq, Eq, utoipa::ToSchema)]
 pub struct TrackMetadata {
@@ -71,16 +69,40 @@ impl DiscoveredMusicTrack {
         ))
     }
 
-    pub fn to_metadata(&self, source_url: Option<String>) -> TrackMetadata {
-        let platform = detect_platform_str(source_url.as_deref()).to_string();
+    pub fn to_metadata(&self, source_url: Option<&Url>) -> TrackMetadata {
+        let source_url_str = source_url.map(|u| u.to_string());
+        let platform = SourcePlatform::detect_from_optional_url(source_url_str.as_deref())
+            .as_str()
+            .to_string();
 
         TrackMetadata {
             id: self.id,
             artist: self.artist.clone(),
             title: self.title.clone(),
             artwork_url: self.artwork_url.as_ref().map(|u| u.as_str().to_string()),
-            source_url,
+            source_url: source_url_str,
             platform,
+        }
+    }
+}
+
+impl From<&yt_audio_downloader::models::VideoMetadata> for DiscoveredMusicTrack {
+    fn from(meta: &yt_audio_downloader::models::VideoMetadata) -> Self {
+        let id = yt_audio_downloader::youtube_id_to_i64(&meta.id);
+        let permalink_url =
+            Url::parse(&format!("https://www.youtube.com/watch?v={}", meta.id)).ok();
+        let artwork_url = meta
+            .thumbnail_url
+            .as_deref()
+            .and_then(|u| Url::parse(u).ok());
+        let (artist, title) = parse_track_metadata(&meta.title, &meta.author);
+        Self {
+            id,
+            title,
+            artist,
+            artwork_url,
+            permalink_url,
+            duration_ms: Some(meta.duration_seconds.saturating_mul(1000)),
         }
     }
 }

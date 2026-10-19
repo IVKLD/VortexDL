@@ -22,18 +22,16 @@ export class SyncState {
 
     public readonly canExport = computed(() => {
         if (this.isExporting() || this.isImporting()) return false;
-        switch (this.selectedProvider()) {
-            case SyncProviderType.WebDav:
-                return this._settingsState.settingsForm.webdav().valid();
-            case SyncProviderType.Local:
-                return this.localPathForm().valid();
-            case SyncProviderType.Url:
-                return false;
-        }
+        if (this.selectedProvider() === SyncProviderType.Url) return false;
+        return this.isCurrentProviderValid();
     });
 
     public readonly canImport = computed(() => {
         if (this.isExporting() || this.isImporting()) return false;
+        return this.isCurrentProviderValid();
+    });
+
+    private isCurrentProviderValid(): boolean {
         switch (this.selectedProvider()) {
             case SyncProviderType.WebDav:
                 return this._settingsState.settingsForm.webdav().valid();
@@ -42,33 +40,9 @@ export class SyncState {
             case SyncProviderType.Url:
                 return this.restoreUrlForm().valid();
         }
-    });
-
-    private getExportPayload(): SyncProviderPayload | null {
-        switch (this.selectedProvider()) {
-            case SyncProviderType.WebDav: {
-                const f = this._settingsState.settingsForm.webdav;
-                return {
-                    webDav: {
-                        baseUrl: f.baseUrl().value(),
-                        remoteDir: f.remoteDir().value(),
-                        username: f.username().value(),
-                        password: f.password().value(),
-                    },
-                };
-            }
-            case SyncProviderType.Local:
-                return {
-                    local: {
-                        path: this.localPath().trim(),
-                    },
-                };
-            case SyncProviderType.Url:
-                return null;
-        }
     }
 
-    private getImportPayload(): SyncProviderPayload | null {
+    private getProviderPayload(): SyncProviderPayload | null {
         switch (this.selectedProvider()) {
             case SyncProviderType.WebDav: {
                 const f = this._settingsState.settingsForm.webdav;
@@ -97,7 +71,8 @@ export class SyncState {
     }
 
     public exportBackup(): void {
-        const payload = this.getExportPayload();
+        if (this.selectedProvider() === SyncProviderType.Url) return;
+        const payload = this.getProviderPayload();
         if (!payload) return;
 
         this.isExporting.set(true);
@@ -108,7 +83,7 @@ export class SyncState {
     }
 
     public importBackup(): void {
-        const payload = this.getImportPayload();
+        const payload = this.getProviderPayload();
         if (!payload) return;
 
         this.isImporting.set(true);

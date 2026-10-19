@@ -13,7 +13,7 @@ use crate::{
     )
 )]
 pub async fn reindex_library(State(state): State<AppState>) -> Result<impl IntoResponse, ApiError> {
-    let base_path = state.settings.output_path().await;
+    let base_path = state.settings.read().await.downloads.output_path.clone();
     let tracks = MusicStorage::scan_library(&base_path).await;
     state.storage.write().await.update_tracks(tracks);
     Ok(StatusCode::OK)

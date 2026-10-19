@@ -6,10 +6,6 @@ use std::{
 
 use tokio::sync::RwLock;
 
-use crate::{
-    api::download_manager::DownloadManager, settings::SettingsManager, storage::MusicStorage,
-};
-
 #[derive(Default)]
 struct CacheInner {
     youtube_ids: HashMap<i64, String>,
@@ -92,37 +88,5 @@ impl AppCache {
         let client = yt_audio_downloader::create_http_client_with_proxy(proxy.as_deref());
         inner.http_client = Some((proxy, client.clone()));
         client
-    }
-}
-
-#[derive(Clone)]
-pub struct AppState {
-    pub client: Arc<soundcloud_rs::Client>,
-    pub storage: Arc<RwLock<MusicStorage>>,
-    pub download_manager: Arc<DownloadManager>,
-    pub settings: SettingsManager,
-    pub cache: AppCache,
-}
-
-impl AppState {
-    pub fn new(
-        client: soundcloud_rs::Client,
-        storage: Arc<RwLock<MusicStorage>>,
-        settings: SettingsManager,
-    ) -> Self {
-        Self {
-            client: Arc::new(client),
-            storage,
-            download_manager: Arc::new(DownloadManager::default()),
-            settings,
-            cache: AppCache::default(),
-        }
-    }
-
-    pub async fn http_client(&self) -> reqwest::Client {
-        let settings = self.settings.read().await;
-        let proxy = settings.network.get_proxy_url().map(String::from);
-        drop(settings);
-        self.cache.get_or_create_client(proxy).await
     }
 }

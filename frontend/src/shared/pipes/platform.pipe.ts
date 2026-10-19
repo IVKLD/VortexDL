@@ -11,14 +11,13 @@ export class PlatformPipe implements PipeTransform {
             return false;
         }
 
-        if (lower === 'youtube' || lower.includes('youtube.com') || lower.includes('youtu.be')) {
+        if (lower.includes('youtube') || lower.includes('youtu.be')) {
             return SupportedPlatform.YouTube;
         }
-        if (lower === 'soundcloud' || lower.includes('soundcloud.com')) {
+        if (lower.includes('soundcloud')) {
             return SupportedPlatform.SoundCloud;
         }
 
-        console.error(`[PlatformPipe] Unable to determine platform for input: "${input}"`);
         return false;
     }
 }

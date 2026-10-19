@@ -1,6 +1,6 @@
 <app-music-card [track]="track()" [isPlaying]="isPlaying()" [isLoadingStream]="isLoadingStream()"
                 (playTrack)="playTrack.emit(track())"
-                [cdkContextMenuTriggerFor]="cardMenu" [cdkContextMenuTriggerData]="{ $implicit: track() }">
+                [matContextMenuTriggerFor]="cardMenu">
     <div meta>
         @if ((track().permalinkUrl || track().sourceUrl) | platform; as platform) {
             <app-platform-chip [platform]="platform"/>
@@ -41,7 +41,7 @@
         }
 
         <menu role="presentation">
-            <button [cdkMenuTriggerFor]="cardMenu" [cdkMenuTriggerData]="{ $implicit: track() }"
+            <button [matMenuTriggerFor]="cardMenu"
                     (click)="$event.stopPropagation()" mat-icon-button>
                 <mat-icon>more_vert</mat-icon>
             </button>
@@ -49,25 +49,23 @@
     </div>
 </app-music-card>
 
-<ng-template #cardMenu let-trackData>
-    <div cdkMenu>
-        <button cdkMenuItem (click)="playTrack.emit(trackData)">
-            <mat-icon>{{ isPlaying() ? 'pause' : 'play_arrow' }}</mat-icon>
-            <span>{{ isPlaying() ? 'Pause' : 'Play' }}</span>
+<mat-menu #cardMenu="matMenu">
+    <button mat-menu-item (click)="playTrack.emit(track())">
+        <mat-icon>{{ isPlaying() ? 'pause' : 'play_arrow' }}</mat-icon>
+        <span>{{ isPlaying() ? 'Pause' : 'Play' }}</span>
+    </button>
+
+    @if (!isDownloaded()) {
+        <button mat-menu-item [disabled]="isDownloaded() || isDownloading()" (click)="downloadTrack.emit(track())">
+            <mat-icon>download</mat-icon>
+            <span>Download</span>
         </button>
+    }
 
-        @if (!isDownloaded()) {
-            <button cdkMenuItem [disabled]="isDownloaded() || isDownloading()" (click)="downloadTrack.emit(trackData)">
-                <mat-icon>download</mat-icon>
-                <span>Download</span>
-            </button>
-        }
-
-        @if (isDownloaded()) {
-            <button cdkMenuItem class="delete" (click)="deleteTrack.emit(trackData)">
-                <mat-icon>delete</mat-icon>
-                <span>Delete</span>
-            </button>
-        }
-    </div>
-</ng-template>
+    @if (isDownloaded()) {
+        <button mat-menu-item class="delete-menu-item" (click)="deleteTrack.emit(track())">
+            <mat-icon>delete</mat-icon>
+            <span>Delete</span>
+        </button>
+    }
+</mat-menu>

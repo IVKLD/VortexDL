@@ -7,7 +7,8 @@ use url::Url;
 
 use crate::{
     api::download_manager::{MessageLevel, ServerEvent},
-    downloader::{Context, DiscoveredMusicTrack},
+    downloader::Context,
+    types::DiscoveredMusicTrack,
     ui::create_standalone_spinner,
     utils::{proxy::race_proxies, soundcloud},
 };

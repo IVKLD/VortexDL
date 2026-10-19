@@ -19,7 +19,8 @@ pub async fn proxy_audio_stream(
     let mut upstream_res =
         send_upstream_request(&client, &stream_url, range_header.as_ref()).await?;
 
-    if upstream_res.status().is_client_error() {
+    let status = upstream_res.status().as_u16();
+    if matches!(status, 401 | 403 | 404 | 410) {
         state.cache.remove_stream(id).await;
         if let Ok(fresh_url) = resolve_stream_url(state, id, url_param).await
             && let Ok(res) = send_upstream_request(&client, &fresh_url, range_header.as_ref()).await

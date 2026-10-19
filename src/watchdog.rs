@@ -12,6 +12,10 @@ use crate::{
     types::AudioFormat,
 };
 
+/// What: Sets up a filesystem watchdog using inotify/system events to monitor the music downloads folder.
+/// Flow: Spawned at application startup to keep library state in sync with external file modifications.
+/// Why:  Debounces incoming file events (waiting 2 seconds after the last write) so that large file copies
+///       or downloads trigger a single clean re-scan, and dynamically rebinds if output_path changes in settings.
 pub async fn init(
     storage: Arc<RwLock<MusicStorage>>,
     settings: SettingsManager,
@@ -28,7 +32,7 @@ pub async fn init(
         notify::Config::default(),
     )?;
 
-    let path_to_watch = settings.output_path().await;
+    let path_to_watch = settings.read().await.downloads.output_path.clone();
 
     watcher.watch(Path::new(&path_to_watch), RecursiveMode::Recursive)?;
     tracing::info!("Watchdog monitoring directory: {}", path_to_watch);
@@ -39,6 +43,7 @@ pub async fn init(
         let mut last_event_time = None;
         let debounce_duration = Duration::from_secs(2);
         let mut check_interval = tokio::time::interval(Duration::from_millis(500));
+        let mut settings_rx = settings.subscribe_changes();
 
         loop {
             tokio::select! {
@@ -47,8 +52,8 @@ pub async fn init(
                         last_event_time = Some(tokio::time::Instant::now());
                     }
                 }
-                _ = check_interval.tick() => {
-                    let current_base_path = settings.output_path().await;
+                Ok(()) = settings_rx.changed() => {
+                    let current_base_path = settings.read().await.downloads.output_path.clone();
 
                     if current_base_path != path_to_watch {
                         tracing::info!("Watchdog: base path changed from {} to {}", path_to_watch, current_base_path);
@@ -67,7 +72,8 @@ pub async fn init(
                             }
                         }
                     }
-
+                }
+                _ = check_interval.tick() => {
                     if last_event_time.is_some_and(|t| t.elapsed() >= debounce_duration) {
                         last_event_time = None;
 

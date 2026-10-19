@@ -10,14 +10,24 @@ pub fn get_settings() -> Result<UserSettings, Error> {
     let db = get_db();
     let read_txn = db.begin_read()?;
 
-    let settings = read_txn
-        .open_table(SETTINGS_TABLE)
-        .ok()
-        .and_then(|table| table.get(SETTINGS_ID).ok().flatten())
-        .and_then(|data| serde_json::from_str(data.value()).ok())
-        .unwrap_or_default();
+    let table = match read_txn.open_table(SETTINGS_TABLE) {
+        Ok(t) => t,
+        Err(_) => return Ok(UserSettings::default()),
+    };
 
-    Ok(settings)
+    let Some(data) = table.get(SETTINGS_ID)? else {
+        return Ok(UserSettings::default());
+    };
+
+    match serde_json::from_str(data.value()) {
+        Ok(settings) => Ok(settings),
+        Err(err) => {
+            tracing::error!(
+                "Failed to parse user settings from database: {err}. Falling back to default settings."
+            );
+            Ok(UserSettings::default())
+        }
+    }
 }
 
 pub fn update_settings(settings: &UserSettings) -> Result<(), Error> {

@@ -1,25 +1,13 @@
-import { inject, Injectable, signal } from '@angular/core';
-import { SettingsTestingService } from '../../settings.service';
-import { finalize } from 'rxjs';
+import { inject, Injectable } from '@angular/core';
 import { FieldTree } from '@angular/forms/signals';
+import { SettingsTestingService } from '@app/pages/settings-view/settings.service';
+import { FieldTesterState } from '@app/pages/settings-view/utils/field-tester.state';
 
 @Injectable()
-export class SoundcloudState {
+export class SoundcloudState extends FieldTesterState {
     private readonly _testingService = inject(SettingsTestingService);
 
-    public readonly isTesting = signal(false);
-
-    public canTest(field: FieldTree<string>): boolean {
-        return !this.isTesting() && field().valid();
-    }
-
     public testUrl(field: FieldTree<string>): void {
-        if (!this.canTest(field)) return;
-
-        this.isTesting.set(true);
-        this._testingService
-            .testSoundCloud(field().value())
-            .pipe(finalize(() => this.isTesting.set(false)))
-            .subscribe();
+        this.runTest(field, (val) => this._testingService.testSoundCloud(val));
     }
 }

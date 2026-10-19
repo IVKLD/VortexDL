@@ -3,7 +3,7 @@ use std::path::Path;
 use reqwest::{Client, StatusCode};
 use tracing::{debug, instrument};
 
-use crate::backup::{error::BackupError, strategy::BackupStrategy};
+use super::super::{error::BackupError, strategy::BackupStrategy};
 
 pub struct UrlStrategy {
     client: Client,
@@ -27,7 +27,7 @@ impl BackupStrategy for UrlStrategy {
         ))
     }
 
-    #[instrument(skip(self), fields(url = %self.url))]
+    #[instrument(skip(self))]
     async fn download(&self, dest: &Path) -> Result<(), BackupError> {
         debug!("URL download to {}", dest.display());
 
@@ -40,7 +40,11 @@ impl BackupStrategy for UrlStrategy {
             _ => {
                 let bytes = response.bytes().await?;
                 tokio::fs::write(dest, &bytes).await?;
-                debug!(bytes = bytes.len(), "URL download complete");
+                debug!(
+                    "URL download complete from {} ({} bytes)",
+                    self.url,
+                    bytes.len()
+                );
                 Ok(())
             }
         }

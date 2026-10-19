@@ -1,7 +1,10 @@
-import { signal } from '@angular/core';
+import { Injectable, signal } from '@angular/core';
 import { PlayableTrack } from '@shared/models/music-track.model';
 import { shuffleArray } from '@shared/utils/array.utils';
 
+@Injectable({
+    providedIn: 'root'
+})
 export class PlayerQueueService {
     private readonly _queue = signal<PlayableTrack[]>([]);
     private readonly _shuffle = signal<boolean>(
@@ -21,10 +24,10 @@ export class PlayerQueueService {
         }
     }
 
-    public removeFromQueue(trackId: number): void {
-        this._queue.update(q => q.filter(t => t.id !== trackId));
+    public removeFromQueue(ids: number[]): void {
+        this._queue.update(q => q.filter(t => !ids.includes(t.id)));
         if (this._shuffle()) {
-            this.shuffleQueue = this.shuffleQueue.filter(t => t.id !== trackId);
+            this.shuffleQueue = this.shuffleQueue.filter(t => !ids.includes(t.id));
         }
     }
 

@@ -6,7 +6,7 @@ use reqwest::{
 };
 use tracing::{debug, instrument};
 
-use crate::backup::{error::BackupError, strategy::BackupStrategy};
+use super::super::{error::BackupError, strategy::BackupStrategy};
 
 const SNAPSHOT_FILENAME: &str = "state.json";
 
@@ -69,12 +69,12 @@ impl WebDavStrategy {
 }
 
 impl BackupStrategy for WebDavStrategy {
-    #[instrument(skip(self), fields(url = %self.file_url))]
+    #[instrument(skip(self))]
     async fn upload(&self, src: &Path) -> Result<(), BackupError> {
         self.ensure_dir().await?;
 
         let body = tokio::fs::read(src).await?;
-        debug!(bytes = body.len(), "WebDAV PUT");
+        debug!("WebDAV PUT to {} ({} bytes)", self.file_url, body.len());
 
         let response = self
             .client
@@ -92,7 +92,7 @@ impl BackupStrategy for WebDavStrategy {
         }
     }
 
-    #[instrument(skip(self), fields(url = %self.file_url))]
+    #[instrument(skip(self))]
     async fn download(&self, dest: &Path) -> Result<(), BackupError> {
         let response = self
             .client
@@ -108,7 +108,11 @@ impl BackupStrategy for WebDavStrategy {
         let bytes = response.bytes().await?;
         tokio::fs::write(dest, &bytes).await?;
 
-        debug!(bytes = bytes.len(), "WebDAV GET complete");
+        debug!(
+            "WebDAV GET complete from {} ({} bytes)",
+            self.file_url,
+            bytes.len()
+        );
         Ok(())
     }
 }

@@ -1,5 +1,6 @@
 use std::time::Duration;
 
+use colored::Colorize;
 use indicatif::{MultiProgress, ProgressBar, ProgressStyle};
 
 pub fn create_total_progress_bar(mp: &MultiProgress, len: u64) -> ProgressBar {
@@ -12,6 +13,20 @@ pub fn create_total_progress_bar(mp: &MultiProgress, len: u64) -> ProgressBar {
             .progress_chars("#>-"),
     );
     total_pb
+}
+
+pub fn create_device_progress_bar(total: u64, device: &str) -> ProgressBar {
+    let pb = ProgressBar::new(total);
+    pb.set_style(
+        ProgressStyle::default_bar()
+            .template(&format!(
+                "{{spinner:.cyan}} [{device}] [{{bar:30.green/white}}] {{pos}}/{{len}} {{msg}}"
+            ))
+            .unwrap_or_else(|_| ProgressStyle::default_bar())
+            .progress_chars("█▉▊▋▌▍▎▏ "),
+    );
+    pb.enable_steady_tick(Duration::from_millis(100));
+    pb
 }
 
 fn setup_spinner(pb: ProgressBar) -> ProgressBar {
@@ -31,4 +46,12 @@ fn get_spinner_style() -> ProgressStyle {
         .template("{spinner:.cyan} {msg}")
         .unwrap_or_else(|_| ProgressStyle::default_spinner())
         .tick_strings(&["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"])
+}
+
+pub fn pb_warn(pb: &ProgressBar, msg: impl std::fmt::Display) {
+    pb.println(format!("{} {msg}", "[WARN]".yellow().bold()));
+}
+
+pub fn pb_err(pb: &ProgressBar, msg: impl std::fmt::Display) {
+    pb.println(format!("{} {msg}", "[ERROR]".red().bold()));
 }

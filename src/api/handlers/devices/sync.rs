@@ -23,8 +23,9 @@ pub async fn sync_adb_device(
     Path(device_id): Path<String>,
     State(state): State<AppState>,
 ) -> Result<impl IntoResponse, ApiError> {
-    let adb_settings = state.settings.read().await.adb.clone();
-    let device_cfg = adb_settings
+    let settings = state.settings.read().await;
+    let device_cfg = settings
+        .adb
         .devices
         .iter()
         .find(|d| d.device_id == device_id);

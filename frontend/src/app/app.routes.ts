@@ -4,7 +4,7 @@ import { Route } from '@angular/router';
 import { HeaderConfig, HeaderFeature, HeaderSortOption } from '@shared/components/bricks/header/header.types';
 import { SettingsView } from './pages/settings-view/settings-view.component';
 import { SearchView } from './pages/search-view/search-view';
-import { MusicSortOption, MusicTracksViewState } from './pages/music-tracks-view/music-tracks-view.state';
+import { MusicSortOption, MusicTracksViewState, TrackSearch } from './pages/music-tracks-view/music-tracks-view.state';
 import { SearchViewState } from './pages/search-view/search-view.state';
 import { inject } from '@angular/core';
 import { form } from '@angular/forms/signals';
@@ -35,12 +35,9 @@ export const routes: CustomRoutes = [
         path: 'musics',
         title: 'Musics',
         resolve: {
-            headerSearch: () => {
-                const state = inject(MusicTracksViewState);
-                return {
-                    formField: state.searchForm,
-                };
-            },
+            headerSearch: () => ({
+                formField: inject(TrackSearch).form,
+            }),
             headerSort: () => {
                 const state = inject(MusicTracksViewState);
                 return {

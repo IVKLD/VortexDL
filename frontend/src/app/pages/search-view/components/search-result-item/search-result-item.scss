@@ -7,7 +7,7 @@ app-music-card {
   width: 100%;
 
   &:hover {
-    [actions] button:not([cdkMenuTriggerFor]) {
+    [actions] button:not([matMenuTriggerFor]) {
       opacity: 1;
     }
   }
@@ -73,7 +73,7 @@ app-music-card {
       flex-shrink: 0;
     }
 
-    button:not([cdkMenuTriggerFor]) {
+    button:not([matMenuTriggerFor]) {
       flex-shrink: 0;
       opacity: 0;
       transition: opacity 0.2s ease, color 0.2s ease;

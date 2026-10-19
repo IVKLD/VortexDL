@@ -1,7 +1,7 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
-import { SearchRdo, DownloadDto } from './models/search-view.model';
+import { SearchRdo } from './models/search-view.model';
 
 @Injectable({ providedIn: 'root' })
 export class SearchViewService {
@@ -18,9 +18,5 @@ export class SearchViewService {
         if (provider) params['provider'] = provider;
         if (duration && duration !== 'any') params['duration'] = duration;
         return this._http.get<SearchRdo>('/search/tracks', { params });
-    }
-
-    public downloadTrack(payload: DownloadDto): Observable<void> {
-        return this._http.post<void>('/download', payload);
     }
 }

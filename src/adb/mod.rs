@@ -1,9 +1,9 @@
-pub mod commands;
+pub mod device;
+pub mod error;
 pub mod state;
 pub mod sync;
-pub mod tracker;
-pub mod ui;
+pub mod transport;
 
-pub use commands::{AdbError, StorageInfo, StorageType, get_device_storages, list_devices};
-pub use sync::sync_device;
-pub use tracker::{init, sync_connected};
+pub use device::{StorageInfo, StorageType, get_device_storages, list_devices, scan_device};
+pub use error::AdbError;
+pub use sync::{init, sync_connected, sync_device};

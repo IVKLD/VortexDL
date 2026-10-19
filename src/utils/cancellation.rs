@@ -2,8 +2,10 @@ use std::future::Future;
 
 use tokio::sync::watch;
 
-/// Races an async future against a tokio watch cancellation receiver.
-/// Returns Some(result) on completion, or None if the cancellation signal was triggered.
+/// What: Runs an asynchronous future while listening for a cancellation signal.
+/// Flow: Wraps long-running operations (like track downloading and audio processing).
+/// Why:  Uses `tokio::select!` so that if the user cancels the task in the UI, the future aborts immediately
+///       without leaving dangling connections or incomplete files on disk.
 pub async fn run_with_cancellation<F, T>(
     cancel_rx: Option<watch::Receiver<bool>>,
     future: F,

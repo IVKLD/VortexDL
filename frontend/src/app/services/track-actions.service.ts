@@ -19,18 +19,6 @@ export class TrackActionsService {
   private readonly _tracksState = inject(MusicTracksViewState);
   private readonly _player = inject(PlayerService);
 
-  private _deleteTrack(id: number) {
-    this._api.delete(id).subscribe({
-      next: () => {
-        this._tracksState.removeTrack(id);
-        if (this._player.currentTrack()?.id === id) {
-          this._player.next();
-        }
-        this._player.removeFromQueue(id);
-      },
-    });
-  }
-
   public download(track: PlayableTrack): void {
     const format = track.format || AudioFormat.MP3;
     const link = document.createElement("a");
@@ -39,8 +27,17 @@ export class TrackActionsService {
     link.click();
   }
 
-  public delete(trackId: number): void {
-    this._deleteTrack(trackId);
+  public delete(ids: number[]): void {
+    this._api.delete(ids).subscribe({
+      next: () => {
+        this._tracksState.removeTracks(ids);
+        const currentId = this._player.currentTrack()?.id;
+        if (currentId && ids.includes(currentId)) {
+          this._player.next();
+        }
+        this._player.removeFromQueue(ids);
+      },
+    });
   }
 
   public deleteWithDialog(data: { title: string; id: number }): void {
@@ -53,7 +50,7 @@ export class TrackActionsService {
 
     dialog.afterClosed().subscribe((result) => {
       if (result) {
-        this._deleteTrack(data.id);
+        this.delete([data.id]);
       }
     });
   }

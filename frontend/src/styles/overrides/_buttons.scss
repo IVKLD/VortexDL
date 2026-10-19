@@ -9,10 +9,11 @@
 }
 
 .mat-mdc-button-base {
-  .mat-icon:only-child,
-  .mdc-button__label>.mat-icon:only-child {
-    margin: 0 !important;
+  &:has(> .mdc-button__label:empty) {
+    --mat-button-filled-icon-spacing: 0;
+    --mat-button-filled-icon-offset: 0;
+    
+    --mat-button-text-icon-spacing: 0;
+    --mat-button-text-icon-offset: 0;
   }
 }
-
-

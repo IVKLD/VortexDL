@@ -1,5 +1,8 @@
-import { effect, inject, NgZone, signal } from '@angular/core';
+import { effect, inject, Injectable, NgZone, signal } from '@angular/core';
 
+@Injectable({
+    providedIn: 'root'
+})
 export class AudioEngineService {
     private readonly zone = inject(NgZone);
     private readonly _audio = new Audio();

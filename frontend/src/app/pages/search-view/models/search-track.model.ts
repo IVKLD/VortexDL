@@ -10,7 +10,3 @@ export interface SearchRdo {
     tracks: SearchTrackItemRdo[];
     hasMore: boolean;
 }
-
-export interface DownloadDto {
-    url: string;
-}

@@ -13,8 +13,8 @@ use crate::{
     )
 )]
 pub async fn get_settings(State(state): State<AppState>) -> impl IntoResponse {
-    let current = state.settings.read().await;
-    Json(&*current).into_response()
+    let current = state.settings.read().await.clone();
+    Json(current).into_response()
 }
 
 #[utoipa::path(

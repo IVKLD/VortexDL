@@ -21,17 +21,13 @@ pub enum ErrorCode {
     IoError,
     AdbError,
     NetworkError,
-    HttpClientError,
     SoundCloudError,
 
     BadRequest,
-    InvalidProxyUrl,
     EmptyUrl,
 
     NotFound,
     TrackNotFound,
-    FileNotFound,
-    DeviceNotFound,
 
     Conflict,
     AlreadyProcessing,
@@ -107,18 +103,23 @@ impl From<io::Error> for ApiError {
 
 impl From<reqwest::Error> for ApiError {
     fn from(err: reqwest::Error) -> Self {
-        Self::new(
-            StatusCode::BAD_REQUEST,
-            ErrorCode::NetworkError,
-            err.to_string(),
-        )
+        let status = if err.is_timeout() {
+            StatusCode::GATEWAY_TIMEOUT
+        } else if err.is_connect() {
+            StatusCode::BAD_GATEWAY
+        } else if let Some(s) = err.status() {
+            s
+        } else {
+            StatusCode::BAD_GATEWAY
+        };
+        Self::new(status, ErrorCode::NetworkError, err.to_string())
     }
 }
 
 impl From<YoutubeAudioError> for ApiError {
     fn from(err: YoutubeAudioError) -> Self {
         Self::new(
-            StatusCode::BAD_REQUEST,
+            StatusCode::BAD_GATEWAY,
             ErrorCode::NetworkError,
             err.to_string(),
         )
@@ -128,7 +129,7 @@ impl From<YoutubeAudioError> for ApiError {
 impl From<SoundCloudError> for ApiError {
     fn from(err: SoundCloudError) -> Self {
         Self::new(
-            StatusCode::BAD_REQUEST,
+            StatusCode::BAD_GATEWAY,
             ErrorCode::SoundCloudError,
             err.to_string(),
         )
@@ -141,12 +142,6 @@ impl From<HttpError> for ApiError {
     }
 }
 
-impl From<Infallible> for ApiError {
-    fn from(err: Infallible) -> Self {
-        match err {}
-    }
-}
-
 impl From<AdbError> for ApiError {
     fn from(err: AdbError) -> Self {
         match err {
@@ -156,7 +151,7 @@ impl From<AdbError> for ApiError {
                 "Device is currently syncing",
             ),
             AdbError::NotAvailable => Self::new(
-                StatusCode::INTERNAL_SERVER_ERROR,
+                StatusCode::SERVICE_UNAVAILABLE,
                 ErrorCode::AdbError,
                 "ADB binary not found in PATH",
             ),
@@ -171,10 +166,47 @@ impl From<AdbError> for ApiError {
 
 impl From<BackupError> for ApiError {
     fn from(err: BackupError) -> Self {
-        Self::new(
-            StatusCode::BAD_REQUEST,
-            ErrorCode::DatabaseError,
-            err.to_string(),
-        )
+        match err {
+            BackupError::Auth => Self::new(
+                StatusCode::UNAUTHORIZED,
+                ErrorCode::InternalError,
+                err.to_string(),
+            ),
+            BackupError::NotFound => {
+                Self::new(StatusCode::NOT_FOUND, ErrorCode::NotFound, err.to_string())
+            }
+            BackupError::HttpStatus(status) => {
+                Self::new(status, ErrorCode::NetworkError, err.to_string())
+            }
+            BackupError::Network(e) => Self::new(
+                StatusCode::BAD_GATEWAY,
+                ErrorCode::NetworkError,
+                e.to_string(),
+            ),
+            BackupError::FileSystem(e) => Self::new(
+                StatusCode::INTERNAL_SERVER_ERROR,
+                ErrorCode::IoError,
+                e.to_string(),
+            ),
+            BackupError::Database(e) => Self::new(
+                StatusCode::INTERNAL_SERVER_ERROR,
+                ErrorCode::DatabaseError,
+                e.to_string(),
+            ),
+            BackupError::Serialization(e) => Self::new(
+                StatusCode::BAD_REQUEST,
+                ErrorCode::BadRequest,
+                e.to_string(),
+            ),
+            BackupError::OperationNotSupported(e) => {
+                Self::new(StatusCode::METHOD_NOT_ALLOWED, ErrorCode::BadRequest, e)
+            }
+        }
+    }
+}
+
+impl From<Infallible> for ApiError {
+    fn from(err: Infallible) -> Self {
+        match err {}
     }
 }

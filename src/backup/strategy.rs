@@ -1,6 +1,6 @@
 use std::path::Path;
 
-use crate::backup::error::BackupError;
+use super::error::BackupError;
 
 pub trait BackupStrategy: Send + Sync {
     async fn upload(&self, src: &Path) -> Result<(), BackupError>;

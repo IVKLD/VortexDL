@@ -2,7 +2,7 @@ use std::path::{Path, PathBuf};
 
 use tracing::{debug, instrument};
 
-use crate::backup::{error::BackupError, strategy::BackupStrategy};
+use super::super::{error::BackupError, strategy::BackupStrategy};
 
 pub struct LocalStrategy {
     remote_path: PathBuf,
@@ -14,11 +14,30 @@ impl LocalStrategy {
             remote_path: remote_path.into(),
         }
     }
+
+    fn validate_path(&self) -> Result<(), BackupError> {
+        if self.remote_path.extension().and_then(|s| s.to_str()) != Some("json") {
+            return Err(BackupError::OperationNotSupported(
+                "Backup file must have a .json extension".to_string(),
+            ));
+        }
+        if self
+            .remote_path
+            .components()
+            .any(|c| matches!(c, std::path::Component::ParentDir))
+        {
+            return Err(BackupError::OperationNotSupported(
+                "Path traversal is not permitted".to_string(),
+            ));
+        }
+        Ok(())
+    }
 }
 
 impl BackupStrategy for LocalStrategy {
     #[instrument(skip(self), fields(remote = %self.remote_path.display()))]
     async fn upload(&self, src: &Path) -> Result<(), BackupError> {
+        self.validate_path()?;
         debug!(
             "Local upload: {} -> {}",
             src.display(),
@@ -36,6 +55,7 @@ impl BackupStrategy for LocalStrategy {
 
     #[instrument(skip(self), fields(remote = %self.remote_path.display()))]
     async fn download(&self, dest: &Path) -> Result<(), BackupError> {
+        self.validate_path()?;
         debug!(
             "Local download: {} -> {}",
             self.remote_path.display(),

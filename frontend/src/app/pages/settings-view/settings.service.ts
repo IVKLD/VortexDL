@@ -1,12 +1,12 @@
 import { HttpClient } from '@angular/common/http';
-import { inject, Injectable, NgZone } from '@angular/core';
+import { inject, Injectable } from '@angular/core';
 import { NotificationService } from '@app/services/notification.service';
-import { catchError, Observable, tap, throwError } from 'rxjs';
+import { WebSocketService } from '@app/services/websocket.service';
+import { Observable, tap } from 'rxjs';
 import { UserSettingsRdo } from './models/user-settings.rdo';
 import { UserSettingsDto } from './models/user-settings.dto';
 import { ProxyTestResultRdo } from './models/proxy-test.rdo';
-import { parseErrorMessage } from '@shared/error-utils';
-import { WebDavSettings } from './models/settings-form.model';
+import { withNotification } from '@shared/utils/notification.utils';
 import { StorageInfo } from './models/adb-storage.model';
 import { SyncAction, SyncProviderPayload, SyncSnapshotResponse } from './models/sync.model';
 
@@ -21,11 +21,7 @@ export class SettingsService {
 
     public updateSettings(userSettings: UserSettingsDto) {
         return this._http.post('/settings', userSettings).pipe(
-            tap(() => this._notification.success('Settings updated')),
-            catchError((error) => {
-                this._notification.error(parseErrorMessage(error, 'Failed to update settings'));
-                return throwError(() => error);
-            })
+            withNotification(this._notification, 'Settings updated', 'Failed to update settings')
         );
     }
 
@@ -39,11 +35,21 @@ export class SettingsService {
 
     public syncDevice(deviceId: string) {
         return this._http.post(`/devices/${deviceId}/sync`, {}).pipe(
-            tap(() => this._notification.success(`Device ${deviceId} synced successfully`)),
-            catchError((error) => {
-                this._notification.error(parseErrorMessage(error, `Failed to sync device ${deviceId}`));
-                return throwError(() => error);
-            })
+            withNotification(
+                this._notification,
+                `Device ${deviceId} synced successfully`,
+                `Failed to sync device ${deviceId}`
+            )
+        );
+    }
+
+    public scanDevice(deviceId: string) {
+        return this._http.post(`/devices/${deviceId}/scan`, {}).pipe(
+            withNotification(
+                this._notification,
+                `Device ${deviceId} music indexing started`,
+                `Failed to trigger music indexing on ${deviceId}`
+            )
         );
     }
 
@@ -55,23 +61,12 @@ export class SettingsService {
             action,
             provider,
         }).pipe(
-            tap(() => this._notification.success(`Database snapshot ${actionLabel} successfully`)),
-            catchError((error) => {
-                this._notification.error(parseErrorMessage(error, `Failed to ${failActionLabel} backup`));
-                return throwError(() => error);
-            })
+            withNotification(
+                this._notification,
+                `Database snapshot ${actionLabel} successfully`,
+                `Failed to ${failActionLabel} backup`
+            )
         );
-    }
-
-    public syncWebDav(action: SyncAction, webdav: WebDavSettings) {
-        return this.syncBackup(action, {
-            webDav: {
-                baseUrl: webdav.baseUrl,
-                remoteDir: webdav.remoteDir,
-                username: webdav.username,
-                password: webdav.password,
-            },
-        });
     }
 
     public getSyncSnapshot() {
@@ -83,15 +78,11 @@ export class SettingsService {
 export class SettingsTestingService {
     private readonly _http = inject(HttpClient);
     private readonly _notification = inject(NotificationService);
-    private readonly _zone = inject(NgZone);
+    private readonly _ws = inject(WebSocketService);
 
     public testSoundCloud(url: string) {
         return this._http.post<string>('/settings/test/soundcloud', { url }).pipe(
-            tap(() => this._notification.success('SoundCloud URL is valid')),
-            catchError((error) => {
-                this._notification.error(parseErrorMessage(error, 'Invalid configuration'));
-                return throwError(() => error);
-            })
+            withNotification(this._notification, 'SoundCloud URL is valid', 'Invalid configuration')
         );
     }
 
@@ -105,56 +96,11 @@ export class SettingsTestingService {
                     this._notification.error(err);
                 }
             }),
-            catchError((error) => {
-                this._notification.error(parseErrorMessage(error, 'Proxy verification failed'));
-                return throwError(() => error);
-            })
+            withNotification(this._notification, null, 'Proxy verification failed')
         );
     }
 
     public testProxy(proxyUrls: string[]): Observable<ProxyTestResultRdo> {
-        return new Observable<ProxyTestResultRdo>(sub => {
-            const ws = new WebSocket(`ws://${window.location.host}/api/settings/test/proxy/ws`);
-            let receivedCount = 0;
-
-            ws.onopen = () => {
-                ws.send(JSON.stringify(proxyUrls));
-            };
-
-            ws.onmessage = (event) => {
-                this._zone.run(() => {
-                    try {
-                        const result = JSON.parse(event.data) as ProxyTestResultRdo;
-                        sub.next(result);
-                        receivedCount++;
-                        if (receivedCount === proxyUrls.length) {
-                            ws.close();
-                            sub.complete();
-                        }
-                    } catch (e) {
-                        sub.error(e);
-                        ws.close();
-                    }
-                });
-            };
-
-            ws.onerror = (err) => {
-                this._zone.run(() => sub.error(err));
-            };
-
-            ws.onclose = () => {
-                this._zone.run(() => {
-                    if (receivedCount < proxyUrls.length) {
-                        sub.error(new Error('Connection closed prematurely'));
-                    } else {
-                        sub.complete();
-                    }
-                });
-            };
-
-            return () => {
-                ws.close();
-            };
-        });
+        return this._ws.requestStream('/api/settings/test/proxy/ws', proxyUrls, proxyUrls.length);
     }
 }

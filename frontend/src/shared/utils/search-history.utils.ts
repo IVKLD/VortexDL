@@ -1,46 +1,56 @@
-const HISTORY_KEY = 'search_history';
-const MAX_ITEMS = 10;
+export interface StorageHistoryHelper {
+    load(): string[];
+    add(current: string[], item: string): string[];
+    remove(current: string[], item: string): string[];
+    clear(): string[];
+}
 
-export function loadSearchHistory(): string[] {
-    try {
-        const stored = localStorage.getItem(HISTORY_KEY);
-        return stored ? JSON.parse(stored) : [];
-    } catch {
+export const createStorageHistory = (key: string, maxItems = 10): StorageHistoryHelper => ({
+    load: (): string[] => {
+        try {
+            const stored = localStorage.getItem(key);
+            return stored ? JSON.parse(stored) : [];
+        } catch {
+            return [];
+        }
+    },
+    add: (current: string[], item: string): string[] => {
+        const trimmed = item.trim();
+        if (!trimmed) return current;
+
+        const filtered = current.filter(i => i.toLowerCase() !== trimmed.toLowerCase());
+        const updated = [trimmed, ...filtered].slice(0, maxItems);
+
+        try {
+            localStorage.setItem(key, JSON.stringify(updated));
+        } catch {
+            // Ignore localStorage error
+        }
+
+        return updated;
+    },
+    remove: (current: string[], item: string): string[] => {
+        const updated = current.filter(i => i !== item);
+        try {
+            localStorage.setItem(key, JSON.stringify(updated));
+        } catch {
+            // Ignore localStorage error
+        }
+        return updated;
+    },
+    clear: (): string[] => {
+        try {
+            localStorage.removeItem(key);
+        } catch {
+            // Ignore localStorage error
+        }
         return [];
-    }
-}
+    },
+});
 
-export function addToSearchHistory(current: string[], item: string): string[] {
-    const trimmed = item.trim();
-    if (!trimmed) return current;
+const searchHistory = createStorageHistory('search_history', 10);
 
-    const filtered = current.filter(i => i.toLowerCase() !== trimmed.toLowerCase());
-    const updated = [trimmed, ...filtered].slice(0, MAX_ITEMS);
-    
-    try {
-        localStorage.setItem(HISTORY_KEY, JSON.stringify(updated));
-    } catch (_err) {
-        // Ignore localStorage error
-    }
-
-    return updated;
-}
-
-export function removeFromSearchHistory(current: string[], item: string): string[] {
-    const updated = current.filter(i => i !== item);
-    try {
-        localStorage.setItem(HISTORY_KEY, JSON.stringify(updated));
-    } catch (_err) {
-        // Ignore localStorage error
-    }
-    return updated;
-}
-
-export function clearSearchHistory(): string[] {
-    try {
-        localStorage.removeItem(HISTORY_KEY);
-    } catch (_err) {
-        // Ignore localStorage error
-    }
-    return [];
-}
+export const loadSearchHistory = searchHistory.load;
+export const addToSearchHistory = searchHistory.add;
+export const removeFromSearchHistory = searchHistory.remove;
+export const clearSearchHistory = searchHistory.clear;

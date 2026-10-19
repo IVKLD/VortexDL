@@ -28,11 +28,29 @@ static ALLOC: mimalloc::MiMalloc = mimalloc::MiMalloc;
 
 #[tokio::main]
 async fn main() -> Result<()> {
+    utils::setup_tracing();
     let args = Args::parse();
 
-    utils::setup_tracing();
-    database::init()?;
+    let state = init_app(&args).await?;
+    handle_args(state, args).await
+}
 
+async fn handle_args(state: AppState, args: Args) -> Result<()> {
+    if args.serve {
+        api::run_server(state, &args).await
+    } else if args.scan_player {
+        cli::run_scan_player().await
+    } else if args.sync_player {
+        cli::run_sync_player(&state).await
+    } else if let Some(ref url) = args.url {
+        cli::run_download(&state, url, &args.proxies).await
+    } else {
+        Ok(())
+    }
+}
+
+async fn init_app(args: &Args) -> Result<AppState> {
+    database::init()?;
     let mut settings = database::get_settings()?;
     let output_dir = args.resolve_output_dir(&settings);
     settings.downloads.output_path = output_dir.to_string_lossy().to_string();
@@ -63,5 +81,5 @@ async fn main() -> Result<()> {
 
     adb::init(storage, state.settings.clone());
 
-    cli::execute_app(state, args).await
+    Ok(state)
 }

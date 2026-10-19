@@ -1,26 +1,25 @@
-import {Component, computed, inject} from '@angular/core';
-import {MatProgressSpinner} from '@angular/material/progress-spinner';
-import {NotificationService} from '@app/services/notification.service';
-import {DownloadTrackingService} from '@app/services/download-tracking.service';
-import {SearchViewService} from './search-view.service';
-import {SearchTrackItemRdo} from './models/search-view.model';
-import {PlayerService} from '@app/services/player.service';
-import {MusicTracksViewState} from '@app/pages/music-tracks-view/music-tracks-view.state';
-import {MusicTracksService} from '@app/pages/music-tracks-view/music-tracks.service';
-import {SearchSkeletonComponent} from './components/search-skeleton/search-skeleton';
-import {SearchHistoryPanelComponent} from './components/search-history-panel/search-history-panel';
-import {SearchResultItemComponent} from './components/search-result-item/search-result-item';
-import {EmptyPaneComponent} from '@shared/components/empty-pane/empty-pane';
-import {ListViewShellComponent} from '@shared/components/list-view-shell/list-view-shell';
+import { Component, computed, inject } from '@angular/core';
+import { MatProgressSpinner } from '@angular/material/progress-spinner';
+import { NotificationService } from '@app/services/notification.service';
+import { DownloadTrackingService } from '@app/services/download-tracking.service';
+import { SearchTrackItemRdo } from './models/search-view.model';
+import { PlayerService } from '@app/services/player.service';
+import { MusicTracksViewState } from '@app/pages/music-tracks-view/music-tracks-view.state';
+import { MusicTracksService } from '@app/pages/music-tracks-view/music-tracks.service';
+import { SearchSkeletonComponent } from './components/search-skeleton/search-skeleton';
+import { SearchHistoryPanelComponent } from './components/search-history-panel/search-history-panel';
+import { SearchResultItemComponent } from './components/search-result-item/search-result-item';
+import { EmptyPaneComponent } from '@shared/components/empty-pane/empty-pane';
+import { ListViewShellComponent } from '@shared/components/list-view-shell/list-view-shell';
 import {
     FixedSizeVirtualScrollStrategy,
     RxVirtualFor,
     RxVirtualScrollViewportComponent,
     RxVirtualScrollWindowDirective
 } from '@rx-angular/template/virtual-scrolling';
-import {SearchToolbarComponent} from './components/search-toolbar/search-toolbar';
-import {SearchViewState} from './search-view.state';
-import {SearchHistoryService} from './search-history.service';
+import { SearchToolbarComponent } from './components/search-toolbar/search-toolbar';
+import { SearchViewState } from './search-view.state';
+import { SearchHistoryService } from './search-history.service';
 
 @Component({
     selector: 'app-search-view',
@@ -41,7 +40,6 @@ import {SearchHistoryService} from './search-history.service';
     styleUrl: './search-view.scss',
 })
 export class SearchView {
-    private readonly _api = inject(SearchViewService);
     private readonly _notification = inject(NotificationService);
     private readonly _tracksState = inject(MusicTracksViewState);
     private readonly _tracksService = inject(MusicTracksService);
@@ -86,15 +84,15 @@ export class SearchView {
             return;
         }
 
-        this._api.downloadTrack({ url: track.permalinkUrl }).subscribe({
+        this._tracksService.download(track.permalinkUrl).subscribe({
             next: () => this._notification.success(`"${track.artist} – ${track.title}" queued`),
             error: (err) => this._notification.error(err?.error?.message || 'Download failed'),
         });
     }
 
     protected deleteTrack(track: SearchTrackItemRdo): void {
-        this._tracksService.delete(track.id).subscribe({
-            next: () => this._tracksState.removeTrack(track.id),
+        this._tracksService.delete([track.id]).subscribe({
+            next: () => this._tracksState.removeTracks([track.id]),
             error: () => this._notification.error('Failed to delete track'),
         });
     }

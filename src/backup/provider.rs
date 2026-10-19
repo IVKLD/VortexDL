@@ -4,7 +4,7 @@ use serde::Deserialize;
 use url::Url;
 use utoipa::ToSchema;
 
-use crate::backup::{
+use super::{
     error::BackupError,
     service::BackupService,
     strategies::{LocalStrategy, UrlStrategy, WebDavStrategy},
@@ -44,18 +44,15 @@ pub enum BackupProvider {
 
 impl BackupProvider {
     pub async fn execute(&self, action: BackupAction) -> Result<(), BackupError> {
-        match action {
-            BackupAction::Export => self.export().await,
-            BackupAction::Import => self.import().await,
-        }
-    }
-
-    async fn export(&self) -> Result<(), BackupError> {
         match self {
-            Self::Local { path } => BackupService::new(LocalStrategy::new(path)).export().await,
+            Self::Local { path } => {
+                BackupService::new(LocalStrategy::new(path))
+                    .execute_action(action)
+                    .await
+            }
             Self::Url { url } => {
                 let strategy = UrlStrategy::new(url.as_str())?;
-                BackupService::new(strategy).export().await
+                BackupService::new(strategy).execute_action(action).await
             }
             Self::WebDav(webdav) => {
                 let strategy = WebDavStrategy::new(
@@ -64,26 +61,7 @@ impl BackupProvider {
                     &webdav.username,
                     &webdav.password,
                 )?;
-                BackupService::new(strategy).export().await
-            }
-        }
-    }
-
-    async fn import(&self) -> Result<(), BackupError> {
-        match self {
-            Self::Local { path } => BackupService::new(LocalStrategy::new(path)).import().await,
-            Self::Url { url } => {
-                let strategy = UrlStrategy::new(url.as_str())?;
-                BackupService::new(strategy).import().await
-            }
-            Self::WebDav(webdav) => {
-                let strategy = WebDavStrategy::new(
-                    webdav.base_url.as_str(),
-                    webdav.remote_dir.to_string_lossy(),
-                    &webdav.username,
-                    &webdav.password,
-                )?;
-                BackupService::new(strategy).import().await
+                BackupService::new(strategy).execute_action(action).await
             }
         }
     }

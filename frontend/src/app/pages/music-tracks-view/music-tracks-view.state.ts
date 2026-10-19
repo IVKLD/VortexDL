@@ -13,16 +13,60 @@ export enum MusicSortOption {
 }
 
 @Injectable({ providedIn: 'root' })
-export class MusicTracksViewState {
-    private readonly _api = inject(MusicTracksService);
+export class TrackSelection {
+    private readonly _ids = signal<number[]>([]);
 
-    private readonly _isLoading = signal<boolean>(true);
-    private readonly _tracks = signal<MusicTrack[]>([]);
-    private readonly _sortOption = signal<MusicSortOption>(MusicSortOption.DATE_DESC);
-    private readonly _selectedIds = signal<Set<number>>(new Set());
+    public readonly ids = this._ids.asReadonly();
+    public readonly count = computed(() => this._ids().length);
+    public readonly hasSelection = computed(() => this._ids().length > 0);
 
-    private readonly _fuse = computed(() =>
-        new Fuse(this._tracks(), {
+    public has(id: number): boolean {
+        return this._ids().includes(id);
+    }
+
+    public select(id: number): void {
+        this._ids.update(ids => ids.includes(id) ? ids : [...ids, id]);
+    }
+
+    public deselect(id: number): void {
+        this._ids.update(ids => ids.filter(i => i !== id));
+    }
+
+    public toggle(id: number): void {
+        this._ids.update(ids => ids.includes(id) ? ids.filter(i => i !== id) : [...ids, id]);
+    }
+
+    public remove(ids: number[]): void {
+        this._ids.update(current => current.filter(id => !ids.includes(id)));
+    }
+
+    public clear(): void {
+        this._ids.set([]);
+    }
+}
+
+@Injectable({ providedIn: 'root' })
+export class TrackSearch {
+    public readonly query = signal<string>('');
+
+    public readonly form = form(this.query, (p) => {
+        debounce(p, 200);
+    });
+
+    public readonly isSearching = computed(() => {
+        return this.form().value() !== this.query();
+    });
+
+    public readonly hasQuery = computed(() => this.query().trim().length > 0);
+    public readonly isEmpty = computed(() => this.query().trim().length === 0);
+
+    public filter(tracks: MusicTrack[]): MusicTrack[] {
+        const q = this.query().trim();
+        if (!q) {
+            return tracks;
+        }
+
+        const fuse = new Fuse(tracks, {
             keys: [
                 { name: 'title', weight: 1 },
                 { name: 'artist', weight: 0.7 },
@@ -30,31 +74,36 @@ export class MusicTracksViewState {
             threshold: 0.3,
             distance: 100,
             ignoreLocation: true,
-        })
-    );
+        });
 
-    public readonly searchQuery = signal<string>('');
+        return fuse.search(q).map(r => r.item);
+    }
 
-    public readonly searchForm = form(this.searchQuery, (p) => {
-        debounce(p, 200);
-    });
+    public setQuery(query: string): void {
+        this.query.set(query);
+    }
 
-    public readonly isSearching = computed(() => {
-        return this.searchForm().value() !== this.searchQuery();
-    });
+    public clear(): void {
+        this.query.set('');
+    }
+}
 
-    public readonly isLoading = this._isLoading.asReadonly();
+@Injectable({ providedIn: 'root' })
+export class MusicTracksViewState {
+    private readonly _api = inject(MusicTracksService);
+    public readonly selection = inject(TrackSelection);
+    public readonly search = inject(TrackSearch);
+
+    private readonly _tracks = signal<MusicTrack[]>([]);
+    private readonly _sortOption = signal<MusicSortOption>(MusicSortOption.DATE_DESC);
+
+    public readonly isLoading = this._api.isLoading.asReadonly();
     public readonly tracks = this._tracks.asReadonly();
     public readonly sortOption = this._sortOption.asReadonly();
-    public readonly selectedIds = this._selectedIds.asReadonly();
-
-    public readonly hasSelection = computed(() => this._selectedIds().size > 0);
-    public readonly selectedTracks = computed(() => this._tracks().filter(t => this._selectedIds().has(t.id)));
 
     public readonly sortedTracks = computed(() => {
-        const query = this.searchQuery().trim();
-        if (query) {
-            return this._fuse().search(query).map(r => r.item);
+        if (this.search.hasQuery()) {
+            return this.search.filter(this._tracks());
         }
 
         const [sort, order] = this._sortOption().split('-');
@@ -71,61 +120,28 @@ export class MusicTracksViewState {
     }
 
     private loadTracks(): void {
-        this.startLoading();
-        this._api.getAll().subscribe({ next: tracks => this.setTracks = tracks });
+        this._api.indexing().subscribe();
+        this._api.getAll().subscribe({ next: tracks => this._tracks.set(tracks) });
     }
 
     public isTrackLocal(id: number): boolean {
         return this._tracks().some(t => t.id === id);
     }
 
-    public set setTracks(value: MusicTrack[]) {
-        this._tracks.set(value);
-        this._isLoading.set(false);
-    }
-
     public addTrack(track: MusicTrack): void {
         this._tracks.update(data => [...data, track]);
     }
 
-    public removeTrack(id: number): void {
-        this._tracks.update(data => data.filter(t => t.id !== id));
-        this._selectedIds.update(ids => (ids.delete(id), new Set(ids)));
-    }
-
-    public selectTrack(track: MusicTrack): void {
-        this._selectedIds.update(ids => ids.has(track.id) ? ids : new Set(ids).add(track.id));
-    }
-
-    public deselectTrack(track: MusicTrack): void {
-        this._selectedIds.update(ids => ids.has(track.id) ? (ids.delete(track.id), new Set(ids)) : ids);
-    }
-
-    public toggleSelect(track: MusicTrack): void {
-        this._selectedIds.update(ids => {
-            const next = new Set(ids);
-            return next.delete(track.id) ? next : next.add(track.id);
-        });
-    }
-
-    public clearSelection(): void {
-        this._selectedIds.set(new Set());
-    }
-
-    public startLoading(): void {
-        this._isLoading.set(true);
+    public removeTracks(ids: number[]): void {
+        this._tracks.update(data => data.filter(t => !ids.includes(t.id)));
+        this.selection.remove(ids);
     }
 
     public refresh(): Observable<MusicTrack[]> {
-        this.startLoading();
-        return this._api.getAll().pipe(tap(tracks => this.setTracks = tracks));
+        return this._api.getAll().pipe(tap(tracks => this._tracks.set(tracks)));
     }
 
     public setSortOption(option: MusicSortOption): void {
         this._sortOption.set(option);
-    }
-
-    public setSearchQuery(query: string): void {
-        this.searchQuery.set(query);
     }
 }

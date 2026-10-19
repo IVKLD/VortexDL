@@ -9,9 +9,21 @@ pub fn build_http_client(
         .connect_timeout(Duration::from_secs(connect_timeout_secs))
         .timeout(Duration::from_secs(request_timeout_secs));
 
-    if let Some(proxy) = proxy_url.and_then(|p| reqwest::Proxy::all(p).ok()) {
-        builder = builder.proxy(proxy);
+    if let Some(proxy_str) = proxy_url.filter(|p| !p.trim().is_empty()) {
+        match reqwest::Proxy::all(proxy_str) {
+            Ok(proxy) => {
+                builder = builder.proxy(proxy);
+            }
+            Err(e) => {
+                tracing::error!("Invalid proxy URL '{proxy_str}': {e}");
+            }
+        }
     }
 
-    builder.build().expect("Failed to build HTTP client")
+    builder.build().unwrap_or_else(|e| {
+        tracing::error!(
+            "Failed to build configured HTTP client: {e}. Falling back to default client."
+        );
+        reqwest::Client::new()
+    })
 }

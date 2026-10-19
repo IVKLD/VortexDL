@@ -4,7 +4,10 @@ pub mod youtube;
 pub use soundcloud::resolve_soundcloud_stream;
 pub use youtube::resolve_youtube_stream;
 
-use crate::api::{errors::ApiError, state::AppState};
+use crate::{
+    api::{errors::ApiError, state::AppState},
+    types::SourcePlatform,
+};
 
 pub async fn resolve_stream_url(
     state: &AppState,
@@ -29,12 +32,15 @@ pub async fn resolve_stream_url(
             .and_then(|t| t.metadata.source_url.clone())
     };
 
-    let stream_url = if let Some(ref u) = target_url
-        && yt_audio_downloader::is_youtube_url(u)
+    let stream_url = match target_url
+        .as_deref()
+        .map(SourcePlatform::detect_from_url_str)
     {
-        resolve_youtube_stream(state, u).await?
-    } else {
-        resolve_soundcloud_stream(state, id).await?
+        Some(SourcePlatform::YouTube) => {
+            let u = target_url.as_deref().unwrap();
+            resolve_youtube_stream(state, u).await?
+        }
+        _ => resolve_soundcloud_stream(state, id).await?,
     };
 
     state.cache.insert_stream(id, stream_url.clone()).await;

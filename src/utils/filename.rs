@@ -56,12 +56,12 @@ pub fn parse_track_metadata(raw_title: &str, uploader: &str) -> (String, String)
         }
 
         let suffix_lower = suffix.to_lowercase();
-        let is_tag = suffix_lower.contains("remix")
-            || suffix_lower.contains("edit")
-            || suffix_lower.contains("vip")
-            || suffix_lower.contains("cover")
-            || suffix_lower.contains("mix")
-            || suffix_lower.contains("bootleg");
+        let is_tag = suffix_lower.split(|c: char| !c.is_alphanumeric()).any(|w| {
+            matches!(
+                w,
+                "remix" | "edit" | "vip" | "cover" | "mix" | "bootleg" | "flip" | "dub"
+            )
+        });
 
         if !is_tag {
             return (prefix.trim().to_string(), suffix.trim().to_string());
@@ -115,6 +115,14 @@ mod tests {
         assert_eq!(
             parse_track_metadata("Fight Back", "NEFFEX"),
             ("NEFFEX".to_string(), "Fight Back".to_string())
+        );
+        assert_eq!(
+            parse_track_metadata("Artist - Edith", "Channel"),
+            ("Artist".to_string(), "Edith".to_string())
+        );
+        assert_eq!(
+            parse_track_metadata("Artist - Vipers", "Channel"),
+            ("Artist".to_string(), "Vipers".to_string())
         );
     }
 }

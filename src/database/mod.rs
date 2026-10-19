@@ -9,16 +9,14 @@ use redb::Database;
 
 pub mod cache;
 pub mod settings;
-pub mod sync_log;
 
 pub use settings::{get_settings, update_settings};
-pub use sync_log::{get_previous_ids, save_sync_ids};
 
 use crate::constants::{APP_DIR, DB_NAME};
 
 static DB_FILE_PATH: LazyLock<PathBuf> = LazyLock::new(|| {
     dirs::config_dir()
-        .expect("Could not find config directory")
+        .unwrap_or_else(|| PathBuf::from("."))
         .join(APP_DIR)
         .join(DB_NAME)
 });

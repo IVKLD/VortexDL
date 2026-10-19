@@ -15,7 +15,22 @@ use crate::{
     downloader,
 };
 
+struct ReleaseUrlGuard<'a>(
+    &'a crate::api::download_manager::DownloadManager,
+    &'a url::Url,
+);
+
+impl Drop for ReleaseUrlGuard<'_> {
+    fn drop(&mut self) {
+        self.0.release_url(self.1);
+        self.0.broadcast_event(ServerEvent::SyncFinished {
+            url: Some(self.1.to_string()),
+        });
+    }
+}
+
 async fn run_pipeline_bg(state: AppState, url: url::Url) {
+    let _guard = ReleaseUrlGuard(&state.download_manager, &url);
     let ctx = downloader::Context::from_state(&state);
 
     if let Err(e) = downloader::run_download_pipeline(&ctx, &url).await {
@@ -23,13 +38,6 @@ async fn run_pipeline_bg(state: AppState, url: url::Url) {
             message: format!("Download failed: {e}"),
         });
     }
-
-    state.download_manager.release_url(&url);
-    state
-        .download_manager
-        .broadcast_event(ServerEvent::SyncFinished {
-            url: Some(url.to_string()),
-        });
 }
 
 #[utoipa::path(

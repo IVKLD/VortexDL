@@ -12,9 +12,9 @@ export class PlayerService {
     private readonly _notification = inject(NotificationService);
     private readonly zone = inject(NgZone);
 
-    private readonly audioEngine = new AudioEngineService();
-    private readonly queueService = new PlayerQueueService();
-    private readonly mediaSession = new MediaSessionManagerService();
+    private readonly audioEngine = inject(AudioEngineService);
+    private readonly queueService = inject(PlayerQueueService);
+    private readonly mediaSession = inject(MediaSessionManagerService);
 
 
     public readonly currentTrack = signal<PlayableTrack | null>(null);
@@ -135,10 +135,10 @@ export class PlayerService {
         this.queueService.setQueue(tracks, this.currentTrack());
     }
 
-    public removeFromQueue(trackId: number): void {
-        this.queueService.removeFromQueue(trackId);
+    public removeFromQueue(ids: number[]): void {
+        this.queueService.removeFromQueue(ids);
         const current = this.currentTrack();
-        if (current && current.id === trackId) {
+        if (current && ids.includes(current.id)) {
             this.audioEngine.stop();
             this.currentTrack.set(null);
         }

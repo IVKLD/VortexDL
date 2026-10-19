@@ -1,6 +1,6 @@
 import { PlayableTrack } from '@shared/models/music-track.model';
 
-export function updateMediaSessionMetadata(track: PlayableTrack, album = 'VortexDL'): void {
+export const updateMediaSessionMetadata = (track: PlayableTrack, album = 'VortexDL'): void => {
     if (!('mediaSession' in navigator)) return;
 
     navigator.mediaSession.metadata = new MediaMetadata({
@@ -9,13 +9,13 @@ export function updateMediaSessionMetadata(track: PlayableTrack, album = 'Vortex
         album,
         artwork: track.artworkUrl ? [{ src: track.artworkUrl }] : [],
     });
-}
+};
 
-export function setMediaSessionPlaybackState(playing: boolean): void {
+export const setMediaSessionPlaybackState = (playing: boolean): void => {
     if ('mediaSession' in navigator) {
         navigator.mediaSession.playbackState = playing ? 'playing' : 'paused';
     }
-}
+};
 
 export interface MediaSessionActionHandlers {
     onPlay?: () => void;
@@ -24,7 +24,7 @@ export interface MediaSessionActionHandlers {
     onNextTrack?: () => void;
 }
 
-export function setupMediaSessionHandlers(handlers: MediaSessionActionHandlers): void {
+export const setupMediaSessionHandlers = (handlers: MediaSessionActionHandlers): void => {
     if (!('mediaSession' in navigator)) return;
 
     if (handlers.onPlay) {
@@ -39,4 +39,4 @@ export function setupMediaSessionHandlers(handlers: MediaSessionActionHandlers):
     if (handlers.onNextTrack) {
         navigator.mediaSession.setActionHandler('nexttrack', handlers.onNextTrack);
     }
-}
+};

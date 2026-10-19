@@ -4,118 +4,17 @@ use std::{
     path::Path,
 };
 
-use anyhow::Result;
-use id3::{
-    Content, Error as Id3Error, ErrorKind as Id3ErrorKind, Tag, TagLike, Version,
-    frame::{ExtendedText, Frame, Picture, PictureType},
-};
-use url::Url;
+use id3::{Tag, TagLike};
 
+use super::id3::{get_txxx, get_txxx_with_legacy};
 use crate::{
     constants::{
         LEGACY_SC_ARTWORK_URL, LEGACY_SC_IDENTIFIER, LEGACY_SC_SOURCE_URL, TAG_ARTWORK_URL,
         TAG_PLATFORM, TAG_SOURCE_URL, TAG_TRACK_ID,
     },
-    types::TrackMetadata,
+    types::{SourcePlatform, TrackMetadata},
     utils::filename,
 };
-
-fn get_tag(path: impl AsRef<Path>) -> Result<Tag> {
-    let path = path.as_ref();
-    match Tag::read_from_path(path) {
-        Ok(tag) => Ok(tag),
-        Err(Id3Error {
-            kind: Id3ErrorKind::NoTag,
-            ..
-        }) => Ok(Tag::new()),
-        Err(e) => {
-            tracing::warn!(
-                path = %path.display(),
-                error = %e,
-                "Failed to read ID3 tag, starting fresh",
-            );
-            Ok(Tag::new())
-        }
-    }
-}
-
-fn set_txxx(tag: &mut Tag, key: &str, value: &str) {
-    tag.remove_extended_text(Some(key), None);
-    tag.add_frame(Frame::with_content(
-        "TXXX",
-        Content::ExtendedText(ExtendedText {
-            description: key.to_string(),
-            value: value.to_string(),
-        }),
-    ));
-}
-
-fn get_txxx(tag: &Tag, key: &str) -> Option<String> {
-    tag.extended_texts()
-        .find(|f| f.description == key)
-        .map(|f| f.value.clone())
-}
-
-fn get_txxx_with_legacy(tag: &Tag, key: &str, legacy_key: &str) -> Option<String> {
-    get_txxx(tag, key).or_else(|| get_txxx(tag, legacy_key))
-}
-
-pub fn detect_platform_str(source_url: Option<&str>) -> &'static str {
-    source_url
-        .map(|u| {
-            if yt_audio_downloader::is_youtube_url(u) {
-                "youtube"
-            } else {
-                "soundcloud"
-            }
-        })
-        .unwrap_or("local")
-}
-
-pub struct SaveTrackArgs<'a> {
-    pub path: &'a Path,
-    pub sc_id: &'a str,
-    pub title: &'a str,
-    pub artist: &'a str,
-    pub artwork_url: Option<&'a Url>,
-    pub source_url: Option<&'a Url>,
-    pub artwork_data: Option<Vec<u8>>,
-}
-
-pub fn save_track_info(args: SaveTrackArgs) -> Result<()> {
-    let mut tag = get_tag(args.path)?;
-
-    tag.set_title(args.title);
-    tag.set_artist(args.artist);
-
-    let platform = detect_platform_str(args.source_url.map(|u| u.as_str()));
-
-    set_txxx(&mut tag, TAG_TRACK_ID, args.sc_id);
-    set_txxx(&mut tag, TAG_PLATFORM, platform);
-
-    if let Some(url) = args.artwork_url {
-        set_txxx(&mut tag, TAG_ARTWORK_URL, url.as_str());
-    }
-    if let Some(url) = args.source_url {
-        set_txxx(&mut tag, TAG_SOURCE_URL, url.as_str());
-    }
-
-    if let Some(data) = args.artwork_data {
-        tag.remove_all_pictures();
-        tag.add_frame(Frame::with_content(
-            "APIC",
-            Content::Picture(Picture {
-                mime_type: "image/jpeg".to_string(),
-                picture_type: PictureType::CoverFront,
-                description: "Cover".to_string(),
-                data,
-            }),
-        ));
-    }
-
-    tag.write_to_path(args.path, Version::Id3v23)?;
-    Ok(())
-}
 
 fn extract_track_id(tag: Option<&Tag>, source_url: Option<&str>, path: &Path) -> i64 {
     if let Some(id) = tag
@@ -140,6 +39,10 @@ fn extract_track_id(tag: Option<&Tag>, source_url: Option<&str>, path: &Path) ->
     if safe_53_bit == 0 { -1 } else { -safe_53_bit }
 }
 
+/// What: Extracts artist, title, source URL, and custom metadata from an audio file on disk.
+/// Flow: Called by `MusicStorage::scan_library` for new or modified audio files.
+/// Why:  Inspects ID3v2 tags (including custom TXXX user frames for track ID, source URL, artwork URL),
+///       falling back to filename heuristics and stable hash generation for non-tagged local files.
 pub fn extract_track_metadata(path: impl AsRef<Path>) -> Option<TrackMetadata> {
     let path = path.as_ref();
     let tag = Tag::read_from_path(path).ok();
@@ -154,7 +57,11 @@ pub fn extract_track_metadata(path: impl AsRef<Path>) -> Option<TrackMetadata> {
     let platform = tag
         .as_ref()
         .and_then(|t| get_txxx(t, TAG_PLATFORM))
-        .unwrap_or_else(|| detect_platform_str(source_url.as_deref()).to_string());
+        .unwrap_or_else(|| {
+            SourcePlatform::detect_from_optional_url(source_url.as_deref())
+                .as_str()
+                .to_string()
+        });
 
     let id = extract_track_id(tag.as_ref(), source_url.as_deref(), path);
 
@@ -202,7 +109,10 @@ pub fn extract_track_metadata(path: impl AsRef<Path>) -> Option<TrackMetadata> {
 mod tests {
     use std::path::PathBuf;
 
+    use id3::Version;
+
     use super::*;
+    use crate::storage::metadata::id3::set_txxx;
 
     #[test]
     fn test_extract_track_metadata_without_tags() {

@@ -11,6 +11,17 @@ struct Asset;
 pub async fn static_handler(uri: Uri) -> impl IntoResponse {
     let path = uri.path().trim_start_matches('/');
 
+    if path.starts_with("api/") || path == "api" {
+        return (
+            StatusCode::NOT_FOUND,
+            axum::Json(serde_json::json!({
+                "status": "error",
+                "message": format!("Endpoint not found: {}", uri.path())
+            })),
+        )
+            .into_response();
+    }
+
     if path.is_empty() {
         return serve_index().await;
     }

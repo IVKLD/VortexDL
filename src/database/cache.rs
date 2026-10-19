@@ -38,6 +38,10 @@ pub fn get_cached_music_tracks() -> Result<HashMap<String, CachedMusicTrack>> {
     Ok(map)
 }
 
+/// What: Atomically updates the track cache in the embedded database with added and removed track records.
+/// Flow: Called by the storage scanner after reindexing, or after batch file operations.
+/// Why:  Wrapping all inserts and deletes inside a single write transaction avoids individual disk syncs,
+///       speeding up bulk library updates by orders of magnitude.
 pub fn update_cached_tracks_batch(
     to_update: &HashMap<String, CachedMusicTrack>,
     to_remove: &HashSet<String>,
@@ -62,12 +66,7 @@ pub fn update_cached_tracks_batch(
 }
 
 pub fn remove_cached_track(path: &str) -> Result<()> {
-    let db = get_db();
-    let write_txn = db.begin_write()?;
-    {
-        let mut table = write_txn.open_table(CACHE_TABLE)?;
-        table.remove(path)?;
-    }
-    write_txn.commit()?;
-    Ok(())
+    let mut to_remove = HashSet::with_capacity(1);
+    to_remove.insert(path.to_string());
+    update_cached_tracks_batch(&HashMap::new(), &to_remove)
 }

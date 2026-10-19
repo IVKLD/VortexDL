@@ -14,9 +14,7 @@ pub struct DownloadRequest {
 #[derive(Debug, Serialize, Deserialize, Clone, Copy, PartialEq, Eq, ToSchema)]
 #[serde(rename_all = "lowercase")]
 pub enum ApiStatus {
-    Ok,
     Queued,
-    Error,
 }
 
 #[derive(Debug, Serialize, ToSchema)]
@@ -26,7 +24,7 @@ pub struct DownloadStartResponse {
     pub message: String,
 }
 
-pub use crate::types::AudioFormat;
+use crate::types::AudioFormat;
 
 #[derive(Debug, Serialize, ToSchema)]
 #[serde(rename_all = "camelCase")]
@@ -53,7 +51,7 @@ impl MusicTrackRecord {
             format: AudioFormat::from_path(&data.path),
             created_at: data.created_at,
             size: data.size,
-            archived: data.is_archived(),
+            archived: data.is_archived,
         }
     }
 }

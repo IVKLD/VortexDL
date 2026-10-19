@@ -1,53 +1,75 @@
 <div class="provider-filters">
-    <button mat-button type="button" class="filter-chip youtube"
-        [class.active]="state.config().provider === SearchProvider.YouTube"
-        (click)="state.setProvider(SearchProvider.YouTube)">
-        <mat-icon class="chip-icon">play_circle_filled</mat-icon>
-        YouTube
-    </button>
+  <button
+    mat-button
+    type="button"
+    class="filter-chip youtube"
+    [class.active]="state.config().provider === SearchProvider.YouTube"
+    (click)="state.setProvider(SearchProvider.YouTube)"
+  >
+    <mat-icon class="chip-icon">play_circle_filled</mat-icon>
+    YouTube
+  </button>
 
-    <button mat-button type="button" class="filter-chip soundcloud"
-        [class.active]="state.config().provider === SearchProvider.SoundCloud"
-        (click)="state.setProvider(SearchProvider.SoundCloud)">
-        <mat-icon class="chip-icon">cloud</mat-icon>
-        SoundCloud
-    </button>
+  <button
+    mat-button
+    type="button"
+    class="filter-chip soundcloud"
+    [class.active]="state.config().provider === SearchProvider.SoundCloud"
+    (click)="state.setProvider(SearchProvider.SoundCloud)"
+  >
+    <mat-icon class="chip-icon">cloud</mat-icon>
+    SoundCloud
+  </button>
 </div>
 
-<mat-divider vertical />
+<mat-divider vertical style="height: 20px" />
 
 <div class="sort-actions">
-    <button mat-button type="button" class="filter-chip sort-chip"
-        [class.active]="state.config().duration !== SearchDurationFilter.Any" [matMenuTriggerFor]="durationMenu">
-        <mat-icon class="chip-icon">schedule</mat-icon>
-        {{ state.durationLabel() }}
-        <mat-icon class="arrow-icon">arrow_drop_down</mat-icon>
+  <button
+    mat-button
+    type="button"
+    class="filter-chip sort-chip"
+    [class.active]="state.config().duration !== SearchDurationFilter.Any"
+    [matMenuTriggerFor]="durationMenu"
+  >
+    <mat-icon class="chip-icon">schedule</mat-icon>
+    {{ state.durationLabel() }}
+  </button>
+
+  <mat-menu #durationMenu="matMenu">
+    @for (option of durationOptions; track option.value) {
+    <button
+      mat-menu-item
+      [class.active-item]="state.config().duration === option.value"
+      (click)="state.setDuration(option.value)"
+    >
+      <mat-icon>{{ option.icon }}</mat-icon>
+      {{ option.label }}
     </button>
+    }
+  </mat-menu>
 
-    <mat-menu #durationMenu="matMenu">
-        @for (option of durationOptions; track option.value) {
-        <button mat-menu-item [class.active-item]="state.config().duration === option.value"
-            (click)="state.setDuration(option.value)">
-            <mat-icon>{{ option.icon }}</mat-icon>
-            {{ option.label }}
-        </button>
-        }
-    </mat-menu>
+  <button
+    mat-button
+    type="button"
+    class="filter-chip sort-chip"
+    [class.active]="state.config().sort !== SearchSortOption.Relevance"
+    [matMenuTriggerFor]="sortMenu"
+  >
+    <mat-icon class="chip-icon">sort</mat-icon>
+    {{ state.sortLabel() }}
+  </button>
 
-    <button mat-button type="button" class="filter-chip sort-chip"
-        [class.active]="state.config().sort !== SearchSortOption.Relevance" [matMenuTriggerFor]="sortMenu">
-        <mat-icon class="chip-icon">sort</mat-icon>
-        {{ state.sortLabel() }}
-        <mat-icon class="arrow-icon">arrow_drop_down</mat-icon>
+  <mat-menu #sortMenu="matMenu">
+    @for (option of sortOptions; track option.value) {
+    <button
+      mat-menu-item
+      [class.active-item]="state.config().sort === option.value"
+      (click)="state.setSortOption(option.value)"
+    >
+      <mat-icon>{{ option.icon }}</mat-icon>
+      {{ option.label }}
     </button>
-
-    <mat-menu #sortMenu="matMenu">
-        @for (option of sortOptions; track option.value) {
-        <button mat-menu-item [class.active-item]="state.config().sort === option.value"
-            (click)="state.setSortOption(option.value)">
-            <mat-icon>{{ option.icon }}</mat-icon>
-            {{ option.label }}
-        </button>
-        }
-    </mat-menu>
+    }
+  </mat-menu>
 </div>

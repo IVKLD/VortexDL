@@ -10,28 +10,26 @@
                 <mat-icon>link</mat-icon>
                 Profile URL
             </mat-label>
-            <input [formField]="form().profileUrl" matInput
-                   placeholder="https://soundcloud.com/your-username"/>
+            <input [formField]="form().profileUrl" matInput placeholder="https://soundcloud.com/your-username" />
             <mat-hint>Used for quick discovery and "Sync All" features</mat-hint>
 
             @if (form().profileUrl().invalid()) {
-                <mat-error>{{ form().profileUrl().errors()[0]?.message }}</mat-error>
+            <mat-error>{{ form().profileUrl().errors()[0]?.message }}</mat-error>
             }
         </mat-form-field>
 
-        <button (click)="state.testUrl(form().profileUrl)"
-                [disabled]="!state.canTest(form().profileUrl)"
-                mat-flat-button
-                type="button"
-                matTooltip="Testing url"
-        >
+        <button (click)="state.testUrl(form().profileUrl)" [disabled]="!state.canTest(form().profileUrl)"
+            mat-flat-button type="button" matTooltip="Testing url">
             <mat-icon [class.rotating]="state.isTesting()">{{
-                    state.isTesting() ? 'sync' : 'check_circle'
+                state.isTesting() ? 'sync' : 'check_circle'
                 }}
             </mat-icon>
             Test
         </button>
     </div>
+
+    <app-settings-switch-card title="Background Sync" description="Enable background synchronization soundcloud"
+        [control]="form().autoSync" />
 
     <div class="row">
         <mat-form-field>
@@ -43,6 +41,5 @@
         </mat-form-field>
     </div>
 
-    <app-settings-switch-card title="Background Sync" description="Enable background synchronization on startup"
-                              [control]="form().autoSync"/>
+
 </div>

@@ -1,4 +1,4 @@
-use std::{net::IpAddr, path::PathBuf};
+use std::{collections::HashSet, net::IpAddr, path::PathBuf};
 
 use anyhow::Result;
 use clap::Parser;
@@ -6,7 +6,7 @@ use url::Url;
 
 use crate::{
     adb,
-    api::{self, state::AppState},
+    api::state::AppState,
     downloader::{self, Context},
     settings::UserSettings,
 };
@@ -50,6 +50,9 @@ pub struct Args {
     )]
     pub sync_player: bool,
 
+    #[arg(long, default_value_t = false, help = "Scan music library on player")]
+    pub scan_player: bool,
+
     #[arg(
         long,
         default_value = "127.0.0.1",
@@ -81,48 +84,53 @@ impl Args {
     }
 }
 
-pub async fn execute_app(state: AppState, args: Args) -> Result<()> {
-    if args.serve {
-        api::run_server(state, &args).await
-    } else if args.sync_player {
-        run_cli_sync(state).await
-    } else if let Some(ref url) = args.url {
-        run_cli_download(state, url.clone(), &args).await
-    } else {
-        Ok(())
+async fn list_connected_devices() -> Result<Option<HashSet<String>>> {
+    match adb::list_devices().await {
+        Ok(devices) if devices.is_empty() => {
+            println!("No connected ADB devices found.");
+            Ok(None)
+        }
+        Ok(devices) => Ok(Some(devices)),
+        Err(adb::AdbError::NotAvailable) => {
+            println!(
+                "adb binary not found in PATH. Please install adb and ensure it is accessible."
+            );
+            Ok(None)
+        }
+        Err(e) => Err(anyhow::anyhow!(e)),
     }
 }
 
-async fn run_cli_sync(state: AppState) -> Result<()> {
+pub async fn run_scan_player() -> Result<()> {
+    let Some(connected) = list_connected_devices().await? else {
+        return Ok(());
+    };
+
+    for id in &connected {
+        println!("Scanning music library on device: {id}...");
+        match adb::scan_device(id).await {
+            Ok(()) => println!("Scan triggered successfully on device: {id}"),
+            Err(e) => eprintln!("Failed to scan device {id}: {e}"),
+        }
+    }
+
+    Ok(())
+}
+
+pub async fn run_sync_player(state: &AppState) -> Result<()> {
     let settings = state.settings.read().await;
     if !settings.adb.enabled {
         println!("ADB is disabled in settings. Please enable it to sync.");
         return Ok(());
     }
 
-    let connected = match adb::list_devices().await {
-        Ok(devices) => devices,
-        Err(adb::AdbError::NotAvailable) => {
-            println!(
-                "adb binary not found in PATH. Please install adb and ensure it is accessible."
-            );
-            return Ok(());
-        }
-        Err(e) => return Err(anyhow::anyhow!(e)),
-    };
-    if connected.is_empty() {
-        println!("No connected ADB devices found.");
+    let Some(connected) = list_connected_devices().await? else {
         return Ok(());
-    }
+    };
 
     let mut synced_any = false;
     for id in &connected {
-        if let Some(cfg) = settings
-            .adb
-            .devices
-            .iter()
-            .find(|d| d.enabled && d.device_id == *id)
-        {
+        if let Some(cfg) = settings.adb.find_enabled_device(id) {
             println!("Syncing with device: {} -> {}", id, cfg.remote_music_dir);
             adb::sync_device(id, &cfg.remote_music_dir, state.storage.clone(), true).await?;
             synced_any = true;
@@ -141,15 +149,14 @@ async fn run_cli_sync(state: AppState) -> Result<()> {
     Ok(())
 }
 
-async fn run_cli_download(state: AppState, url: Url, args: &Args) -> Result<()> {
-    let ctx = Context::from_state(&state);
+pub async fn run_download(state: &AppState, url: &Url, proxies: &[String]) -> Result<()> {
+    let ctx = Context::from_state(state);
 
-    let mut current_settings = ctx.settings.read().await.clone();
-    if !args.proxies.is_empty() {
-        current_settings.network.fallback_proxies = args.proxies.clone();
+    if !proxies.is_empty() {
+        let mut current_settings = ctx.settings.read().await.clone();
+        current_settings.network.fallback_proxies = proxies.to_vec();
+        ctx.settings.update(current_settings).await?;
     }
-    ctx.settings.update_in_memory(current_settings).await;
 
-    downloader::run_download_pipeline(&ctx, &url).await?;
-    Ok(())
+    downloader::run_download_pipeline(&ctx, url).await
 }

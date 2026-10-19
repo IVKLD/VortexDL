@@ -1,5 +1,6 @@
 :host {
-    mat-dialog-content div {
+    mat-dialog-content {
+        margin: .6em .4em;
         font-size: 1.2em;
     }
 }

@@ -43,14 +43,7 @@ export class SettingsState {
     public loadSettings(): void {
         this._api.getSettings().subscribe({
             next: (res) => {
-                this.settingsForm().reset({
-                    soundcloud: res.soundcloud,
-                    downloads: res.downloads,
-                    network: res.network,
-                    adb: res.adb,
-                    system: res.system,
-                    webdav: res.webdav,
-                });
+                this.settingsForm().reset(res);
             },
         });
     }

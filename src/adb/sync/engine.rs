@@ -2,13 +2,18 @@ use std::{collections::HashSet, path::PathBuf, sync::Arc, time::Duration};
 
 use anyhow::Result;
 use tokio::sync::RwLock;
+use tracing::{error, info, warn};
 
-use super::{
-    commands,
-    state::{SyncGuard, get_last_sync_time, update_last_sync_time},
+use crate::{
+    adb::{
+        device::files,
+        error::AdbError,
+        state::{SyncGuard, get_last_sync_time, update_last_sync_time},
+    },
+    storage::MusicStorage,
     ui,
+    utils::filename::clean_filename,
 };
-use crate::{storage::MusicStorage, utils::filename::clean_filename};
 
 struct PushTask {
     rel_path: String,
@@ -31,7 +36,7 @@ fn diff_local_and_remote(storage: &MusicStorage, remote_files: &HashSet<String>)
     }
 
     for track in storage.tracks.values() {
-        if track.is_archived() {
+        if track.is_archived {
             continue;
         }
         let Some(name) = track.path.file_name().and_then(|f| f.to_str()) else {
@@ -59,12 +64,16 @@ fn diff_local_and_remote(storage: &MusicStorage, remote_files: &HashSet<String>)
     SyncDiff { to_push, to_delete }
 }
 
+/// What: Synchronizes all local music tracks to a target Android device over ADB.
+/// Flow: Triggered manually from CLI/WebUI or automatically by the device tracker when an authorized device connects.
+/// Why:  Avoids redundant uploads: it queries remote files, computes the diff against local storage,
+///       pushes missing tracks, deletes orphaned ones, and uses SyncGuard to guarantee exclusive device access.
 pub async fn sync_device(
     device: &str,
     remote_dir: &str,
     storage: Arc<RwLock<MusicStorage>>,
     force: bool,
-) -> Result<()> {
+) -> Result<(), AdbError> {
     if !force
         && get_last_sync_time(device)
             .is_some_and(|last_sync| last_sync.elapsed() < Duration::from_secs(10))
@@ -76,20 +85,18 @@ pub async fn sync_device(
         Some(g) => g,
         None => {
             if force {
-                return Err(commands::AdbError::AlreadyInProgress.into());
+                return Err(AdbError::AlreadyInProgress);
             }
             return Ok(());
         }
     };
 
-    if let Err(e) = commands::ensure_dir(device, remote_dir).await {
-        ui::remote_access_failed(remote_dir, device, &e);
+    if let Err(e) = files::ensure_dir(device, remote_dir).await {
+        error!("Cannot access remote directory '{remote_dir}' on device {device}: {e}");
         return Err(e);
     }
 
-    let _ = commands::sync_device_fs(device).await;
-
-    let remote_files = commands::list_files(device, remote_dir).await?;
+    let remote_files = files::list_files(device, remote_dir).await?;
 
     let diff = {
         let storage_read = storage.read().await;
@@ -100,34 +107,40 @@ pub async fn sync_device(
     };
 
     if diff.to_push.is_empty() && diff.to_delete.is_empty() {
-        ui::sync_not_needed(device);
+        info!("[{device}] Sync not needed, no changes");
         update_last_sync_time(device);
         return Ok(());
     }
 
-    ui::sync_start(device, remote_dir);
+    info!("[{device}] Syncing ADB device -> {remote_dir}");
 
     if !diff.to_delete.is_empty() {
-        ui::removing(diff.to_delete.len(), device);
+        info!(
+            "[{device}] Removing {} orphaned tracks",
+            diff.to_delete.len()
+        );
         delete_tracks(device, remote_dir, &diff.to_delete).await;
-        let _ = commands::sync_device_fs(device).await;
+        let _ = files::sync_device_fs(device).await;
     }
 
     if !diff.to_push.is_empty() {
-        ui::pushing(diff.to_push.len(), device);
+        info!("[{device}] Pushing {} tracks", diff.to_push.len());
         push_tracks(device, remote_dir, diff.to_push).await?;
-        let _ = commands::sync_device_fs(device).await;
+        let _ = files::sync_device_fs(device).await;
     }
 
     update_last_sync_time(device);
-
-    ui::sync_complete(device);
+    info!("[{device}] Sync complete");
 
     Ok(())
 }
 
-async fn push_tracks(device: &str, remote_dir: &str, tracks: Vec<PushTask>) -> Result<()> {
-    let pb = ui::progress_bar(tracks.len() as u64, device);
+async fn push_tracks(
+    device: &str,
+    remote_dir: &str,
+    tracks: Vec<PushTask>,
+) -> Result<(), AdbError> {
+    let pb = ui::create_device_progress_bar(tracks.len() as u64, device);
     let (mut pushed, mut failed) = (0u64, 0u64);
 
     for task in &tracks {
@@ -139,17 +152,17 @@ async fn push_tracks(device: &str, remote_dir: &str, tracks: Vec<PushTask>) -> R
         };
 
         let parent = format!("{remote_dir}/{}", task.artist_dir);
-        if let Err(e) = commands::ensure_dir(device, &parent).await {
+        if let Err(e) = files::ensure_dir(device, &parent).await {
             ui::pb_err(&pb, format!("mkdir {parent}: {e}"));
             failed += 1;
             pb.inc(1);
             continue;
-        }
+        };
 
         let remote = format!("{remote_dir}/{}", task.rel_path);
         pb.set_message(task.rel_path.clone());
 
-        match commands::push(device, local, &remote).await {
+        match files::push(device, local, &remote).await {
             Ok(()) => {
                 pushed += 1;
             }
@@ -163,7 +176,11 @@ async fn push_tracks(device: &str, remote_dir: &str, tracks: Vec<PushTask>) -> R
     }
 
     pb.finish_and_clear();
-    ui::push_results(pushed, failed);
+    if failed > 0 {
+        warn!("Track push completed with failures (pushed: {pushed}, failed: {failed})");
+    } else {
+        info!("Track push completed successfully ({pushed} tracks)");
+    }
     Ok(())
 }
 
@@ -173,18 +190,18 @@ async fn delete_tracks(device: &str, remote_dir: &str, paths: &[String]) {
     for rel in paths {
         let remote = format!("{remote_dir}/{rel}");
 
-        match commands::delete_file(device, &remote).await {
+        match files::delete_file(device, &remote).await {
             Ok(()) => {
-                ui::deleted(rel);
+                info!("Deleted file: {rel}");
                 if let Some((parent, _)) = rel.split_once('/') {
                     parents_to_clean.insert(parent.to_string());
                 }
             }
-            Err(e) => ui::delete_failed(rel, &e),
+            Err(e) => warn!("Failed to delete file {rel}: {e}"),
         }
     }
 
     for parent in parents_to_clean {
-        let _ = commands::delete_dir(device, &format!("{remote_dir}/{parent}")).await;
+        let _ = files::delete_dir(device, &format!("{remote_dir}/{parent}")).await;
     }
 }
