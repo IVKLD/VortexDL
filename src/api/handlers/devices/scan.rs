@@ -1,6 +1,6 @@
 use axum::{extract::Path, http::StatusCode, response::IntoResponse};
 
-use crate::{adb::scan_device, api::errors::ApiError};
+use crate::{api::errors::ApiError, devices::scan_device};
 
 #[utoipa::path(
     method(post),

@@ -3,8 +3,8 @@ use std::sync::Arc;
 use anyhow::Result;
 use tokio::sync::{RwLock, RwLockReadGuard, watch};
 
-use super::model::UserSettings;
-use crate::database::update_settings;
+use super::types::UserSettings;
+use crate::infra::db::update_settings;
 
 #[derive(Clone)]
 pub struct SettingsManager {

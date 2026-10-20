@@ -7,7 +7,7 @@ use axum::{
 use serde_json::to_string;
 use tokio::{select, time::interval};
 
-use crate::adb::list_devices;
+use crate::devices::list_devices;
 
 async fn handle_socket(mut socket: WebSocket) {
     let mut last_devices = Vec::new();

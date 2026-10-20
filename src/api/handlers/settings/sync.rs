@@ -3,14 +3,15 @@ use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
 
 use crate::{
-    api::{errors::ApiError, state::AppState},
-    backup::{BackupAction, BackupProvider, BackupSnapshot},
+    api::errors::ApiError,
+    app::AppState,
+    backup::{BackupAction, BackupSnapshot, BackupTarget},
 };
 
 #[derive(Deserialize, ToSchema)]
 #[serde(rename_all = "camelCase")]
 pub struct SyncRequest {
-    pub provider: BackupProvider,
+    pub provider: BackupTarget,
     pub action: BackupAction,
 }
 

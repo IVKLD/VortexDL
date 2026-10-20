@@ -5,9 +5,9 @@ use axum::{
     response::IntoResponse,
 };
 
-use crate::api::{
-    errors::{ApiError, ErrorCode},
-    state::AppState,
+use crate::{
+    api::errors::{ApiError, ErrorCode},
+    app::AppState,
 };
 
 #[utoipa::path(
@@ -24,7 +24,7 @@ pub async fn remove_track(
     State(state): State<AppState>,
     Path(id): Path<i64>,
 ) -> Result<impl IntoResponse, ApiError> {
-    let mut storage = state.storage.write().await;
+    let mut storage = state.library.write().await;
     match storage.remove_track(id).await? {
         Some(_) => Ok(StatusCode::OK),
         None => Err(ApiError::not_found(format!("Track with ID {id} not found"))
@@ -44,7 +44,7 @@ pub async fn remove_tracks(
     State(state): State<AppState>,
     Json(ids): Json<Vec<i64>>,
 ) -> Result<impl IntoResponse, ApiError> {
-    let mut storage = state.storage.write().await;
+    let mut storage = state.library.write().await;
     storage.remove_tracks_batch(ids).await?;
     Ok(StatusCode::OK)
 }

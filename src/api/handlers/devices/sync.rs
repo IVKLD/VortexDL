@@ -4,10 +4,7 @@ use axum::{
     response::IntoResponse,
 };
 
-use crate::{
-    adb::sync_device,
-    api::{errors::ApiError, state::AppState},
-};
+use crate::{api::errors::ApiError, app::AppState, devices::sync_device};
 
 #[utoipa::path(
     method(post),
@@ -39,6 +36,6 @@ pub async fn sync_adb_device(
         }
     };
 
-    sync_device(&device_id, &remote_music_dir, state.storage.clone(), true).await?;
+    sync_device(&device_id, &remote_music_dir, state.library.clone(), true).await?;
     Ok(StatusCode::OK)
 }

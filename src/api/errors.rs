@@ -12,7 +12,7 @@ use serde_json::json;
 use soundcloud_rs::Error as SoundCloudError;
 use yt_audio_downloader::YoutubeAudioError;
 
-use crate::{adb::AdbError, backup::BackupError};
+use crate::{backup::BackupError, devices::DeviceError};
 
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(rename_all = "SCREAMING_SNAKE_CASE")]
@@ -20,7 +20,7 @@ pub enum ErrorCode {
     InternalError,
     DatabaseError,
     IoError,
-    AdbError,
+    DeviceError,
     NetworkError,
     SoundCloudError,
 
@@ -143,22 +143,22 @@ impl From<HttpError> for ApiError {
     }
 }
 
-impl From<AdbError> for ApiError {
-    fn from(err: AdbError) -> Self {
+impl From<DeviceError> for ApiError {
+    fn from(err: DeviceError) -> Self {
         match err {
-            AdbError::AlreadyInProgress => Self::new(
+            DeviceError::AlreadyInProgress => Self::new(
                 StatusCode::CONFLICT,
                 ErrorCode::AlreadyProcessing,
                 "Device is currently syncing",
             ),
-            AdbError::NotAvailable => Self::new(
+            DeviceError::NotAvailable => Self::new(
                 StatusCode::SERVICE_UNAVAILABLE,
-                ErrorCode::AdbError,
+                ErrorCode::DeviceError,
                 "ADB binary not found in PATH",
             ),
-            AdbError::Other(e) => Self::new(
+            DeviceError::Other(e) => Self::new(
                 StatusCode::INTERNAL_SERVER_ERROR,
-                ErrorCode::AdbError,
+                ErrorCode::DeviceError,
                 format!("{:#}", e),
             ),
         }

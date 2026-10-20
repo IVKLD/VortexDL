@@ -14,7 +14,7 @@ use tokio::task::JoinSet;
 use url::Url;
 use utoipa::ToSchema;
 
-use crate::api::{errors::ApiError, state::AppState};
+use crate::{api::errors::ApiError, app::AppState};
 
 #[derive(Deserialize, ToSchema)]
 #[serde(rename_all = "camelCase")]
@@ -35,7 +35,7 @@ pub async fn test_soundcloud(
     State(state): State<AppState>,
     Json(payload): Json<TestSoundCloudRequest>,
 ) -> Result<impl IntoResponse, ApiError> {
-    state.client.resolve_url(&payload.url).await?;
+    state.soundcloud.resolve_url(&payload.url).await?;
     Ok((
         StatusCode::OK,
         Json("SoundCloud URL is valid and accessible"),

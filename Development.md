@@ -13,14 +13,19 @@ VortexDL is split into a **Rust Backend** and an **Angular Frontend**, compiled 
 ├── build.rs                    # Compiles Angular frontend when the web feature is enabled
 ├── Justfile                    # Developer task runner (install, backend, frontend, dist)
 ├── src/                        # Rust backend
-│   ├── main.rs                 # Entry point, system startup, Axum runner
-│   ├── cli.rs                  # CLI argument parsing
-│   ├── settings.rs             # Configuration manager (memory cache + database writeback)
-│   ├── storage.rs              # File scanner & metadata database catalog
-│   ├── database/               # Redb embedded database layer (settings, sync)
-│   ├── api/                    # REST API & SSE (Server-Sent Events) handlers
-│   ├── downloader/             # Track discovery & staged download pipeline
-│   └── adb_device/             # ADB Android synchronizer
+│   ├── main.rs                 # Minimal entry point (Args parse -> app::run)
+│   ├── app/                    # Application lifecycle, AppState, bootstrap & background tasks
+│   ├── api/                    # REST API, WebSocket & Swagger UI handlers
+│   ├── cli/                    # CLI commands & argument handling
+│   ├── downloader/             # Download queue, worker pool, cancellation & finalization
+│   ├── providers/              # Streaming & discovery providers (SoundCloud, YouTube)
+│   ├── library/                # Music catalog scanner, metadata reader/writer & in-memory index
+│   ├── devices/                # Device registry, ADB transport & incremental sync engine
+│   ├── backup/                 # Settings backup & snapshot management (Local, URL, WebDAV)
+│   ├── settings/               # User settings model & reactive SettingsManager
+│   ├── infra/                  # Infrastructure (redb storage, HTTP client & proxy pool, logging)
+│   ├── domain/                 # Core domain entities (Track, AudioFormat, Platform)
+│   └── terminal/               # Terminal spinners & multi-progress bars
 └── frontend/                   # Angular 21 SPA (standalone components + signals)
 ```
 
@@ -28,25 +33,26 @@ VortexDL is split into a **Rust Backend** and an **Angular Frontend**, compiled 
 
 ## 2. Backend Architecture
 
-### A. Database (`src/database/`)
-Powered by [redb](https://github.com/cberner/redb), a pure-Rust embedded key-value store. It stores application configurations and tracks sync checkpoints for ADB-connected devices.
+The backend follows a layered architecture where dependencies flow strictly downward:
+Adapters (`api`, `cli`) → Application (`app`) → Orchestration (`downloader`) → Domain Services (`providers`, `library`, `devices`, `backup`, `settings`) → Infrastructure (`infra`) → Pure Leaf Types (`domain`, `terminal`).
 
-### B. Music Storage Scanner (`src/storage.rs`)
-Iterates over the configured output directory, extracts metadata from filenames (`Artist - Title`), and maps them in the database. Serves as the source of truth for the local track list, preventing redownloading of existing tracks.
+### A. Infrastructure & Storage (`src/infra/`)
+Powered by [redb](https://github.com/cberner/redb), a pure-Rust embedded key-value store. It persists user configurations and cached track file metadata. Also provides connection/proxy pools and structured logging.
+
+### B. Library Catalog (`src/library/`)
+Recursively scans music directories, parses ID3 tags and audio metadata, caches indexed files in redb, and maintains an in-memory `Library` index.
 
 ### C. Downloader Pipeline (`src/downloader/`)
-Async download routines are handled inside `src/downloader/` through a staged pipeline:
-1.  **Prepare (`prepare.rs`)**: Initializes CLI progress bars and adds the task to `DownloadManager` with status `Downloading`.
-2.  **Resolve (`resolve.rs`)**: Uses `soundcloud-rs` to fetch progressive MP3 or HLS streams from SoundCloud API.
-3.  **Download (`download.rs`)**: Reads the stream asynchronously, writes chunks to disk, and pushes real-time progress to `DownloadManager`.
-4.  **Complete (`complete.rs`)**: blocking task injecting ID3 tags (artist, title, cover art) into the MP3 file, transitioning the state to `Finished` and indexing it in `MusicStorage`.
+Coordinates multi-stage downloads with concurrency limits, cancellation channels, and WebSocket progress events:
+1.  **Queue & Discovery (`pipeline.rs`)**: Resolves remote tracks from SoundCloud / YouTube via `providers`.
+2.  **Worker Pool (`worker.rs`)**: Concurrent downloads with rate-limiting and graceful cancellation signals.
+3.  **Finalization (`finalize.rs`)**: Writes ID3 tags, updates cache and in-memory index, and triggers ADB device sync.
 
-### D. ADB Android Sync (`src/adb_device/`)
-Subscribes to the ADB server via TCP (port 5037) using `host:track-devices` to listen for device connection events in real-time. Upon connection:
-1.  Fetches file list from target device directory.
-2.  Deletes **orphaned tracks** that were deleted locally.
-3.  Pushes **new tracks** sorted into `Artist/Track.mp3` directories.
-4.  Runs native `am broadcast ...` media scan on the Android device so tracks appear instantly in players.
+### D. Device Sync (`src/devices/`)
+Monitors connected Android players/devices via ADB daemon sockets (`host:track-devices`):
+1.  Scans external storage and SD card music directories.
+2.  Computes diff against local library: pushes new tracks (`Artist/Track.mp3`) and removes deleted ones.
+3.  Triggers Android media scanner broadcasts so tracks appear instantly in media players.
 
 ---
 

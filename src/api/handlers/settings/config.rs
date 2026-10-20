@@ -1,9 +1,6 @@
 use axum::{Json, extract::State, http::StatusCode, response::IntoResponse};
 
-use crate::{
-    api::{errors::ApiError, state::AppState},
-    settings::UserSettings,
-};
+use crate::{api::errors::ApiError, app::AppState, settings::UserSettings};
 
 #[utoipa::path(
     method(get),

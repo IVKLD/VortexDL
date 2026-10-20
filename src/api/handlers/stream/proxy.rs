@@ -10,7 +10,7 @@ use reqwest::{
 use yt_audio_downloader::select_user_agent_for_url;
 
 use super::resolve::resolve_stream_url;
-use crate::api::{errors::ApiError, state::AppState};
+use crate::{api::errors::ApiError, app::AppState};
 
 pub async fn proxy_audio_stream(
     state: &AppState,
@@ -19,16 +19,16 @@ pub async fn proxy_audio_stream(
     range_header: Option<HeaderValue>,
 ) -> Result<Response, ApiError> {
     let cached = resolve_stream_url(state, id, url_param.clone()).await?;
-    let client = state.cache.get_or_create_client(cached.proxy.clone()).await;
+    let client = state.cache.get_or_create_client(cached.proxy.clone());
 
     let mut upstream_res =
         send_upstream_request(&client, &cached.url, range_header.as_ref()).await?;
 
     let status = upstream_res.status().as_u16();
     if matches!(status, 401 | 403 | 404 | 410) {
-        state.cache.remove_stream(id).await;
+        state.cache.remove_stream(id);
         if let Ok(fresh) = resolve_stream_url(state, id, url_param).await {
-            let fresh_client = state.cache.get_or_create_client(fresh.proxy).await;
+            let fresh_client = state.cache.get_or_create_client(fresh.proxy);
             if let Ok(res) =
                 send_upstream_request(&fresh_client, &fresh.url, range_header.as_ref()).await
                 && (res.status().is_success() || res.status().as_u16() == 206)

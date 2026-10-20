@@ -12,7 +12,7 @@ use tower::ServiceExt;
 use tower_http::services::ServeFile;
 pub use types::StreamQuery;
 
-use crate::api::{errors::ApiError, state::AppState};
+use crate::{api::errors::ApiError, app::AppState};
 
 #[utoipa::path(
     method(get),
@@ -33,7 +33,7 @@ pub async fn stream_audio(
     req: Request,
 ) -> Result<Response, ApiError> {
     if let Some(path) = state
-        .storage
+        .library
         .read()
         .await
         .get_track(id)

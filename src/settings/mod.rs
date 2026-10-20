@@ -1,8 +1,8 @@
 pub mod manager;
-pub mod model;
+pub mod types;
 
 pub use manager::SettingsManager;
-pub use model::{
+pub use types::{
     AdbDeviceSettings, AdbSettings, DownloadSettings, NetworkSettings, SoundcloudSettings,
     SystemSettings, UserSettings, WebDavSettings,
 };

@@ -1,8 +1,8 @@
 use axum::{Json, extract::Path};
 
 use crate::{
-    adb::{StorageInfo, get_device_storages, list_devices},
     api::errors::ApiError,
+    devices::{StorageInfo, get_device_storages, list_devices},
 };
 
 #[utoipa::path(

@@ -2,7 +2,7 @@ use serde::{Deserialize, Serialize};
 use url::Url;
 use utoipa::ToSchema;
 
-use crate::storage::LocalMusicTrack;
+use crate::{domain::AudioFormat, library::LibraryTrack};
 
 #[derive(Debug, Deserialize, ToSchema)]
 #[serde(rename_all = "camelCase")]
@@ -24,11 +24,9 @@ pub struct DownloadStartResponse {
     pub message: String,
 }
 
-use crate::types::AudioFormat;
-
 #[derive(Debug, Serialize, ToSchema)]
 #[serde(rename_all = "camelCase")]
-pub struct MusicTrackRecord {
+pub struct TrackRecord {
     pub id: i64,
     pub artist: String,
     pub title: String,
@@ -40,8 +38,8 @@ pub struct MusicTrackRecord {
     pub archived: bool,
 }
 
-impl MusicTrackRecord {
-    pub fn from_local_track(id: i64, data: &LocalMusicTrack) -> Self {
+impl TrackRecord {
+    pub fn from_track(id: i64, data: &LibraryTrack) -> Self {
         Self {
             id,
             artist: data.metadata.artist.clone(),

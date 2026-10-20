@@ -14,17 +14,16 @@ use super::types::{
     SearchDurationFilter, SearchProviderParam, SearchQuery, SearchResponse, SearchTrackItem,
 };
 use crate::{
-    api::{
-        errors::{ApiError, ErrorCode},
-        state::AppState,
-    },
-    utils::{filename, soundcloud},
+    api::errors::{ApiError, ErrorCode},
+    app::AppState,
+    domain::parse_track_metadata,
+    providers::soundcloud,
 };
 
 fn youtube_meta_to_item(meta: &VideoMetadata) -> (i64, String, SearchTrackItem) {
     let id = youtube_id_to_i64(&meta.id);
     let permalink_url = format!("https://www.youtube.com/watch?v={}", meta.id);
-    let (artist, title) = filename::parse_track_metadata(&meta.title, &meta.author);
+    let (artist, title) = parse_track_metadata(&meta.title, &meta.author);
     let item = SearchTrackItem {
         id,
         title,
@@ -65,7 +64,7 @@ async fn search_youtube(
             .await
     {
         let (id, vid, item) = youtube_meta_to_item(&meta);
-        state.cache.insert_youtube_id(id, vid).await;
+        state.cache.insert_youtube_id(id, vid);
         return Ok(SearchResponse {
             tracks: vec![item],
             has_more: false,
@@ -73,7 +72,7 @@ async fn search_youtube(
     }
 
     let continuation = if offset > 0 {
-        state.cache.get_continuation(query).await
+        state.cache.continuation(query)
     } else {
         None
     };
@@ -88,7 +87,7 @@ async fn search_youtube(
     };
 
     let has_more = next_token.is_some();
-    state.cache.set_continuation(query, next_token).await;
+    state.cache.set_continuation(query, next_token);
 
     let mut tracks = Vec::new();
     for meta in videos {
@@ -97,7 +96,7 @@ async fn search_youtube(
         }
 
         let (id, vid, item) = youtube_meta_to_item(&meta);
-        state.cache.insert_youtube_id(id, vid).await;
+        state.cache.insert_youtube_id(id, vid);
         tracks.push(item);
         if tracks.len() >= limit {
             break;
@@ -120,7 +119,7 @@ async fn search_soundcloud(
         ..Default::default()
     };
 
-    let Some(sc_results) = state.client.search_tracks(Some(&sc_query)).await.ok() else {
+    let Some(sc_results) = state.soundcloud.search_tracks(Some(&sc_query)).await.ok() else {
         return Ok(SearchResponse {
             tracks: Vec::new(),
             has_more: false,
@@ -132,7 +131,7 @@ async fn search_soundcloud(
 
     for track in sc_results.collection {
         let Some(id) = track.id else { continue };
-        state.cache.insert_soundcloud_track(id, track.clone()).await;
+        state.cache.insert_soundcloud_track(id, track.clone());
         let artist = track
             .user
             .as_ref()
@@ -140,7 +139,8 @@ async fn search_soundcloud(
             .unwrap_or_else(|| "Unknown".to_string());
         let artwork_url = track
             .artwork_url
-            .and_then(|url| Url::parse(&url).ok())
+            .as_deref()
+            .and_then(|url| Url::parse(url).ok())
             .map(|url| soundcloud::resize_artwork_url(url, "-t200x200").to_string());
 
         tracks.push(SearchTrackItem {

@@ -1,6 +1,5 @@
 pub mod errors;
 pub mod handlers;
-pub mod state;
 pub mod static_files;
 pub mod types;
 
@@ -32,21 +31,21 @@ use handlers::{
 };
 use tokio::net::TcpListener;
 use tower_http::cors::CorsLayer;
-use types::{ApiStatus, DownloadRequest, DownloadStartResponse, MusicTrackRecord};
+use types::{ApiStatus, DownloadRequest, DownloadStartResponse, TrackRecord};
 use utoipa::OpenApi;
 use utoipa_swagger_ui::SwaggerUi;
 
 use crate::{
-    adb::{StorageInfo, StorageType},
-    api::state::AppState,
-    backup::{BackupAction, BackupProvider, WebDavBackupConfig},
+    app::AppState,
+    backup::{BackupAction, BackupTarget, WebDavBackupConfig},
     cli::Args,
-    download_manager::{DownloadItem, DownloadStatus, MessageLevel},
+    devices::{StorageInfo, StorageType},
+    domain::AudioFormat,
+    downloader::{DownloadItem, DownloadStatus, MessageLevel},
     settings::{
         AdbDeviceSettings, AdbSettings, DownloadSettings, NetworkSettings, SoundcloudSettings,
         SystemSettings, UserSettings, WebDavSettings,
     },
-    types::AudioFormat,
 };
 
 #[derive(OpenApi)]
@@ -82,7 +81,7 @@ use crate::{
             AudioFormat,
             DownloadRequest,
             DownloadStartResponse,
-            MusicTrackRecord,
+            TrackRecord,
 
             // Settings
             UserSettings,
@@ -111,7 +110,7 @@ use crate::{
 
             // Backup
             BackupAction,
-            BackupProvider,
+            BackupTarget,
             WebDavBackupConfig,
 
             // Search & Tracks

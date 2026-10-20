@@ -6,7 +6,10 @@ use axum::{
 use serde::Deserialize;
 use utoipa::IntoParams;
 
-use crate::api::{errors::ApiError, state::AppState, types::MusicTrackRecord};
+use crate::{
+    api::{errors::ApiError, types::TrackRecord},
+    app::AppState,
+};
 
 #[derive(Deserialize, IntoParams)]
 pub struct TracksQuery {
@@ -22,18 +25,18 @@ pub struct TracksQuery {
         TracksQuery
     ),
     responses(
-        (status = 200, description = "Get list of local track records", body = Vec<MusicTrackRecord>)
+        (status = 200, description = "Get list of local track records", body = Vec<TrackRecord>)
     )
 )]
 pub async fn get_tracks(
     State(state): State<AppState>,
     Query(query): Query<TracksQuery>,
 ) -> Result<impl IntoResponse, ApiError> {
-    let storage = state.storage.read().await;
+    let storage = state.library.read().await;
 
     let mut tracks = storage
         .iter()
-        .map(|(id, data)| MusicTrackRecord::from_local_track(*id, data))
+        .map(|(id, data)| TrackRecord::from_track(*id, data))
         .collect::<Vec<_>>();
 
     let sort = query.sort.as_deref().unwrap_or("date");

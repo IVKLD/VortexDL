@@ -9,8 +9,8 @@ use serde_json::to_string;
 use tokio::sync::broadcast::error::RecvError;
 
 use crate::{
-    api::state::AppState,
-    download_manager::{MessageLevel, ServerEvent},
+    app::AppState,
+    downloader::{MessageLevel, ServerEvent},
 };
 
 async fn send_event(socket: &mut WebSocket, event: &ServerEvent) -> bool {

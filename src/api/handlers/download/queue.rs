@@ -9,11 +9,10 @@ use url::Url;
 use crate::{
     api::{
         errors::{ApiError, ErrorCode},
-        state::AppState,
         types::{ApiStatus, DownloadRequest, DownloadStartResponse},
     },
-    download_manager::{DownloadItem, DownloadManager, ServerEvent},
-    downloader,
+    app::AppState,
+    downloader::{self, DownloadItem, DownloadManager, ServerEvent},
 };
 
 struct ReleaseUrlGuard<'a>(&'a DownloadManager, &'a Url);
