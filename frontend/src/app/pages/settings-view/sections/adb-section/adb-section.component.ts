@@ -1,5 +1,4 @@
 import { Component, inject, input } from '@angular/core';
-import { CommonModule } from '@angular/common';
 import { MatIcon } from '@angular/material/icon';
 import { MatIconButton } from '@angular/material/button';
 import { MatDivider } from '@angular/material/divider';
@@ -12,7 +11,6 @@ import { AdbState } from './adb.state';
 @Component({
     selector: 'app-adb-section',
     imports: [
-        CommonModule,
         MatIcon,
         MatIconButton,
         MatDivider,

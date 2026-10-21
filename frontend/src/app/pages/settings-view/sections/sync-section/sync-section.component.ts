@@ -1,5 +1,4 @@
 import { Component, inject, input } from '@angular/core';
-import { CommonModule } from '@angular/common';
 import { MatIcon } from '@angular/material/icon';
 import { MatButton, MatIconButton } from '@angular/material/button';
 import { MatButtonToggle, MatButtonToggleGroup } from '@angular/material/button-toggle';
@@ -15,7 +14,6 @@ import { SyncState } from './sync.state';
 @Component({
     selector: 'app-sync-section',
     imports: [
-        CommonModule,
         MatIcon,
         MatInput,
         MatFormField,

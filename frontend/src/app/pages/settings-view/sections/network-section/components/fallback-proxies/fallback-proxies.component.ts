@@ -1,5 +1,4 @@
 import {Component, inject, input, signal} from '@angular/core';
-import {CommonModule} from '@angular/common';
 import {MatIcon} from '@angular/material/icon';
 import {MatIconButton} from '@angular/material/button';
 import {MatTooltip} from '@angular/material/tooltip';
@@ -18,7 +17,7 @@ import {parseErrorMessage} from '@shared/error-utils';
 @Component({
     selector: 'app-fallback-proxies',
     imports: [
-        CommonModule, MatIcon, MatIconButton, MatTooltip, MatDivider
+        MatIcon, MatIconButton, MatTooltip, MatDivider
     ],
     templateUrl: './fallback-proxies.component.html',
     styleUrl: './fallback-proxies.component.scss',

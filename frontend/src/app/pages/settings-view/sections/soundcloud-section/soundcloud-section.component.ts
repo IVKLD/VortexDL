@@ -1,5 +1,4 @@
 import { Component, inject, input } from '@angular/core';
-import { CommonModule } from '@angular/common';
 import { MatIcon } from '@angular/material/icon';
 import { MatButton } from '@angular/material/button';
 import { MatInput } from '@angular/material/input';
@@ -13,7 +12,6 @@ import { SoundcloudState } from './soundcloud.state';
 @Component({
     selector: 'app-soundcloud-section',
     imports: [
-        CommonModule,
         MatIcon,
         MatInput,
         MatFormField,

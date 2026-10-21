@@ -8,7 +8,7 @@ use anyhow::Result;
 use tokio::{fs::remove_file, task::spawn_blocking};
 
 use super::types::LibraryTrack;
-use crate::infra::db::{remove_cached_track, update_cached_tracks_batch};
+use crate::infra::db::update_cached_tracks_batch;
 
 #[derive(Default)]
 pub struct Library {
@@ -48,21 +48,7 @@ impl Library {
         tracing::debug!("Indexing complete. Found {} tracks.", count);
     }
 
-    pub async fn remove_track(&mut self, id: i64) -> Result<Option<LibraryTrack>, io::Error> {
-        let Some(data) = self.tracks.remove(&id) else {
-            return Ok(None);
-        };
-
-        delete_track_file(&data.path).await?;
-        let path_str = data.path.to_string_lossy().into_owned();
-        let _ = spawn_blocking(move || {
-            let _ = remove_cached_track(&path_str);
-        })
-        .await;
-        Ok(Some(data))
-    }
-
-    pub async fn remove_tracks_batch(
+    pub async fn remove_tracks(
         &mut self,
         ids: Vec<i64>,
     ) -> Result<Vec<LibraryTrack>, io::Error> {

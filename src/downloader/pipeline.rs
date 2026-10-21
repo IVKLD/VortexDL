@@ -233,6 +233,11 @@ async fn finalize_single_track(
             size,
         );
     }
+
+    let _ = spawn_blocking(move || {
+        let _ = crate::infra::db::record_download(size);
+    })
+    .await;
 }
 
 async fn handle_track_failure(

@@ -5,23 +5,27 @@
     </h2>
 </div>
 
-<div class="format-list">
-    @for (fmt of data(); track fmt.format) {
-        <div class="format-item">
-            <div class="format-info">
-                <span [style.background]="fmt.color" class="format-dot"></span>
-                <span class="format-name">{{ fmt.format }}</span>
-                <span class="format-count">{{ fmt.count }}</span>
+@if (data().length > 0) {
+    <div class="format-list">
+        @for (fmt of data(); track fmt.format) {
+            <div class="format-item">
+                <div class="format-info">
+                    <span [style.background]="fmt.color" class="format-dot"></span>
+                    <span class="format-name">{{ fmt.format }}</span>
+                    <span class="format-count">{{ fmt.count }}</span>
+                </div>
+                <div class="format-bar-bg">
+                    <div [style.background]="fmt.color"
+                         [style.width]="fmt.percentage + '%'"
+                         class="format-bar-fill"></div>
+                </div>
             </div>
-            <div class="format-bar-bg">
-                <div [style.background]="fmt.color"
-                     [style.width]="fmt.percentage + '%'"
-                     class="format-bar-fill"></div>
-            </div>
-        </div>
-    } @empty {
-        <div class="empty-state mini">
-            <p>Library is empty.</p>
-        </div>
-    }
-</div>
+        }
+    </div>
+} @else {
+    <app-empty-pane
+        icon="pie_chart"
+        heading="Library is empty"
+        description="Download music to see format breakdown."
+        [accent]="false" />
+}

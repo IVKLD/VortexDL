@@ -39,4 +39,27 @@ impl AudioFormat {
             })
             .unwrap_or(Self::Unknown)
     }
+
+    pub fn as_str(&self) -> &'static str {
+        match self {
+            Self::Mp3 => "mp3",
+            Self::Flac => "flac",
+            Self::Wav => "wav",
+            Self::M4a => "m4a",
+            Self::Aac => "aac",
+            Self::Ogg => "ogg",
+            Self::Opus => "opus",
+            Self::Wma => "wma",
+            Self::Alac => "alac",
+            Self::Aiff => "aiff",
+            Self::Unknown => "unknown",
+        }
+    }
 }
+
+impl std::fmt::Display for AudioFormat {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.as_str())
+    }
+}
+

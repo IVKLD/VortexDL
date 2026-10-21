@@ -1,36 +1,14 @@
-use axum::{
-    Json,
-    extract::{Path, State},
-    http::StatusCode,
-    response::IntoResponse,
-};
+use std::time::SystemTime;
+
+use axum::{Json, extract::State, http::StatusCode, response::IntoResponse};
+use tokio::task::spawn_blocking;
 
 use crate::{
-    api::errors::{ApiError, ErrorCode},
+    api::errors::ApiError,
     app::AppState,
+    domain::AudioFormat,
+    infra::db::{DeletedTrackRecord, record_deleted_tracks},
 };
-
-#[utoipa::path(
-    method(delete),
-    path = "/api/downloads/{id}",
-    params(
-        ("id" = i64, Path, description = "Track ID to remove")
-    ),
-    responses(
-        (status = 200, description = "Track deleted successfully")
-    )
-)]
-pub async fn remove_track(
-    State(state): State<AppState>,
-    Path(id): Path<i64>,
-) -> Result<impl IntoResponse, ApiError> {
-    let mut storage = state.library.write().await;
-    match storage.remove_track(id).await? {
-        Some(_) => Ok(StatusCode::OK),
-        None => Err(ApiError::not_found(format!("Track with ID {id} not found"))
-            .with_code(ErrorCode::TrackNotFound)),
-    }
-}
 
 #[utoipa::path(
     method(delete),
@@ -45,6 +23,30 @@ pub async fn remove_tracks(
     Json(ids): Json<Vec<i64>>,
 ) -> Result<impl IntoResponse, ApiError> {
     let mut storage = state.library.write().await;
-    storage.remove_tracks_batch(ids).await?;
+    let removed = storage.remove_tracks(ids).await?;
+    if !removed.is_empty() {
+        let now = SystemTime::now()
+            .duration_since(SystemTime::UNIX_EPOCH)
+            .unwrap_or_default()
+            .as_secs();
+        let records = removed
+            .into_iter()
+            .map(|t| {
+                let format = AudioFormat::from_path(&t.path).to_string();
+                DeletedTrackRecord {
+                    id: t.metadata.id,
+                    title: t.metadata.title,
+                    artist: t.metadata.artist,
+                    format,
+                    size: t.size,
+                    deleted_at: now,
+                }
+            })
+            .collect::<Vec<_>>();
+        let _ = spawn_blocking(move || {
+            let _ = record_deleted_tracks(&records);
+        })
+        .await;
+    }
     Ok(StatusCode::OK)
 }

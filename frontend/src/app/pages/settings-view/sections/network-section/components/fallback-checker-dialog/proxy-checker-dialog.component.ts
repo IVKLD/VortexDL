@@ -1,5 +1,4 @@
 import {Component, inject, signal, computed} from '@angular/core';
-import {CommonModule} from '@angular/common';
 import {MatIcon} from '@angular/material/icon';
 import {MatButton} from '@angular/material/button';
 import {
@@ -23,7 +22,7 @@ export interface ProxyStatus {
 @Component({
     selector: 'app-proxy-checker-dialog',
     imports: [
-        CommonModule, MatIcon, MatButton,
+        MatIcon, MatButton,
         MatDialogTitle, MatDialogContent, MatDialogActions, MatDialogClose,
         MatTooltip, RxVirtualScrollViewportComponent, RxVirtualFor, FixedSizeVirtualScrollStrategy
     ],

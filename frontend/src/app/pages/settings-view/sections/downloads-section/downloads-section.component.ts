@@ -1,5 +1,4 @@
 import { Component, input } from '@angular/core';
-import { CommonModule } from '@angular/common';
 import { MatIcon } from '@angular/material/icon';
 import { MatInput } from '@angular/material/input';
 import { MatFormField, MatHint, MatLabel, MatError } from '@angular/material/form-field';
@@ -9,7 +8,6 @@ import { SettingsFormModel } from '../../models/settings-form.model';
 @Component({
     selector: 'app-downloads-section',
     imports: [
-        CommonModule,
         MatIcon,
         MatInput,
         MatFormField,

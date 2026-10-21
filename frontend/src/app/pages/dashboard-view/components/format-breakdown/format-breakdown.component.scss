@@ -81,20 +81,3 @@
   }
 }
 
-.empty-state.mini {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: var(--mat-sys-surface-container-lowest);
-  border: 1px dashed var(--mat-sys-outline-variant);
-  border-radius: 12px;
-  min-height: 100px;
-  padding: 1.5rem;
-  text-align: center;
-
-  p {
-    color: var(--mat-sys-on-surface-variant);
-
-    font-size: 0.95rem;
-  }
-}

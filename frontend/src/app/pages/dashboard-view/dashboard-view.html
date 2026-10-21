@@ -1,14 +1,53 @@
 <div class="stats-container">
-    @for (stat of stats(); track stat.label) {
-        <app-stat-card
-                [iconClass]="stat.iconClass"
-                [icon]="stat.icon"
-                [label]="stat.label"
-                [value]="stat.isSize ? (stat.value | fileSize) : stat.value"/>
-    }
+    <app-stat-card label="Total Tracks" [value]="state.totalTracks()">
+        <div icon class="stat-icon tracks">
+            <mat-icon>library_music</mat-icon>
+        </div>
+    </app-stat-card>
+
+    <app-stat-card label="Library Size" [value]="state.totalSize()">
+        <div icon class="stat-icon storage">
+            <mat-icon>storage</mat-icon>
+        </div>
+    </app-stat-card>
+
+    <app-stat-card label="Total Downloaded" [value]="state.totalDownloaded()">
+        <div icon class="stat-icon downloaded">
+            <mat-icon>cloud_done</mat-icon>
+        </div>
+    </app-stat-card>
+
+    <app-stat-card label="Downloaded Size" [value]="state.totalDownloadedBytes()">
+        <div icon class="stat-icon downloaded">
+            <mat-icon>download_for_offline</mat-icon>
+        </div>
+    </app-stat-card>
+
+    <app-stat-card label="Deleted Tracks" [value]="state.deletedTracks()">
+        <div icon class="stat-icon deleted">
+            <mat-icon>delete_sweep</mat-icon>
+        </div>
+    </app-stat-card>
+
+    <app-stat-card label="Space Recovered" [value]="state.spaceRecovered()">
+        <div icon class="stat-icon deleted">
+            <mat-icon>cleaning_services</mat-icon>
+        </div>
+    </app-stat-card>
+
+    <app-stat-card label="Active Queue" [value]="state.activeQueue()">
+        <div icon class="stat-icon active">
+            <mat-icon>downloading</mat-icon>
+        </div>
+    </app-stat-card>
 </div>
 
 <main>
-    <app-activity-chart [data]="activityData()"/>
-    <app-format-breakdown [data]="formatBreakdown()"/>
+    <app-activity-chart [data]="state.activityData()" />
+    <app-format-breakdown [data]="state.formatBreakdown()" />
+    <app-deleted-tracks
+        [recentDeleted]="state.recentDeleted()"
+        [totalDeleted]="state.deletedCount()"
+        [totalDeletedBytes]="state.deletedBytes()"
+        (clearHistory)="state.clearDeletedHistory()" />
 </main>

@@ -27,7 +27,10 @@ use handlers::{
         sync::{SnapshotResponse, SyncRequest, get_snapshot_handler, sync_handler},
     },
     stream::stream_audio,
-    tracks::{get_tracks, reindex_library, remove_track, remove_tracks},
+    tracks::{
+        LibraryStatsResponse, clear_deleted_stats, get_library_stats, get_tracks, reindex_library,
+        remove_tracks,
+    },
 };
 use tokio::net::TcpListener;
 use tower_http::cors::CorsLayer;
@@ -42,6 +45,7 @@ use crate::{
     devices::{StorageInfo, StorageType},
     domain::AudioFormat,
     downloader::{DownloadItem, DownloadStatus, MessageLevel},
+    infra::db::DeletedTrackRecord,
     settings::{
         AdbDeviceSettings, AdbSettings, DownloadSettings, NetworkSettings, SoundcloudSettings,
         SystemSettings, UserSettings, WebDavSettings,
@@ -60,7 +64,8 @@ use crate::{
         handlers::search::tracks::search_tracks,
         handlers::tracks::list::get_tracks,
         handlers::tracks::library::reindex_library,
-        handlers::tracks::manage::remove_track,
+        handlers::tracks::stats::get_library_stats,
+        handlers::tracks::stats::clear_deleted_stats,
         handlers::tracks::manage::remove_tracks,
         handlers::devices::list::list_adb_devices,
         handlers::devices::ws::devices_ws,
@@ -82,6 +87,8 @@ use crate::{
             DownloadRequest,
             DownloadStartResponse,
             TrackRecord,
+            LibraryStatsResponse,
+            DeletedTrackRecord,
 
             // Settings
             UserSettings,
@@ -138,7 +145,7 @@ pub fn build_router(state: AppState, embed_frontend: bool) -> Router {
     let api_routes = Router::new()
         .route("/stream/{id}", get(stream_audio))
         .nest("/download", download_routes())
-        .nest("/downloads", downloads_routes())
+        .nest("/downloads", tracks_routes())
         .nest("/library", library_routes())
         .nest("/search", search_routes())
         .nest("/devices", devices_routes())
@@ -167,10 +174,10 @@ fn download_routes() -> Router<AppState> {
         .route("/syncing", get(get_syncing_urls))
 }
 
-fn downloads_routes() -> Router<AppState> {
+fn tracks_routes() -> Router<AppState> {
     Router::new()
         .route("/", get(get_tracks).delete(remove_tracks))
-        .route("/{id}", delete(remove_track))
+        .route("/stats", get(get_library_stats).delete(clear_deleted_stats))
 }
 
 fn library_routes() -> Router<AppState> {

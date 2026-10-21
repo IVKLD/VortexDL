@@ -9,9 +9,14 @@ use redb::Database;
 
 pub mod cache;
 pub mod settings;
+pub mod stats;
 
 pub use cache::{CachedTrack, get_cached_tracks, remove_cached_track, update_cached_tracks_batch};
 pub use settings::{get_settings, update_settings};
+pub use stats::{
+    DeletedTrackRecord, PersistentStats, clear_deleted_history, get_stats, record_deleted_tracks,
+    record_download,
+};
 
 use crate::infra::{APP_DIR, DB_NAME};
 

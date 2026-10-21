@@ -1,24 +1,30 @@
-<div class="section-header">
+<header>
     <h2>
         <mat-icon>bar_chart</mat-icon>
-        Download Activity (7 Days)
+        Activity
     </h2>
-</div>
+    <div class="legend">
+        <span class="dl">Downloads</span>
+        <span class="del">Deleted</span>
+    </div>
+</header>
 
-<div class="chart-container">
-    @if (data().length > 0) {
-        <div class="bars-wrapper">
-            @for (item of data(); track item.label) {
-                <div class="bar-col">
-                    <div [class.zero]="item.count === 0" class="bar-value">{{ item.count }}</div>
-                    <div [style.height]="item.heightPercent + '%'" class="bar-fill"></div>
-                    <div class="bar-label">{{ item.label }}</div>
+@if (data().length > 0) {
+    <div class="chart">
+        @for (item of data(); track item.label) {
+            <div class="bar-col">
+                <div class="bars">
+                    <div class="bar dl" [style.height]="item.downloadHeightPercent + '%'" [title]="item.downloadCount + ' downloaded'"></div>
+                    <div class="bar del" [style.height]="item.deleteHeightPercent + '%'" [title]="item.deleteCount + ' deleted'"></div>
                 </div>
-            }
-        </div>
-    } @else {
-        <div class="empty-state mini">
-            <p>No activity data available.</p>
-        </div>
-    }
-</div>
+                <span>{{ item.label }}</span>
+            </div>
+        }
+    </div>
+} @else {
+    <app-empty-pane
+        icon="bar_chart"
+        heading="No activity data"
+        description="Download or delete tracks to see your activity."
+        [accent]="false" />
+}
