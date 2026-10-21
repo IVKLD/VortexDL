@@ -28,7 +28,9 @@ echo -e "${BLUE}Updating to version:${NC} $NEW_VERSION"
 sed -i "s/^version = \"$CURRENT_VERSION\"/version = \"$NEW_VERSION\"/" Cargo.toml
 sed -i "0,/\"version\": \"$CURRENT_VERSION\"/s/\"version\": \"$CURRENT_VERSION\"/\"version\": \"$NEW_VERSION\"/" frontend/package.json
 
-git add Cargo.toml frontend/package.json
+cargo check --quiet 2>/dev/null || true
+
+git add Cargo.toml Cargo.lock frontend/package.json
 
 git commit -m "chore: release v$NEW_VERSION"
 git tag -a "v$NEW_VERSION" -m "Release v$NEW_VERSION"

@@ -7,6 +7,7 @@ on:
 
 permissions:
   contents: write
+  pull-requests: write
 
 jobs:
   release:
@@ -15,6 +16,8 @@ jobs:
       - uses: actions/checkout@v4
         with:
           submodules: recursive
+          fetch-depth: 0
+          token: ${{ secrets.GH_PAT || secrets.GITHUB_TOKEN }}
 
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
@@ -42,6 +45,8 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Update Nix Package
+        env:
+          GH_TOKEN: ${{ secrets.GH_PAT || secrets.GITHUB_TOKEN }}
         run: |
           VERSION=${GITHUB_REF#refs/tags/v}
           BINARY_PATH="target/release/vortex-dl"
@@ -52,12 +57,32 @@ jobs:
           git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
           
           git fetch origin main
-          git checkout main
+          git checkout -B main origin/main
           
           sed -i "s|version = \"[^\"]*\";|version = \"$VERSION\";|" nix/package.nix
           sed -i "s|hash = \"[^\"]*\";|hash = \"$SRI_HASH\";|" nix/package.nix
           
+          if git diff --quiet nix/package.nix; then
+            echo "nix/package.nix is already up to date"
+            exit 0
+          fi
+          
           git add nix/package.nix
           git commit -m "chore: release v$VERSION (update nix package)"
-          git push origin main
+          
+          git pull --rebase origin main
+          
+          if git push origin main; then
+            echo "Successfully updated nix/package.nix on main"
+          else
+            echo "Direct push to main failed (branch protection?). Creating pull request..."
+            BRANCH="update-nix-v$VERSION"
+            git checkout -b "$BRANCH"
+            git push -u origin "$BRANCH" --force
+            gh pr create \
+              --title "chore: release v$VERSION (update nix package)" \
+              --body "Automated update of \`nix/package.nix\` for release v$VERSION." \
+              --base main \
+              --head "$BRANCH" || true
+          fi
 
