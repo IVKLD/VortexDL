@@ -5,10 +5,7 @@ use axum::{
 };
 use soundcloud_rs::TracksQuery;
 use url::Url;
-use yt_audio_downloader::{
-    VideoMetadata, YoutubeAudioDownloader, is_youtube_url, search_youtube_page_with_client,
-    youtube_id_to_i64,
-};
+use yt_audio_downloader::{VideoMetadata, YoutubeAudioDownloader};
 
 use super::types::{
     SearchDurationFilter, SearchProviderParam, SearchQuery, SearchResponse, SearchTrackItem,
@@ -16,14 +13,14 @@ use super::types::{
 use crate::{
     api::errors::{ApiError, ErrorCode},
     app::AppState,
-    domain::parse_track_metadata,
+    domain,
     providers::soundcloud,
 };
 
 fn youtube_meta_to_item(meta: &VideoMetadata) -> (i64, String, SearchTrackItem) {
-    let id = youtube_id_to_i64(&meta.id);
+    let id = yt_audio_downloader::youtube_id_to_i64(&meta.id);
     let permalink_url = format!("https://www.youtube.com/watch?v={}", meta.id);
-    let (artist, title) = parse_track_metadata(&meta.title, &meta.author);
+    let (artist, title) = domain::parse_track_metadata(&meta.title, &meta.author);
     let item = SearchTrackItem {
         id,
         title,
@@ -57,7 +54,7 @@ async fn search_youtube(
     let client = state.http_client().await;
 
     if offset == 0
-        && is_youtube_url(query)
+        && yt_audio_downloader::is_youtube_url(query)
         && let Ok(meta) = YoutubeAudioDownloader::new()
             .client(client.clone())
             .fetch_metadata(query)
@@ -78,7 +75,7 @@ async fn search_youtube(
     };
 
     let Ok((videos, next_token)) =
-        search_youtube_page_with_client(query, continuation.as_deref(), client).await
+        yt_audio_downloader::search_youtube_page_with_client(query, continuation.as_deref(), client).await
     else {
         return Ok(SearchResponse {
             tracks: Vec::new(),

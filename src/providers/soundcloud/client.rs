@@ -7,7 +7,7 @@ use soundcloud_rs::{
 use url::Url;
 
 use crate::{
-    infra::net::race_proxies,
+    infra::net,
     settings::{SettingsManager, UserSettings},
 };
 
@@ -129,7 +129,7 @@ pub async fn resolve_soundcloud_stream_with_fallback(
     id: i64,
 ) -> Result<(String, StreamType, Option<String>)> {
     let settings_clone = settings.clone();
-    race_proxies(
+    net::race_proxies(
         &settings.network.fallback_proxies,
         settings.network.max_concurrent_proxies,
         move |proxy| {

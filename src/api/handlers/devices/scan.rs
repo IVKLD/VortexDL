@@ -1,6 +1,6 @@
 use axum::{extract::Path, http::StatusCode, response::IntoResponse};
 
-use crate::{api::errors::ApiError, devices::scan_device};
+use crate::{api::errors::ApiError, devices};
 
 #[utoipa::path(
     method(post),
@@ -13,6 +13,6 @@ use crate::{api::errors::ApiError, devices::scan_device};
     )
 )]
 pub async fn scan_adb_device(Path(device_id): Path<String>) -> Result<impl IntoResponse, ApiError> {
-    scan_device(&device_id).await?;
+    devices::scan_device(&device_id).await?;
     Ok(StatusCode::OK)
 }

@@ -5,7 +5,6 @@ use std::{
 };
 
 use id3::{Tag, TagLike};
-use yt_audio_downloader::{extract_video_id, is_youtube_url, youtube_id_to_i64};
 
 use super::{
     id3::{get_txxx, get_txxx_with_legacy},
@@ -14,7 +13,7 @@ use super::{
         TAG_PLATFORM, TAG_SOURCE_URL, TAG_TRACK_ID,
     },
 };
-use crate::domain::{SourcePlatform, TrackMetadata, parse_track_metadata};
+use crate::domain::{self, SourcePlatform, TrackMetadata};
 
 fn extract_track_id(tag: Option<&Tag>, source_url: Option<&str>, path: &Path) -> i64 {
     if let Some(id) = tag
@@ -25,10 +24,10 @@ fn extract_track_id(tag: Option<&Tag>, source_url: Option<&str>, path: &Path) ->
     }
 
     if let Some(url) = source_url
-        && is_youtube_url(url)
-        && let Ok(video_id) = extract_video_id(url)
+        && yt_audio_downloader::is_youtube_url(url)
+        && let Ok(video_id) = yt_audio_downloader::extract_video_id(url)
     {
-        return youtube_id_to_i64(&video_id);
+        return yt_audio_downloader::youtube_id_to_i64(&video_id);
     }
 
     let mut hasher = DefaultHasher::new();
@@ -91,7 +90,7 @@ pub fn extract_track_metadata(path: impl AsRef<Path>) -> Option<TrackMetadata> {
                 .file_stem()
                 .and_then(|s| s.to_str())
                 .unwrap_or("Unknown");
-            parse_track_metadata(stem, "Unknown")
+            domain::parse_track_metadata(stem, "Unknown")
         }
     };
 
@@ -107,7 +106,7 @@ pub fn extract_track_metadata(path: impl AsRef<Path>) -> Option<TrackMetadata> {
 
 #[cfg(test)]
 mod tests {
-    use std::path::PathBuf;
+    use std::{env, fs, path::PathBuf};
 
     use id3::Version;
 
@@ -141,9 +140,9 @@ mod tests {
 
     #[test]
     fn test_youtube_source_url_id_extraction() {
-        let temp_dir = std::env::temp_dir();
+        let temp_dir = env::temp_dir();
         let file_path = temp_dir.join("test_yt_extract_id.mp3");
-        let _ = std::fs::File::create(&file_path);
+        let _ = fs::File::create(&file_path);
 
         let mut tag = Tag::new();
         set_txxx(
@@ -154,9 +153,9 @@ mod tests {
         let _ = tag.write_to_path(&file_path, Version::Id3v23);
 
         let meta = extract_track_metadata(&file_path).unwrap();
-        let expected_id = youtube_id_to_i64("dQw4w9WgXcQ");
+        let expected_id = yt_audio_downloader::youtube_id_to_i64("dQw4w9WgXcQ");
         assert_eq!(meta.id, expected_id);
 
-        let _ = std::fs::remove_file(&file_path);
+        let _ = fs::remove_file(&file_path);
     }
 }

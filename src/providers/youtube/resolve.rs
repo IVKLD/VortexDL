@@ -1,8 +1,7 @@
 use anyhow::Result;
-use yt_audio_downloader::get_stream_info_with_client;
 
 use crate::{
-    infra::net::race_proxies,
+    infra::net,
     providers::{ResolvedStreamInfo, cache::ProviderCache},
     settings::SettingsManager,
 };
@@ -18,7 +17,10 @@ pub async fn resolve_youtube_stream(
 
     // 1. Fast path: configured proxy or direct connection
     let client = cache.get_or_create_client(configured_proxy.clone());
-    if let Ok(info) = get_stream_info_with_client(target, client, configured_proxy.clone()).await {
+    if let Ok(info) =
+        yt_audio_downloader::get_stream_info_with_client(target, client, configured_proxy.clone())
+            .await
+    {
         return Ok(ResolvedStreamInfo {
             stream_url: info.stream_url,
             proxy_used: configured_proxy,
@@ -28,8 +30,12 @@ pub async fn resolve_youtube_stream(
     // 2. Previously working fallback proxy before full racing
     if let Some(ref fallback_proxy) = active_fallback {
         let fallback_client = cache.get_or_create_client(Some(fallback_proxy.clone()));
-        if let Ok(info) =
-            get_stream_info_with_client(target, fallback_client, Some(fallback_proxy.clone())).await
+        if let Ok(info) = yt_audio_downloader::get_stream_info_with_client(
+            target,
+            fallback_client,
+            Some(fallback_proxy.clone()),
+        )
+        .await
         {
             return Ok(ResolvedStreamInfo {
                 stream_url: info.stream_url,
@@ -44,13 +50,17 @@ pub async fn resolve_youtube_stream(
     let proxies = settings.network.fallback_proxies.clone();
     let max_concurrent = settings.network.max_concurrent_proxies;
 
-    let (info, used_proxy) = race_proxies(&proxies, max_concurrent, move |proxy| {
+    let (info, used_proxy) = net::race_proxies(&proxies, max_concurrent, move |proxy| {
         let target = target.clone();
         let cache = cache_clone.clone();
         async move {
             let client = cache.get_or_create_client(Some(proxy.clone()));
-            let stream_info =
-                get_stream_info_with_client(&target, client, Some(proxy.clone())).await?;
+            let stream_info = yt_audio_downloader::get_stream_info_with_client(
+                &target,
+                client,
+                Some(proxy.clone()),
+            )
+            .await?;
             Ok((stream_info, proxy))
         }
     })

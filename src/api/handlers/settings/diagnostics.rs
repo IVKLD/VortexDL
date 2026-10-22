@@ -8,7 +8,6 @@ use axum::{
     response::IntoResponse,
 };
 use serde::{Deserialize, Serialize};
-use serde_json::{from_str, to_string};
 use soundcloud_rs::ClientBuilder;
 use tokio::task::JoinSet;
 use url::Url;
@@ -65,7 +64,7 @@ pub async fn test_proxy_ws(
 
 async fn handle_proxy_ws(mut socket: WebSocket, state: AppState) {
     let proxies = match socket.recv().await {
-        Some(Ok(Message::Text(text))) => from_str::<Vec<String>>(&text).ok(),
+        Some(Ok(Message::Text(text))) => serde_json::from_str::<Vec<String>>(&text).ok(),
         _ => None,
     };
     if let Some(proxies) = proxies {
@@ -107,7 +106,7 @@ async fn handle_proxy_ws(mut socket: WebSocket, state: AppState) {
         }
 
         while let Some(res) = tasks.join_next().await {
-            if let Ok(Ok(msg_str)) = res.map(|result| to_string(&result)) {
+            if let Ok(Ok(msg_str)) = res.map(|result| serde_json::to_string(&result)) {
                 let send_res = socket.send(Message::Text(msg_str.into())).await;
                 if send_res.is_err() {
                     break;

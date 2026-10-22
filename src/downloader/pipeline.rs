@@ -8,26 +8,23 @@ use anyhow::{Error as AnyhowError, Result};
 use colored::Colorize;
 use futures::stream::{self, StreamExt};
 use indicatif::{MultiProgress, ProgressBar};
-use tokio::task::{JoinHandle, spawn_blocking};
+use tokio::task::JoinHandle;
 use url::Url;
 
-use super::{
-    cancellation::run_with_cancellation,
-    types::{DownloadContext, DownloadTask},
-};
+use super::{cancellation, types::{DownloadContext, DownloadTask}};
 use crate::{
     devices,
     domain::{AudioFormat, DiscoveredTrack},
     infra::{
-        db::cache::{CachedTrack, update_cached_tracks_batch},
+        db::{self, cache::{self, CachedTrack}},
         system_time_to_secs,
     },
     library::{
         LibraryTrack,
-        metadata::{SaveTrackArgs, save_track_info},
+        metadata::{self, SaveTrackArgs},
     },
-    providers::{self, download_track, soundcloud, spawn_artwork_fetch},
-    terminal::create_total_progress_bar,
+    providers::{self, soundcloud},
+    terminal,
 };
 
 /// End-to-end pipeline that takes a URL (SoundCloud/YouTube) and processes all tracks to completion.
@@ -75,7 +72,7 @@ async fn exclude_already_downloaded_tracks(
 pub async fn run_parallel_downloads(ctx: &DownloadContext, tracks: Vec<DiscoveredTrack>) {
     let mp = MultiProgress::new();
     let total_tracks = tracks.len();
-    let total_pb = create_total_progress_bar(&mp, total_tracks as u64);
+    let total_pb = terminal::create_total_progress_bar(&mp, total_tracks as u64);
 
     let (max_concurrent, naming_template, output_dir) = {
         let s = ctx.settings.read().await;
@@ -122,8 +119,10 @@ async fn process_track(
         m.update_downloading(task.track.id);
     }
 
-    let artwork_handle = spawn_artwork_fetch(&ctx, &task);
-    let download_result = run_with_cancellation(cancel_rx, download_track(&ctx, &mut task)).await;
+    let artwork_handle = providers::spawn_artwork_fetch(&ctx, &task);
+    let download_result =
+        cancellation::run_with_cancellation(cancel_rx, providers::download_track(&ctx, &mut task))
+            .await;
 
     let success = match download_result {
         Some(Ok(())) => {
@@ -181,9 +180,9 @@ async fn finalize_single_track(
     let artwork_url = task.track.artwork_url.clone();
     let metadata_clone = metadata.clone();
 
-    spawn_blocking(move || {
+    tokio::task::spawn_blocking(move || {
         let sc_id = track_id.to_string();
-        if let Err(err) = save_track_info(SaveTrackArgs {
+        if let Err(err) = metadata::save_track_info(SaveTrackArgs {
             path: &file_path,
             sc_id: &sc_id,
             title: &track_title,
@@ -205,7 +204,7 @@ async fn finalize_single_track(
                 mtime,
             },
         );
-        if let Err(err) = update_cached_tracks_batch(&to_update, &HashSet::new()) {
+        if let Err(err) = cache::update_cached_tracks_batch(&to_update, &HashSet::new()) {
             tracing::error!(track_id, "Failed to update track cache: {err:#}");
         }
     })
@@ -234,8 +233,8 @@ async fn finalize_single_track(
         );
     }
 
-    let _ = spawn_blocking(move || {
-        let _ = crate::infra::db::record_download(size);
+    let _ = tokio::task::spawn_blocking(move || {
+        let _ = db::record_download(size);
     })
     .await;
 }

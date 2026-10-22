@@ -5,10 +5,10 @@ pub mod types;
 
 use std::net::SocketAddr;
 
+use anyhow::Result;
 use axum::{
     Router,
     routing::{delete, get, post},
-    serve,
 };
 use handlers::{
     devices::{
@@ -131,13 +131,13 @@ use crate::{
 )]
 struct ApiDoc;
 
-pub async fn run_server(state: AppState, args: &Args) -> anyhow::Result<()> {
+pub async fn run_server(state: AppState, args: &Args) -> Result<()> {
     let router = build_router(state, args.serve);
     let addr = SocketAddr::new(args.host, args.port);
     let listener = TcpListener::bind(addr).await?;
 
     tracing::info!("VortexDL running on http://{}", addr);
-    serve(listener, router).await?;
+    axum::serve(listener, router).await?;
     Ok(())
 }
 

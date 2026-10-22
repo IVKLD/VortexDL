@@ -1,13 +1,12 @@
 use std::time::SystemTime;
 
 use axum::{Json, extract::State, http::StatusCode, response::IntoResponse};
-use tokio::task::spawn_blocking;
 
 use crate::{
     api::errors::ApiError,
     app::AppState,
     domain::AudioFormat,
-    infra::db::{DeletedTrackRecord, record_deleted_tracks},
+    infra::db::{self, DeletedTrackRecord},
 };
 
 #[utoipa::path(
@@ -43,8 +42,8 @@ pub async fn remove_tracks(
                 }
             })
             .collect::<Vec<_>>();
-        let _ = spawn_blocking(move || {
-            let _ = record_deleted_tracks(&records);
+        let _ = tokio::task::spawn_blocking(move || {
+            let _ = db::record_deleted_tracks(&records);
         })
         .await;
     }

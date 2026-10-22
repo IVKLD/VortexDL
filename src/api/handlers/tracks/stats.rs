@@ -5,7 +5,7 @@ use utoipa::ToSchema;
 use crate::{
     api::errors::ApiError,
     app::AppState,
-    infra::db::{DeletedTrackRecord, clear_deleted_history, get_stats},
+    infra::db::{self, DeletedTrackRecord},
 };
 
 #[derive(Debug, Serialize, ToSchema)]
@@ -38,7 +38,7 @@ pub async fn get_library_stats(
         .map(|t| t.size)
         .sum();
 
-    let persistent = get_stats().unwrap_or_default();
+    let persistent = db::get_stats().unwrap_or_default();
 
     let total_downloaded = persistent
         .total_downloaded
@@ -66,6 +66,6 @@ pub async fn get_library_stats(
     )
 )]
 pub async fn clear_deleted_stats() -> Result<impl IntoResponse, ApiError> {
-    clear_deleted_history().map_err(|e| ApiError::internal(e.to_string()))?;
+    db::clear_deleted_history().map_err(|e| ApiError::internal(e.to_string()))?;
     Ok(StatusCode::OK)
 }

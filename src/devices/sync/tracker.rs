@@ -1,14 +1,10 @@
 use std::{sync::Arc, time::Duration};
 
-use tokio::sync::RwLock;
+use tokio::{sync::RwLock, task::JoinHandle};
 
-use super::engine::sync_device;
+use super::engine;
 use crate::{
-    devices::{
-        adb::{read_device_list_update, subscribe_track_devices},
-        error::DeviceError,
-        registry,
-    },
+    devices::{adb, error::DeviceError, registry},
     library::Library,
     settings::SettingsManager,
 };
@@ -19,7 +15,7 @@ use crate::{
 ///       If disabled, aborts the tracker task and clears connected state.
 pub fn init_device_tracker(storage: Arc<RwLock<Library>>, settings: SettingsManager) {
     tokio::spawn(async move {
-        let mut tracker_task: Option<tokio::task::JoinHandle<Result<(), DeviceError>>> = None;
+        let mut tracker_task: Option<JoinHandle<Result<(), DeviceError>>> = None;
         let mut adb_available = true;
         let mut settings_rx = settings.subscribe_changes();
 
@@ -54,9 +50,7 @@ pub fn init_device_tracker(storage: Arc<RwLock<Library>>, settings: SettingsMana
                         let s = storage.clone();
                         let cfg = settings.clone();
                         tracker_task =
-                            Some(tokio::spawn(
-                                async move { run_device_tracker(s, cfg).await },
-                            ));
+                            Some(tokio::spawn(async move { run_device_tracker(s, cfg).await }));
                     }
                 }
             } else if let Some(handle) = tracker_task.take() {
@@ -83,11 +77,11 @@ async fn run_device_tracker(
     storage: Arc<RwLock<Library>>,
     settings: SettingsManager,
 ) -> Result<(), DeviceError> {
-    let mut stream = subscribe_track_devices().await?;
+    let mut stream = adb::subscribe_track_devices().await?;
     tracing::info!("Successfully connected to ADB server and subscribed to device tracking");
 
     loop {
-        let current = read_device_list_update(&mut stream).await?;
+        let current = adb::read_device_list_update(&mut stream).await?;
 
         let adb_settings = {
             let s = settings.read().await;
@@ -133,7 +127,7 @@ pub async fn sync_connected(storage: Arc<RwLock<Library>>, settings: SettingsMan
 
 fn spawn_sync(device_id: String, remote_music_dir: String, storage: Arc<RwLock<Library>>) {
     tokio::spawn(async move {
-        if let Err(e) = sync_device(&device_id, &remote_music_dir, storage, false).await {
+        if let Err(e) = engine::sync_device(&device_id, &remote_music_dir, storage, false).await {
             tracing::error!("ADB device {device_id} sync failed: {e}");
         }
     });

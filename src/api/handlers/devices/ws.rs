@@ -4,25 +4,23 @@ use axum::{
     extract::ws::{Message, WebSocket, WebSocketUpgrade},
     response::IntoResponse,
 };
-use serde_json::to_string;
-use tokio::{select, time::interval};
 
-use crate::devices::list_devices;
+use crate::devices;
 
 async fn handle_socket(mut socket: WebSocket) {
     let mut last_devices = Vec::new();
-    let mut tick_interval = interval(Duration::from_secs(2));
+    let mut tick_interval = tokio::time::interval(Duration::from_secs(2));
 
     loop {
-        select! {
+        tokio::select! {
             _ = tick_interval.tick() => {
-                if let Ok(devices) = list_devices().await {
+                if let Ok(devices) = devices::list_devices().await {
                     let mut list: Vec<String> = devices.into_iter().collect();
                     list.sort();
 
                     if list != last_devices {
                         last_devices = list.clone();
-                        let msg_str = match to_string(&list) {
+                        let msg_str = match serde_json::to_string(&list) {
                             Ok(s) => s,
                             Err(_) => continue,
                         };

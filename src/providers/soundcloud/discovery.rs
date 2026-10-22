@@ -9,12 +9,12 @@ use super::client::ClientBuilder;
 use crate::{
     domain::DiscoveredTrack,
     downloader::{DownloadContext, MessageLevel, ServerEvent},
-    infra::net::race_proxies,
-    terminal::create_standalone_spinner,
+    infra::net,
+    terminal,
 };
 
 pub fn init_progress_spinner(ctx: &DownloadContext, msg: &str) -> ProgressBar {
-    let pb = create_standalone_spinner(msg);
+    let pb = terminal::create_standalone_spinner(msg);
 
     if let Some(manager) = &ctx.manager {
         manager.broadcast_event(ServerEvent::Message {
@@ -136,7 +136,7 @@ pub async fn resolve_tracks_from_url(
             let settings_clone = settings.clone();
             let ctx_clone = ctx.clone();
             let url_clone = url.clone();
-            race_proxies(
+            net::race_proxies(
                 &settings.network.fallback_proxies,
                 settings.network.max_concurrent_proxies,
                 move |proxy| {

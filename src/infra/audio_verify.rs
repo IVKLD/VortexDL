@@ -2,14 +2,13 @@ use std::{fs::File, io::ErrorKind, path::Path};
 
 use anyhow::{Result, anyhow};
 use symphonia::core::{errors::Error, io::MediaSourceStream, probe::Hint};
-use tokio::fs;
 
 pub async fn verify_audio_file(path: impl AsRef<Path>, expected_size: u64) -> Result<()> {
     let path = path.as_ref();
-    let final_size = fs::metadata(path).await?.len();
+    let final_size = tokio::fs::metadata(path).await?.len();
 
     if final_size < 10_000 || (expected_size > 0 && final_size != expected_size) {
-        fs::remove_file(path).await.ok();
+        tokio::fs::remove_file(path).await.ok();
         return Err(anyhow!(
             "Integrity check failed: expected {expected_size} bytes, got on disk {final_size}"
         ));
@@ -21,7 +20,7 @@ pub async fn verify_audio_file(path: impl AsRef<Path>, expected_size: u64) -> Re
         .unwrap_or(false);
 
     if !is_valid {
-        fs::remove_file(path).await.ok();
+        tokio::fs::remove_file(path).await.ok();
         return Err(anyhow!(
             "Audio integrity check failed: file is corrupted or truncated"
         ));

@@ -4,13 +4,11 @@ use std::{
     path::{Path, PathBuf},
 };
 
-use tokio::task::spawn_blocking;
-
-use super::{ARCHIVE_DIR, metadata::extract_track_metadata, types::LibraryTrack};
+use super::{ARCHIVE_DIR, metadata, types::LibraryTrack};
 use crate::{
     domain::AudioFormat,
     infra::{
-        db::cache::{CachedTrack, get_cached_tracks, update_cached_tracks_batch},
+        db::cache::{self, CachedTrack},
         system_time_to_secs,
     },
 };
@@ -39,7 +37,7 @@ fn get_file_timestamps(metadata: &fs::Metadata) -> (u64, u64) {
 pub async fn scan_directory(base_path: impl AsRef<Path>) -> HashMap<i64, LibraryTrack> {
     let root = base_path.as_ref().to_path_buf();
 
-    let result = spawn_blocking(move || {
+    let result = tokio::task::spawn_blocking(move || {
         let mut tracks: HashMap<i64, LibraryTrack> = HashMap::new();
         let mut insert_track = |id: i64, data: LibraryTrack| {
             if tracks
@@ -51,7 +49,7 @@ pub async fn scan_directory(base_path: impl AsRef<Path>) -> HashMap<i64, Library
             tracks.insert(id, data);
         };
         let mut stack = vec![root.clone()];
-        let cached = get_cached_tracks().unwrap_or_default();
+        let cached = cache::get_cached_tracks().unwrap_or_default();
         let mut visited = HashSet::new();
         let mut to_update = HashMap::new();
 
@@ -107,7 +105,7 @@ pub async fn scan_directory(base_path: impl AsRef<Path>) -> HashMap<i64, Library
             .cloned()
             .collect();
 
-        if let Err(e) = update_cached_tracks_batch(&to_update, &to_remove) {
+        if let Err(e) = cache::update_cached_tracks_batch(&to_update, &to_remove) {
             tracing::error!("Failed to update track cache batch: {e}");
         }
 
@@ -124,7 +122,7 @@ fn parse_file_metadata(
     mtime: u64,
     created_at: u64,
 ) -> Option<CachedTrack> {
-    let metadata = extract_track_metadata(path)?;
+    let metadata = metadata::extract_track_metadata(path)?;
     Some(CachedTrack {
         metadata,
         created_at,

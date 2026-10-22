@@ -2,7 +2,7 @@ use axum::{Json, extract::Path};
 
 use crate::{
     api::errors::ApiError,
-    devices::{StorageInfo, get_device_storages, list_devices},
+    devices::{self, StorageInfo},
 };
 
 #[utoipa::path(
@@ -13,7 +13,7 @@ use crate::{
     )
 )]
 pub async fn list_adb_devices() -> Result<Json<Vec<String>>, ApiError> {
-    let devices = list_devices().await?;
+    let devices = devices::list_devices().await?;
     let mut list: Vec<String> = devices.into_iter().collect();
     list.sort();
     Ok(Json(list))
@@ -32,6 +32,6 @@ pub async fn list_adb_devices() -> Result<Json<Vec<String>>, ApiError> {
 pub async fn get_device_storage_info(
     Path(device_id): Path<String>,
 ) -> Result<Json<Vec<StorageInfo>>, ApiError> {
-    let storages = get_device_storages(&device_id).await?;
+    let storages = devices::get_device_storages(&device_id).await?;
     Ok(Json(storages))
 }

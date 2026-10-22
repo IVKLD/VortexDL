@@ -4,7 +4,7 @@ use anyhow::Result;
 use tokio::sync::{RwLock, RwLockReadGuard, watch};
 
 use super::types::UserSettings;
-use crate::infra::db::update_settings;
+use crate::infra::db;
 
 #[derive(Clone)]
 pub struct SettingsManager {
@@ -33,7 +33,7 @@ impl SettingsManager {
     }
 
     pub async fn update(&self, new_settings: UserSettings) -> Result<()> {
-        update_settings(&new_settings)?;
+        db::update_settings(&new_settings)?;
         *self.inner.write().await = new_settings;
         let _ = self.change_tx.send(());
         Ok(())

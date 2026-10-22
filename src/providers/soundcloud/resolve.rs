@@ -5,10 +5,10 @@ use soundcloud_rs::{Client, StreamType};
 use tokio::task::JoinHandle;
 use url::Url;
 
-use super::client::{SoundcloudExt, resolve_soundcloud_stream_with_fallback};
+use super::client::{self, SoundcloudExt};
 use crate::{
     downloader::DownloadContext,
-    infra::net::build_http_client,
+    infra::net,
     providers::{ResolvedStreamInfo, cache::ProviderCache},
     settings::SettingsManager,
 };
@@ -38,7 +38,7 @@ pub async fn resolve_soundcloud_stream(
     }
 
     let settings = settings_mgr.read().await.clone();
-    let (url, _, proxy) = resolve_soundcloud_stream_with_fallback(&settings, id).await?;
+    let (url, _, proxy) = client::resolve_soundcloud_stream_with_fallback(&settings, id).await?;
 
     Ok(ResolvedStreamInfo {
         stream_url: url,
@@ -84,7 +84,7 @@ pub async fn resolve_stream_source(ctx: &DownloadContext, id: i64) -> Result<Str
                 return Err(direct_err);
             }
 
-            let (url, stype, proxy_url) = resolve_soundcloud_stream_with_fallback(&settings, id)
+            let (url, stype, proxy_url) = client::resolve_soundcloud_stream_with_fallback(&settings, id)
                 .await
                 .map_err(|e| {
                     tracing::error!("All fallback proxies failed resolving track {id}: {e}");
@@ -119,7 +119,7 @@ pub fn spawn_artwork_fetch(
             .network
             .get_proxy_url()
             .map(String::from);
-        let client = build_http_client(proxy_url.as_deref(), 5, 10);
+        let client = net::build_http_client(proxy_url.as_deref(), 5, 10);
         let resp = client
             .get(url)
             .timeout(Duration::from_secs(5))

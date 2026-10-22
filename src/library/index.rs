@@ -5,10 +5,9 @@ use std::{
 };
 
 use anyhow::Result;
-use tokio::{fs::remove_file, task::spawn_blocking};
 
 use super::types::LibraryTrack;
-use crate::infra::db::update_cached_tracks_batch;
+use crate::infra::db;
 
 #[derive(Default)]
 pub struct Library {
@@ -64,8 +63,8 @@ impl Library {
         }
 
         if !to_remove_cache.is_empty() {
-            spawn_blocking(move || {
-                let _ = update_cached_tracks_batch(&HashMap::new(), &to_remove_cache);
+            tokio::task::spawn_blocking(move || {
+                let _ = db::update_cached_tracks_batch(&HashMap::new(), &to_remove_cache);
             })
             .await?;
         }
@@ -76,7 +75,7 @@ impl Library {
 
 async fn delete_track_file(path: &Path) -> Result<(), io::Error> {
     if path.exists() {
-        remove_file(path).await?;
+        tokio::fs::remove_file(path).await?;
     }
     Ok(())
 }

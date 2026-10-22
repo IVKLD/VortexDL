@@ -2,12 +2,12 @@ use std::time::Duration;
 
 use anyhow::{Result, anyhow};
 use futures::StreamExt;
-use tokio::{fs, io::AsyncWriteExt, time::sleep};
+use tokio::{fs, io::AsyncWriteExt};
 
 use super::{client::ClientBuilder, resolve::StreamSource};
 use crate::{
     downloader::{DownloadContext, DownloadTask},
-    infra::{net::build_http_client, verify_audio_file},
+    infra::{self, net},
 };
 
 pub async fn download_soundcloud_track(
@@ -35,7 +35,7 @@ pub async fn download_soundcloud_track(
                 if attempts_left == 0 {
                     return Err(err);
                 }
-                sleep(Duration::from_secs(1)).await;
+                tokio::time::sleep(Duration::from_secs(1)).await;
             }
         }
     }
@@ -50,7 +50,7 @@ async fn download_progressive(
     let active_proxy = proxy_url
         .map(String::from)
         .or_else(|| context.settings.get_proxy_url_sync());
-    let client = build_http_client(active_proxy.as_deref(), 5, 30);
+    let client = net::build_http_client(active_proxy.as_deref(), 5, 30);
     let response = client.get(url).send().await?.error_for_status()?;
     let exact_size = response.content_length();
     let total = exact_size.unwrap_or_else(|| match task.track.duration_ms {
@@ -73,7 +73,7 @@ async fn download_progressive(
     }
 
     drop(file);
-    verify_audio_file(&task.file_path, exact_size.unwrap_or(0)).await?;
+    infra::verify_audio_file(&task.file_path, exact_size.unwrap_or(0)).await?;
     Ok(())
 }
 
@@ -112,7 +112,7 @@ async fn download_hls(
         let mut has_existed = false;
         let mut missing_count = 0;
         loop {
-            sleep(Duration::from_millis(500)).await;
+            tokio::time::sleep(Duration::from_millis(500)).await;
             match fs::metadata(&path_clone).await {
                 Ok(meta) => {
                     has_existed = true;
@@ -145,6 +145,6 @@ async fn download_hls(
 
     download_res.map_err(|err| anyhow!("HLS download failed: {err}"))?;
 
-    verify_audio_file(&task.file_path, 0).await?;
+    infra::verify_audio_file(&task.file_path, 0).await?;
     Ok(())
 }

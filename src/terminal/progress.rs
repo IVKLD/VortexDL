@@ -1,4 +1,4 @@
-use std::time::Duration;
+use std::{fmt::Display, time::Duration};
 
 use colored::Colorize;
 use indicatif::{MultiProgress, ProgressBar, ProgressStyle};
@@ -29,10 +29,10 @@ pub fn create_device_progress_bar(total: u64, device: &str) -> ProgressBar {
     pb
 }
 
-pub fn pb_warn(pb: &ProgressBar, msg: impl std::fmt::Display) {
+pub fn pb_warn(pb: &ProgressBar, msg: impl Display) {
     pb.println(format!("{} {msg}", "[WARN]".yellow().bold()));
 }
 
-pub fn pb_err(pb: &ProgressBar, msg: impl std::fmt::Display) {
+pub fn pb_err(pb: &ProgressBar, msg: impl Display) {
     pb.println(format!("{} {msg}", "[ERROR]".red().bold()));
 }

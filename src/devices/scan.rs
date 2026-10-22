@@ -1,3 +1,5 @@
+use tokio::io::AsyncReadExt;
+
 use super::{DeviceError, SyncGuard, adb};
 
 async fn trigger_cayin_scan_async(device: &str) -> Result<(), DeviceError> {
@@ -53,7 +55,6 @@ input keyevent 3
     let shell_req = format!("shell:{}", script.trim());
     adb::send_adb_cmd(&mut stream, &shell_req).await?;
 
-    use tokio::io::AsyncReadExt;
     let mut response = Vec::new();
     let _ = stream.read_to_end(&mut response).await;
 

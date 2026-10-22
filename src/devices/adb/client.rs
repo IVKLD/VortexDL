@@ -1,6 +1,13 @@
-use std::{collections::HashSet, io::ErrorKind, sync::OnceLock};
+use std::{
+    collections::HashSet,
+    env,
+    fs,
+    io::ErrorKind,
+    process::Output,
+    sync::OnceLock,
+};
 
-use anyhow::Result;
+use anyhow::{Result, anyhow};
 use tokio::process::Command;
 
 use crate::devices::error::DeviceError;
@@ -9,16 +16,16 @@ static ADB_DIR_INIT: OnceLock<()> = OnceLock::new();
 
 fn ensure_android_dir() {
     ADB_DIR_INIT.get_or_init(|| {
-        if let Ok(android_home) = std::env::var("ANDROID_USER_HOME") {
-            let _ = std::fs::create_dir_all(&android_home);
+        if let Ok(android_home) = env::var("ANDROID_USER_HOME") {
+            let _ = fs::create_dir_all(&android_home);
         } else if let Some(home) = dirs::home_dir() {
-            let _ = std::fs::create_dir_all(home.join(".android"));
+            let _ = fs::create_dir_all(home.join(".android"));
         }
     });
 }
 
 /// Executes the `adb` CLI binary with raw arguments and captures stdout/stderr.
-pub async fn raw(args: &[&str]) -> Result<std::process::Output, DeviceError> {
+pub async fn raw(args: &[&str]) -> Result<Output, DeviceError> {
     ensure_android_dir();
 
     let mut cmd = Command::new("adb");
@@ -26,7 +33,7 @@ pub async fn raw(args: &[&str]) -> Result<std::process::Output, DeviceError> {
         if e.kind() == ErrorKind::NotFound {
             DeviceError::NotAvailable
         } else {
-            DeviceError::Other(anyhow::anyhow!(
+            DeviceError::Other(anyhow!(
                 "Failed to run adb {}: {e}",
                 args.first().unwrap_or(&"")
             ))
@@ -41,7 +48,7 @@ pub async fn exec(device: &str, args: &[&str]) -> Result<String, DeviceError> {
     let output = raw(&final_args).await?;
 
     if !output.status.success() {
-        return Err(DeviceError::Other(anyhow::anyhow!(
+        return Err(DeviceError::Other(anyhow!(
             "{}",
             String::from_utf8_lossy(&output.stderr).trim()
         )));

@@ -1,17 +1,22 @@
-use std::{path::Path, sync::Arc, time::Duration};
+use std::{
+    fs,
+    path::Path,
+    sync::Arc,
+    time::{Duration, Instant},
+};
 
 use anyhow::Result;
 use notify::{
     Config as WatcherConfig, Event, RecommendedWatcher, RecursiveMode, Result as NotifyResult,
     Watcher,
 };
-use tokio::sync::{RwLock, mpsc::unbounded_channel};
+use tokio::sync::{RwLock, mpsc};
 
 use crate::{
     devices,
     domain::AudioFormat,
     downloader::{DownloadManager, MessageLevel, ServerEvent},
-    library::{Library, scan_directory},
+    library::{self, Library},
     settings::SettingsManager,
 };
 
@@ -23,7 +28,7 @@ pub async fn start_library_watcher(
     settings: SettingsManager,
     dm: Arc<DownloadManager>,
 ) -> Result<()> {
-    let (tx, mut rx) = unbounded_channel();
+    let (tx, mut rx) = mpsc::unbounded_channel();
 
     let mut watcher = RecommendedWatcher::new(
         move |res: NotifyResult<Event>| {
@@ -51,7 +56,7 @@ pub async fn start_library_watcher(
             tokio::select! {
                 Some(event) = rx.recv() => {
                     if is_relevant(&event) {
-                        last_event_time = Some(tokio::time::Instant::now());
+                        last_event_time = Some(Instant::now());
                     }
                 }
                 Ok(()) = settings_rx.changed() => {
@@ -62,12 +67,12 @@ pub async fn start_library_watcher(
                         if let Err(e) = watcher.unwatch(Path::new(&path_to_watch)) {
                             tracing::warn!("Library watcher: failed to unwatch {}: {e}", path_to_watch);
                         }
-                        let _ = std::fs::create_dir_all(&current_base_path);
+                        let _ = fs::create_dir_all(&current_base_path);
                         match watcher.watch(Path::new(&current_base_path), RecursiveMode::Recursive) {
                             Ok(()) => {
                                 path_to_watch = current_base_path;
                                 tracing::info!("Library watcher: now monitoring directory: {}", path_to_watch);
-                                last_event_time = Some(tokio::time::Instant::now());
+                                last_event_time = Some(Instant::now());
                             }
                             Err(e) => {
                                 tracing::error!("Library watcher: failed to watch new directory {}: {e}", current_base_path);
@@ -91,7 +96,7 @@ pub async fn start_library_watcher(
                             level: MessageLevel::Info,
                         });
 
-                        let tracks = scan_directory(&path_to_watch).await;
+                        let tracks = library::scan_directory(&path_to_watch).await;
                         storage.write().await.update_tracks(tracks);
                         devices::sync_connected(storage.clone(), settings.clone()).await;
 

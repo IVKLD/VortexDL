@@ -8,9 +8,9 @@ use crate::{
     devices::{
         error::DeviceError,
         files,
-        registry::{SyncGuard, get_last_sync_time, update_last_sync_time},
+        registry::{self, SyncGuard},
     },
-    domain::clean_filename,
+    domain,
     library::Library,
     terminal,
 };
@@ -42,7 +42,7 @@ fn diff_local_and_remote(storage: &Library, remote_files: &HashSet<String>) -> S
         let Some(name) = track.path.file_name().and_then(|f| f.to_str()) else {
             continue;
         };
-        let artist_dir = clean_filename(&track.metadata.artist);
+        let artist_dir = domain::clean_filename(&track.metadata.artist);
         let rel = format!("{artist_dir}/{name}");
         local_paths_lower.insert(rel.to_lowercase());
 
@@ -75,7 +75,7 @@ pub async fn sync_device(
     force: bool,
 ) -> Result<(), DeviceError> {
     if !force
-        && get_last_sync_time(device)
+        && registry::get_last_sync_time(device)
             .is_some_and(|last_sync| last_sync.elapsed() < Duration::from_secs(10))
     {
         return Ok(());
@@ -108,7 +108,7 @@ pub async fn sync_device(
 
     if diff.to_push.is_empty() && diff.to_delete.is_empty() {
         info!("[{device}] Sync not needed, no changes");
-        update_last_sync_time(device);
+        registry::update_last_sync_time(device);
         return Ok(());
     }
 
@@ -129,7 +129,7 @@ pub async fn sync_device(
         let _ = files::sync_device_fs(device).await;
     }
 
-    update_last_sync_time(device);
+    registry::update_last_sync_time(device);
     info!("[{device}] Sync complete");
 
     Ok(())

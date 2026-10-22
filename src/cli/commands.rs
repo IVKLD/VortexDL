@@ -1,6 +1,6 @@
 use std::collections::HashSet;
 
-use anyhow::{Result, anyhow};
+use anyhow::{Result, anyhow, bail};
 use url::Url;
 
 use crate::{
@@ -17,10 +17,7 @@ async fn list_connected_devices() -> Result<Option<HashSet<String>>> {
         }
         Ok(devs) => Ok(Some(devs)),
         Err(DeviceError::NotAvailable) => {
-            println!(
-                "adb binary not found in PATH. Please install adb and ensure it is accessible."
-            );
-            Ok(None)
+            bail!("adb binary not found in PATH. Please install adb and ensure it is accessible.");
         }
         Err(e) => Err(anyhow!(e)),
     }
@@ -45,8 +42,7 @@ pub async fn run_scan_player() -> Result<()> {
 pub async fn run_sync_player(state: &AppState) -> Result<()> {
     let settings = state.settings.read().await;
     if !settings.adb.enabled {
-        println!("ADB is disabled in settings. Please enable it to sync.");
-        return Ok(());
+        bail!("ADB is disabled in settings. Please enable it in settings to sync.");
     }
 
     let Some(connected) = list_connected_devices().await? else {
@@ -79,6 +75,7 @@ pub async fn run_download(state: &AppState, url: &Url, proxies: &[String]) -> Re
 
     if !proxies.is_empty() {
         let mut current_settings = ctx.settings.read().await.clone();
+        current_settings.network.use_proxy = true;
         current_settings.network.fallback_proxies = proxies.to_vec();
         ctx.settings.update(current_settings).await?;
     }

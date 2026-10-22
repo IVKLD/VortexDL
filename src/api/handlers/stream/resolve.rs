@@ -2,9 +2,7 @@ use crate::{
     api::errors::ApiError,
     app::AppState,
     domain::SourcePlatform,
-    providers::{
-        cache::CachedStream, soundcloud::resolve_soundcloud_stream, youtube::resolve_youtube_stream,
-    },
+    providers::{cache::CachedStream, soundcloud, youtube},
 };
 
 pub async fn resolve_stream_url(
@@ -35,10 +33,10 @@ pub async fn resolve_stream_url(
     {
         Some(SourcePlatform::YouTube) => {
             let u = target_url.as_deref().unwrap();
-            resolve_youtube_stream(&state.settings, &state.cache, u).await?
+            youtube::resolve_youtube_stream(&state.settings, &state.cache, u).await?
         }
         _ => {
-            resolve_soundcloud_stream(&state.soundcloud, &state.settings, &state.cache, id).await?
+            soundcloud::resolve_soundcloud_stream(&state.soundcloud, &state.settings, &state.cache, id).await?
         }
     };
 

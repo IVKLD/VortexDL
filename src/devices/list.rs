@@ -1,12 +1,14 @@
 use std::collections::HashSet;
 
+use anyhow::anyhow;
+
 use super::{DeviceError, adb};
 
 pub async fn list_devices() -> Result<HashSet<String>, DeviceError> {
     let output = adb::raw(&["devices"]).await?;
 
     if !output.status.success() {
-        return Err(DeviceError::Other(anyhow::anyhow!(
+        return Err(DeviceError::Other(anyhow!(
             "adb devices: {}",
             String::from_utf8_lossy(&output.stderr).trim()
         )));

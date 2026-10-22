@@ -1,7 +1,6 @@
 use std::path::Path;
 
-use serde_json::{from_slice, to_string_pretty};
-use tracing::{debug, instrument};
+use tracing::instrument;
 
 use super::{BackupAction, BackupBackend, BackupError, BackupSnapshot};
 
@@ -45,9 +44,9 @@ impl<B: BackupBackend> BackupService<B> {
     async fn do_export(&self, tmp: &Path) -> Result<(), BackupError> {
         let snapshot = BackupSnapshot::from_database()?;
 
-        let json = to_string_pretty(&snapshot)?;
+        let json = serde_json::to_string_pretty(&snapshot)?;
         tokio::fs::write(tmp, json.as_bytes()).await?;
-        debug!("Snapshot written ({} bytes)", json.len());
+        tracing::debug!("Snapshot written ({} bytes)", json.len());
 
         self.backend.upload(tmp).await?;
         Ok(())
@@ -58,9 +57,9 @@ impl<B: BackupBackend> BackupService<B> {
         self.backend.download(tmp).await?;
 
         let bytes = tokio::fs::read(tmp).await?;
-        debug!("Read {} bytes from downloaded backup", bytes.len());
+        tracing::debug!("Read {} bytes from downloaded backup", bytes.len());
 
-        let snapshot: BackupSnapshot = from_slice(&bytes)?;
+        let snapshot: BackupSnapshot = serde_json::from_slice(&bytes)?;
         snapshot.apply_to_database()?;
 
         Ok(())
@@ -74,8 +73,8 @@ mod tests {
     #[test]
     fn test_snapshot_serialization() {
         let snapshot = BackupSnapshot::default();
-        let json = to_string_pretty(&snapshot).unwrap();
-        let deserialized: BackupSnapshot = from_slice(json.as_bytes()).unwrap();
+        let json = serde_json::to_string_pretty(&snapshot).unwrap();
+        let deserialized: BackupSnapshot = serde_json::from_slice(json.as_bytes()).unwrap();
         assert_eq!(snapshot.synced_ids, deserialized.synced_ids);
     }
 }
