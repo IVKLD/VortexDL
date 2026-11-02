@@ -12,7 +12,7 @@
 
   &:hover {
     svg circle:first-child {
-      stroke: rgba(255, 255, 255, 0.15);
+      stroke: var(--mat-sys-outline);
     }
 
     span {
@@ -33,14 +33,14 @@ svg {
 
   circle:first-child {
     fill: none;
-    stroke: rgba(255, 255, 255, 0.08);
+    stroke: var(--mat-sys-outline-variant);
     stroke-width: 4px;
     transition: stroke 0.2s ease;
   }
 
   circle:last-child {
     fill: none;
-    stroke: #fff;
+    stroke: var(--mat-sys-primary);
     stroke-width: 6px;
     stroke-linecap: round;
     stroke-dasharray: 276.46;
@@ -64,13 +64,13 @@ button {
   --mat-button-tonal-icon-offset: 0;
   --mat-button-tonal-icon-spacing: 0;
 
-  --mat-button-tonal-container-color: white;
-  --mat-button-tonal-label-text-color: black;
+  background-color: var(--mat-sys-primary);
+  color: var(--mat-sys-on-primary);
 
   mat-spinner {
-    --mat-sys-primary: #000000;
-    --mat-progress-spinner-color: #000000;
-    --mdc-circular-progress-active-indicator-color: #000000;
+    --mat-sys-primary: var(--mat-sys-on-primary);
+    --mat-progress-spinner-color: var(--mat-sys-on-primary);
+    --mdc-circular-progress-active-indicator-color: var(--mat-sys-on-primary);
     --mdc-circular-progress-size: 20px;
     width: 20px;
     height: 20px;
@@ -80,8 +80,8 @@ button {
 span {
   position: absolute;
   bottom: -28px;
-  background: rgba(0, 0, 0, 0.85);
-  color: #fff;
+  background: var(--mat-sys-surface-container-highest);
+  color: var(--mat-sys-on-surface);
   font-size: 11px;
   padding: 4px 8px;
   border-radius: 6px;
@@ -92,5 +92,5 @@ span {
   white-space: nowrap;
   z-index: 10;
   font-variant-numeric: tabular-nums;
-  border: 1px solid rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--mat-sys-outline-variant);
 }

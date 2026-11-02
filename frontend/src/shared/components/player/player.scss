@@ -3,9 +3,9 @@
   flex-direction: column;
   align-items: center;
   width: 100%;
-  background: rgba(255, 255, 255, 0.03);
-  border: 1px solid rgba(255, 255, 255, 0.05);
-  border-radius: 1em;
+  background: var(--mat-sys-surface-container-low);
+  border: 1px solid var(--mat-sys-outline-variant);
+  border-radius: 16px;
   padding: 20px 16px;
   transition: padding-bottom 0.25s cubic-bezier(0.4, 0, 0.2, 1);
 

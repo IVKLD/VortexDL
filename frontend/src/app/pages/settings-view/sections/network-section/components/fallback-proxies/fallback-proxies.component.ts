@@ -1,4 +1,4 @@
-import {Component, inject, input, signal} from '@angular/core';
+import { Component, inject, input, signal } from '@angular/core';
 import {MatIcon} from '@angular/material/icon';
 import {MatIconButton} from '@angular/material/button';
 import {MatTooltip} from '@angular/material/tooltip';
@@ -23,7 +23,6 @@ import {parseErrorMessage} from '@shared/error-utils';
     styleUrl: './fallback-proxies.component.scss',
     })
 export class FallbackProxiesComponent {
-
     private readonly _testingService = inject(SettingsTestingService);
     private readonly _dialog = inject(MatDialog);
     public readonly form = input.required<FieldTree<NetworkSettings>>();
@@ -55,22 +54,25 @@ export class FallbackProxiesComponent {
             autoFocus: 'textarea',
         });
 
-        dialogRef.afterClosed().pipe(filter((u): u is string[] => u !== undefined)).subscribe((workingProxies: string[]) => {
-            if (workingProxies.length > 0) {
-                const current = this.form().fallbackProxies().value() || [];
-                const next = Array.from(new Set([...current, ...workingProxies]));
-                this.form().fallbackProxies().value.set(next);
-                this.form().fallbackProxies().markAsDirty();
+        dialogRef
+            .afterClosed()
+            .pipe(filter((u): u is string[] => u !== undefined))
+            .subscribe((workingProxies: string[]) => {
+                if (workingProxies.length > 0) {
+                    const current = this.form().fallbackProxies().value() || [];
+                    const next = Array.from(new Set([...current, ...workingProxies]));
+                    this.form().fallbackProxies().value.set(next);
+                    this.form().fallbackProxies().markAsDirty();
 
-                this.proxyStatuses.update(prev => {
-                    const updated = {...prev};
-                    for (const p of workingProxies) {
-                        updated[p] = {loading: false, valid: true};
-                    }
-                    return updated;
-                });
-            }
-        });
+                    this.proxyStatuses.update(prev => {
+                        const updated = {...prev};
+                        for (const p of workingProxies) {
+                            updated[p] = {loading: false, valid: true};
+                        }
+                        return updated;
+                    });
+                }
+            });
     }
 
     testIndividualProxy(proxy: string): void {
@@ -119,22 +121,22 @@ export class FallbackProxiesComponent {
                     }
                 }));
             },
-            error: (err: HttpErrorResponse | Error) => {
-                const errorDetail = parseErrorMessage(err, 'Verification failed');
-                for (const proxy of proxies) {
-                    if (this.proxyStatuses()[proxy]?.loading) {
-                        this.proxyStatuses.update(prev => ({
-                            ...prev,
-                            [proxy]: {loading: false, valid: false, error: errorDetail}
-                        }));
+                error: (err: HttpErrorResponse | Error) => {
+                    const errorDetail = parseErrorMessage(err, 'Verification failed');
+                    for (const proxy of proxies) {
+                        if (this.proxyStatuses()[proxy]?.loading) {
+                            this.proxyStatuses.update(prev => ({
+                                ...prev,
+                                [proxy]: {loading: false, valid: false, error: errorDetail}
+                            }));
+                        }
                     }
+                    this.isTestingAll.set(false);
+                },
+                complete: () => {
+                    this.isTestingAll.set(false);
                 }
-                this.isTestingAll.set(false);
-            },
-            complete: () => {
-                this.isTestingAll.set(false);
-            }
-        });
+            });
     }
 
     pruneFailedActive(): void {

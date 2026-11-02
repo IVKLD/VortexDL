@@ -35,23 +35,23 @@
     }
 
     &.storage {
-      background: color-mix(in srgb, #34d399 15%, transparent);
-      color: #34d399;
+      background: color-mix(in srgb, var(--mat-sys-tertiary) 15%, transparent);
+      color: var(--mat-sys-tertiary);
     }
 
     &.downloaded {
-      background: color-mix(in srgb, #38bdf8 15%, transparent);
-      color: #38bdf8;
+      background: color-mix(in srgb, var(--mat-sys-secondary) 15%, transparent);
+      color: var(--mat-sys-secondary);
     }
 
     &.deleted {
-      background: color-mix(in srgb, #f43f5e 15%, transparent);
-      color: #f43f5e;
+      background: color-mix(in srgb, var(--mat-sys-error) 15%, transparent);
+      color: var(--mat-sys-error);
     }
 
     &.active {
-      background: color-mix(in srgb, #fbbf24 15%, transparent);
-      color: #fbbf24;
+      background: color-mix(in srgb, var(--mat-sys-primary-container) 40%, transparent);
+      color: var(--mat-sys-primary);
     }
   }
 }

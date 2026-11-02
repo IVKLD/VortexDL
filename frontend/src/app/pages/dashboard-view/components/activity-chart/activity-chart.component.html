@@ -12,12 +12,12 @@
 @if (data().length > 0) {
     <div class="chart">
         @for (item of data(); track item.label) {
-            <div class="bar-col">
-                <div class="bars">
-                    <div class="bar dl" [style.height]="item.downloadHeightPercent + '%'" [title]="item.downloadCount + ' downloaded'"></div>
-                    <div class="bar del" [style.height]="item.deleteHeightPercent + '%'" [title]="item.deleteCount + ' deleted'"></div>
+            <div>
+                <div>
+                    <span class="dl" [style.height]="item.downloadHeightPercent + '%'" [title]="item.downloadCount + ' downloaded'"></span>
+                    <span class="del" [style.height]="item.deleteHeightPercent + '%'" [title]="item.deleteCount + ' deleted'"></span>
                 </div>
-                <span>{{ item.label }}</span>
+                <time>{{ item.label }}</time>
             </div>
         }
     </div>
@@ -28,3 +28,5 @@
         description="Download or delete tracks to see your activity."
         [accent]="false" />
 }
+
+

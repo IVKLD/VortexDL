@@ -40,11 +40,7 @@ export class SettingsState {
         }
     });
 
-    public loadSettings(): void {
-        this._api.getSettings().subscribe({
-            next: (res) => {
-                this.settingsForm().reset(res);
-            },
-        });
+    public loadSettings() {
+        this._api.getSettings().subscribe(this.settingsForm().reset);
     }
 }

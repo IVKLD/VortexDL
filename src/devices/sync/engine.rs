@@ -62,10 +62,6 @@ fn diff_local_and_remote(tracks: &[LibraryTrack], remote_files: &HashSet<String>
     SyncDiff { to_push, to_delete }
 }
 
-/// What: Synchronizes all local music tracks to a target Android device over ADB.
-/// Flow: Triggered manually from CLI/WebUI or automatically by the device tracker when an authorized device connects.
-/// Why:  Avoids redundant uploads: it queries remote files, computes the diff against local storage,
-///       pushes missing tracks, deletes orphaned ones, and uses SyncGuard to guarantee exclusive device access.
 pub async fn sync_device(
     device: &str,
     remote_dir: &str,
@@ -79,8 +75,6 @@ pub async fn sync_device(
         return Ok(());
     }
 
-    // A forced (manual) sync waits for any in-flight sync to finish so that the caller
-    // (which typically triggers a player scan next) only continues once files are on the device.
     let _guard = if force {
         SyncGuard::acquire(device).await
     } else {
@@ -90,10 +84,7 @@ pub async fn sync_device(
         }
     };
 
-    if let Err(e) = files::ensure_dir(device, remote_dir).await {
-        error!("Cannot access remote directory '{remote_dir}' on device {device}: {e}");
-        return Err(e);
-    }
+    files::ensure_dir(device, remote_dir).await?;
 
     let remote_files = files::list_files(device, remote_dir).await?;
 

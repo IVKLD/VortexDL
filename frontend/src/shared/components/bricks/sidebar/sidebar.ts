@@ -1,4 +1,4 @@
-import {Component, inject} from '@angular/core';
+import { Component, inject } from '@angular/core';
 import {MatButton} from '@angular/material/button';
 import {MatSidenav, MatSidenavContainer, MatSidenavContent} from '@angular/material/sidenav';
 import {RouterLink, RouterLinkActive} from '@angular/router';
@@ -77,16 +77,17 @@ export class Sidebar {
     protected readonly navItems = SIDEBAR_NAV_ITEMS;
 
     protected openErrorsDialog() {
-        const dialogRef = this.dialog.open(ErrorsDialogComponent, {
-            data: this.tracking.errors(),
-            width: '600px',
-            maxWidth: '90vw'
-        });
-
-        dialogRef.afterClosed().subscribe(result => {
-            if (result === ErrorsDialogResult.Clear) {
-                this.tracking.clearError();
-            }
-        });
+        this.dialog
+            .open(ErrorsDialogComponent, {
+                data: this.tracking.errors(),
+                width: '600px',
+                maxWidth: '90vw',
+            })
+            .afterClosed()
+            .subscribe((result) => {
+                if (result === ErrorsDialogResult.Clear) {
+                    this.tracking.clearError();
+                }
+            });
     }
 }

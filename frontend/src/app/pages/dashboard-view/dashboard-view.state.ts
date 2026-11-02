@@ -2,14 +2,13 @@ import { computed, inject, Injectable, signal } from '@angular/core';
 import { MusicTracksViewState } from '@app/pages/music-tracks-view/music-tracks-view.state';
 import { DownloadTrackingService } from '@app/services/download-tracking.service';
 import { NotificationService } from '@app/services/notification.service';
+import { LoadingService } from '@app/services/loading.service';
 import { AudioFormat } from '@shared/models/music-track.model';
 import { FileSizePipe } from '@shared/pipes/file-size.pipe';
-import {
-    ActivityDay,
-    DeletedTrack,
-    FormatItem,
-    LibraryStats,
-} from './dashboard-view.model';
+import { ActivityDay } from './components/activity-chart/activity-chart.model';
+import { DeletedTrack } from './components/deleted-tracks/deleted-tracks.model';
+import { FormatItem } from './components/format-breakdown/format-breakdown.model';
+import { LibraryStats } from './dashboard-view.model';
 import { DashboardViewService } from './dashboard-view.service';
 
 const FORMATS_CONFIG: { format: AudioFormat; color: string }[] = [
@@ -35,7 +34,7 @@ export class DashboardViewState {
     private readonly _fileSize = new FileSizePipe();
 
     public readonly serverStats = signal<LibraryStats | null>(null);
-    public readonly loading = signal<boolean>(false);
+    public readonly loading = inject(LoadingService).isLoading;
 
     public readonly recentDeleted = computed<DeletedTrack[]>(() => this.serverStats()?.recentDeleted ?? []);
     public readonly deletedCount = computed<number>(() => this.serverStats()?.totalDeleted ?? 0);
@@ -122,29 +121,20 @@ export class DashboardViewState {
         });
     });
 
-    public loadStats(): void {
-        this.loading.set(true);
+    public loadStats() {
         this._api.getStats().subscribe({
-            next: (data) => {
-                this.serverStats.set(data);
-                this.loading.set(false);
-            },
-            error: () => {
-                this.loading.set(false);
-                this._notification.error('Failed to load dashboard statistics');
-            },
+            next: this.serverStats.set,
+            error: () => this._notification.error('Failed to load dashboard statistics'),
         });
     }
 
-    public clearDeletedHistory(): void {
+    public clearDeletedHistory() {
         this._api.clearDeletedHistory().subscribe({
             next: () => {
                 this.loadStats();
                 this._notification.success('Deleted tracks history cleared');
             },
-            error: () => {
-                this._notification.error('Failed to clear deleted tracks history');
-            },
+            error: () => this._notification.error('Failed to clear deleted tracks history'),
         });
     }
 }

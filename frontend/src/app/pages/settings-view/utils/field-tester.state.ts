@@ -5,7 +5,7 @@ import { Observable, finalize } from 'rxjs';
 export abstract class FieldTesterState {
     public readonly isTesting = signal(false);
 
-    protected runTest(field: FieldTree<string>, testFn: (value: string) => Observable<unknown>): void {
+    protected runTest(field: FieldTree<string>, testFn: (value: string) => Observable<unknown>) {
         if (!this.canTest(field)) return;
 
         this.isTesting.set(true);

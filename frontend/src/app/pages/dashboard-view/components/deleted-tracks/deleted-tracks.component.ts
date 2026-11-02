@@ -1,14 +1,34 @@
 import { Component, input, output } from '@angular/core';
+import {
+    MatList,
+    MatListItem,
+    MatListItemIcon,
+    MatListItemLine,
+    MatListItemMeta,
+    MatListItemTitle,
+} from '@angular/material/list';
 import { MatIcon } from '@angular/material/icon';
 import { MatButton } from '@angular/material/button';
 import { DatePipe } from '@angular/common';
 import { FileSizePipe } from '@shared/pipes/file-size.pipe';
 import { EmptyPaneComponent } from '@shared/components/empty-pane/empty-pane';
-import { DeletedTrack } from '../../dashboard-view.model';
+import { DeletedTrack } from './deleted-tracks.model';
 
 @Component({
     selector: 'app-deleted-tracks',
-    imports: [MatIcon, MatButton, DatePipe, FileSizePipe, EmptyPaneComponent],
+    imports: [
+        MatList,
+        MatListItem,
+        MatListItemIcon,
+        MatListItemTitle,
+        MatListItemLine,
+        MatListItemMeta,
+        MatIcon,
+        MatButton,
+        DatePipe,
+        FileSizePipe,
+        EmptyPaneComponent,
+    ],
     templateUrl: './deleted-tracks.component.html',
     styleUrl: './deleted-tracks.component.scss',
 })

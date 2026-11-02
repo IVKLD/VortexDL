@@ -1,4 +1,4 @@
-import {Component, inject, signal} from '@angular/core';
+import { Component, inject, signal } from '@angular/core';
 import {MusicTracksService} from "@app/pages/music-tracks-view/music-tracks.service";
 import {DownloadHistoryService} from "@app/services/download-history.service";
 import {DialogRef} from "@angular/cdk/dialog";
@@ -63,12 +63,8 @@ export class DownloadDialogComponent {
 
         this._historyService.add(url);
         this._trackService.download(url).subscribe({
-            next: () => {
-                this._dialogRef.close();
-            },
-            error: err => {
-                console.error('Download failed', err);
-            },
+            next: () => this._dialogRef.close(),
+            error: (err) => console.error('Download failed', err),
         });
     }
 }

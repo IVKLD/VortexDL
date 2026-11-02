@@ -19,7 +19,7 @@ export class TrackActionsService {
   private readonly _tracksState = inject(MusicTracksViewState);
   private readonly _player = inject(PlayerService);
 
-  public download(track: PlayableTrack): void {
+  public download(track: PlayableTrack) {
     const format = track.format || AudioFormat.MP3;
     const link = document.createElement("a");
     link.href = `/api/stream/${track.id}`;
@@ -27,7 +27,7 @@ export class TrackActionsService {
     link.click();
   }
 
-  public delete(ids: number[]): void {
+  public delete(ids: number[]) {
     this._api.delete(ids).subscribe({
       next: () => {
         this._tracksState.removeTracks(ids);
@@ -40,22 +40,20 @@ export class TrackActionsService {
     });
   }
 
-  public deleteWithDialog(data: { title: string; id: number }): void {
-    const dialog = this._dialog.open<DialogDeleteTrack, DialogDeleteTrackData>(
-      DialogDeleteTrack,
-      {
+  public deleteWithDialog(data: { title: string; id: number }) {
+    this._dialog
+      .open<DialogDeleteTrack, DialogDeleteTrackData>(DialogDeleteTrack, {
         data: { title: data.title },
-      },
-    );
-
-    dialog.afterClosed().subscribe((result) => {
-      if (result) {
-        this.delete([data.id]);
-      }
-    });
+      })
+      .afterClosed()
+      .subscribe((result) => {
+        if (result) {
+          this.delete([data.id]);
+        }
+      });
   }
 
-  public openDetails(track: PlayableTrack): void {
+  public openDetails(track: PlayableTrack) {
     const fullTrack =
       this._tracksState.tracks().find((t) => t.id === track.id) ?? track;
     this._dialog.open(MusicDetailModal, {

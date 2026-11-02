@@ -1,27 +1,26 @@
-<div class="section-header">
+<header>
     <h2>
         <mat-icon>pie_chart</mat-icon>
         Audio Formats
     </h2>
-</div>
+</header>
 
 @if (data().length > 0) {
-    <div class="format-list">
+    <section>
         @for (fmt of data(); track fmt.format) {
-            <div class="format-item">
-                <div class="format-info">
-                    <span [style.background]="fmt.color" class="format-dot"></span>
-                    <span class="format-name">{{ fmt.format }}</span>
-                    <span class="format-count">{{ fmt.count }}</span>
+            <div>
+                <div>
+                    <span [style.background]="fmt.color"></span>
+                    <strong>{{ fmt.format }}</strong>
+                    <em>{{ fmt.count }}</em>
                 </div>
-                <div class="format-bar-bg">
-                    <div [style.background]="fmt.color"
-                         [style.width]="fmt.percentage + '%'"
-                         class="format-bar-fill"></div>
-                </div>
+                <mat-progress-bar
+                    mode="determinate"
+                    [value]="fmt.percentage"
+                    [style.--mdc-linear-progress-active-indicator-color]="fmt.color" />
             </div>
         }
-    </div>
+    </section>
 } @else {
     <app-empty-pane
         icon="pie_chart"
@@ -29,3 +28,6 @@
         description="Download music to see format breakdown."
         [accent]="false" />
 }
+
+
+

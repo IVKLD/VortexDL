@@ -73,10 +73,6 @@ pub async fn send_adb_cmd(stream: &mut TcpStream, cmd: &str) -> Result<(), Devic
     }
 }
 
-/// What: Reads a single packet from an ADB daemon TCP connection.
-/// Flow: Called by ADB streaming functions (like device tracking) whenever the daemon sends new data.
-/// Why:  The ADB host protocol prefixes every payload with a 4-character hex length string (e.g. "0012").
-///       We read the exact length first, parse the hex, then read the remaining payload bytes.
 pub async fn read_adb_hex_packet(stream: &mut TcpStream) -> Result<Vec<u8>, DeviceError> {
     let mut len_buf = [0u8; 4];
     stream
@@ -141,9 +137,6 @@ pub async fn list_devices() -> Result<HashSet<String>, DeviceError> {
     }
 }
 
-/// What: Awaits the next device state event packet and parses it into a set of device IDs.
-/// Flow: Called in an infinite loop by the ADB tracker task (`start_device_tracker`).
-/// Why:  The ADB daemon keeps the socket open and pushes updates whenever an Android device connects or disconnects.
 pub async fn read_device_list_update(
     stream: &mut TcpStream,
 ) -> Result<HashSet<String>, DeviceError> {

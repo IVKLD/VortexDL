@@ -1,4 +1,4 @@
-import {Component, computed, inject, signal} from '@angular/core';
+import { Component, computed, inject, signal } from '@angular/core';
 import {ActivatedRoute, NavigationEnd, Router} from '@angular/router';
 import {HeaderFeature} from './header.types';
 import {filter, finalize} from 'rxjs';
@@ -85,7 +85,7 @@ export class Header {
         this.headerService.sortBind.set(data['headerSort'] || null);
     }
 
-    protected onSearchKeydown(event: KeyboardEvent): void {
+    protected onSearchKeydown(event: KeyboardEvent) {
         const bind = this.headerService.searchBind();
         if (event.key === 'Enter' && bind && bind.onSubmit) {
             bind.onSubmit(bind.formField().value().trim());
@@ -102,11 +102,12 @@ export class Header {
                     return;
                 }
 
-                this._trackService.download(settings.soundcloud.profileUrl)
+                this._trackService
+                    .download(settings.soundcloud.profileUrl)
                     .pipe(finalize(() => this._localSyncing.set(false)))
                     .subscribe();
             },
-            error: () => this._localSyncing.set(false)
+            error: () => this._localSyncing.set(false),
         });
     }
 

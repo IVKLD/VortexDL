@@ -3,7 +3,7 @@
         <mat-icon>delete_sweep</mat-icon>
         Deleted Tracks
         @if (totalDeleted() > 0) {
-            <span class="badge">{{ totalDeleted() }} ({{ totalDeletedBytes() | fileSize }} freed)</span>
+            <span>{{ totalDeleted() }} ({{ totalDeletedBytes() | fileSize }} freed)</span>
         }
     </h2>
     @if (recentDeleted().length > 0) {
@@ -15,24 +15,22 @@
 </header>
 
 @if (recentDeleted().length > 0) {
-    <ul>
+    <mat-list>
         @for (track of recentDeleted(); track (track.id + '-' + track.deletedAt)) {
-            <li>
-                <mat-icon class="icon">music_off</mat-icon>
-                <div class="info">
-                    <strong>{{ track.title || 'Unknown Title' }}</strong>
-                    <span>{{ track.artist || 'Unknown Artist' }}</span>
-                </div>
-                <div class="meta">
+            <mat-list-item>
+                <mat-icon matListItemIcon>music_off</mat-icon>
+                <div matListItemTitle>{{ track.title || 'Unknown Title' }}</div>
+                <div matListItemLine>{{ track.artist || 'Unknown Artist' }}</div>
+                <div matListItemMeta>
                     @if (track.format) {
                         <em>{{ track.format }}</em>
                     }
-                    <span class="size">{{ track.size | fileSize }}</span>
+                    <span>{{ track.size | fileSize }}</span>
                     <time>{{ track.deletedAt * 1000 | date:'MMM d, HH:mm' }}</time>
                 </div>
-            </li>
+            </mat-list-item>
         }
-    </ul>
+    </mat-list>
 } @else {
     <app-empty-pane
         icon="delete_outline"
@@ -40,3 +38,6 @@
         description="Tracks removed from your library will appear here."
         [accent]="false" />
 }
+
+
+

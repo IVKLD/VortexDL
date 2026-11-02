@@ -8,10 +8,6 @@ use crate::{
     settings::SettingsManager,
 };
 
-/// What: Spawns the ADB supervisor task that manages device tracking lifecycle.
-/// Flow: Called during application initialization in `src/main.rs`.
-/// Why:  Periodically checks if ADB is enabled in user settings. If enabled, starts `run_device_tracker`.
-///       If disabled, aborts the tracker task and clears connected state.
 pub fn init_device_tracker(library: LibraryService, settings: SettingsManager) {
     tokio::spawn(async move {
         let mut tracker_task: Option<JoinHandle<Result<(), DeviceError>>> = None;
@@ -77,10 +73,6 @@ pub fn init_device_tracker(library: LibraryService, settings: SettingsManager) {
     });
 }
 
-/// What: Background listener loop that monitors ADB device connection and disconnection events.
-/// Flow: Spawned by `init`; runs continuously while ADB is enabled in settings.
-/// Why:  Subscribes directly to the ADB daemon socket (`host:track-devices`). When an authorized
-///       device connects, it automatically triggers `sync_device` without requiring user interaction.
 async fn run_device_tracker(
     library: LibraryService,
     settings: SettingsManager,

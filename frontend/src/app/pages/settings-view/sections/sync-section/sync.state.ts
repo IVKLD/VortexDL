@@ -70,7 +70,7 @@ export class SyncState {
         }
     }
 
-    public exportBackup(): void {
+    public exportBackup() {
         if (this.selectedProvider() === SyncProviderType.Url) return;
         const payload = this.getProviderPayload();
         if (!payload) return;
@@ -82,7 +82,7 @@ export class SyncState {
             .subscribe();
     }
 
-    public importBackup(): void {
+    public importBackup() {
         const payload = this.getProviderPayload();
         if (!payload) return;
 

@@ -1,7 +1,7 @@
 import { Component, input } from '@angular/core';
 import { MatIcon } from '@angular/material/icon';
 import { EmptyPaneComponent } from '@shared/components/empty-pane/empty-pane';
-import { ActivityDay } from '../../dashboard-view.model';
+import { ActivityDay } from './activity-chart.model';
 
 @Component({
     selector: 'app-activity-chart',

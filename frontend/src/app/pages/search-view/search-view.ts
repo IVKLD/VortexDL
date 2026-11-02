@@ -46,7 +46,6 @@ export class SearchView {
     protected readonly tracking = inject(DownloadTrackingService);
     protected readonly player = inject(PlayerService);
     protected readonly history = inject(SearchHistoryService);
-
     protected readonly state = inject(SearchViewState);
 
     protected readonly isInitial = computed(() => {
@@ -61,7 +60,7 @@ export class SearchView {
     protected readonly downloadedIds = computed(() => new Set(this._tracksState.tracks().map(t => t.id)));
     protected readonly downloadingIds = computed(() => new Set(this.tracking.activeDownloads().map(d => d.id)));
 
-    protected onViewRange(range: { start: number; end: number }): void {
+    protected onViewRange(range: { start: number; end: number }) {
         if (this.isInitial() || !this.state.hasMore() || this.state.loading() || this.state.results().length === 0) return;
 
         if (range.end >= this.state.results().length - 3) {
@@ -69,16 +68,16 @@ export class SearchView {
         }
     }
 
-    protected selectHistoryItem(item: string): void {
+    protected selectHistoryItem(item: string) {
         this.state.search(item);
     }
 
-    protected togglePlay(track: SearchTrackItemRdo): void {
+    protected togglePlay(track: SearchTrackItemRdo) {
         this.player.setQueue(this.state.results());
         this.player.play(track);
     }
 
-    protected downloadTrack(track: SearchTrackItemRdo): void {
+    protected downloadTrack(track: SearchTrackItemRdo) {
         if (!track.permalinkUrl) {
             this._notification.error('Cannot download: missing track URL');
             return;
@@ -90,7 +89,7 @@ export class SearchView {
         });
     }
 
-    protected deleteTrack(track: SearchTrackItemRdo): void {
+    protected deleteTrack(track: SearchTrackItemRdo) {
         this._tracksService.delete([track.id]).subscribe({
             next: () => this._tracksState.removeTracks([track.id]),
             error: () => this._notification.error('Failed to delete track'),

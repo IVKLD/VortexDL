@@ -1,4 +1,4 @@
-import {Component, inject, signal, computed} from '@angular/core';
+import { Component, computed, inject, signal } from '@angular/core';
 import {MatIcon} from '@angular/material/icon';
 import {MatButton} from '@angular/material/button';
 import {
@@ -62,7 +62,8 @@ export class ProxyCheckerDialogComponent {
         this.workingProxies.set([]);
         this.importStatuses.set(proxies.map(url => ({ url, loading: true })));
 
-        this._testingService.testProxy(proxies)
+        this._testingService
+            .testProxy(proxies)
             .pipe(finalize(() => this.isTesting.set(false)))
             .subscribe({
                 next: (result) => {

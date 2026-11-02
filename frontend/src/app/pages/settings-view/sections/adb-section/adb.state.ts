@@ -21,23 +21,23 @@ export class AdbState {
             .connect<string[]>('/api/devices/ws')
             .pipe(takeUntilDestroyed())
             .subscribe({
-                next: (devices) => this.connectedDevices.set(devices),
+                next: this.connectedDevices.set,
                 error: (err) => console.error('ADB devices WebSocket error:', err),
             });
     }
 
-    public refreshDevices(): void {
+    public refreshDevices() {
         this.isRefreshing.set(true);
         this._api
             .getAdbDevices()
             .pipe(finalize(() => this.isRefreshing.set(false)))
             .subscribe({
-                next: (devices) => this.connectedDevices.set(devices),
+                next: this.connectedDevices.set,
                 error: (err) => console.error('Failed to get connected ADB devices:', err),
             });
     }
 
-    public syncDevicesWithConfig(form: FieldTree<SettingsFormModel['adb']>): void {
+    public syncDevicesWithConfig(form: FieldTree<SettingsFormModel['adb']>) {
         const devices = this.connectedDevices();
         const current = [...form.devices().value()];
         let changed = false;

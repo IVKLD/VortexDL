@@ -3,16 +3,15 @@
   align-items: center;
   gap: 1.5rem;
   flex: 1 1 200px;
-
   background: var(--mat-sys-surface-container-low);
   border: 1px solid var(--mat-sys-outline-variant);
   border-radius: 16px;
   padding: 1.5rem;
 
-  .stat-info {
+  div {
     display: inline-flex;
     flex-direction: column;
-    gap: .5em;
+    gap: 0.5em;
     min-width: 0;
 
     h3 {
@@ -35,3 +34,6 @@
     }
   }
 }
+
+
+

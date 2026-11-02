@@ -6,128 +6,119 @@
   border-radius: 16px;
   padding: 1.5rem;
   gap: 1rem;
-}
 
-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  flex-wrap: wrap;
-  gap: 1rem;
-
-  h2 {
+  header {
     display: flex;
     align-items: center;
-    gap: 0.75rem;
-    font-size: 1.25rem;
-    font-weight: 600;
-    margin: 0;
-    color: var(--mat-sys-on-surface);
-
-    mat-icon {
-      color: #f43f5e;
-    }
-
-    .badge {
-      font-size: 0.75rem;
-      font-weight: 500;
-      padding: 0.2rem 0.6rem;
-      border-radius: 1rem;
-      background: color-mix(in srgb, #f43f5e 15%, transparent);
-      color: #f43f5e;
-    }
-  }
-
-  button {
-    color: var(--mat-sys-on-surface-variant);
-    font-size: 0.85rem;
-
-    &:hover {
-      color: #f43f5e;
-    }
-  }
-}
-
-ul {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-  max-height: 360px;
-  overflow-y: auto;
-
-  li {
-    display: flex;
-    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
     gap: 1rem;
-    padding: 0.6rem 0.8rem;
-    border-radius: 10px;
-    background: var(--mat-sys-surface-container);
 
-    &:hover {
-      background: var(--mat-sys-surface-container-high);
-    }
-
-    .icon {
-      color: #f43f5e;
-      font-size: 20px;
-      width: 20px;
-      height: 20px;
-      flex-shrink: 0;
-    }
-
-    .info {
+    h2 {
       display: flex;
-      flex-direction: column;
-      flex: 1;
-      min-width: 0;
+      align-items: center;
+      gap: 0.75rem;
+      font-size: 1.25rem;
+      font-weight: 600;
+      margin: 0;
+      color: var(--mat-sys-on-surface);
 
-      strong {
+      mat-icon {
+        color: var(--mat-sys-error);
+      }
+
+      span {
+        font-size: 0.75rem;
+        font-weight: 500;
+        padding: 0.2rem 0.6rem;
+        border-radius: 1rem;
+        background: color-mix(in srgb, var(--mat-sys-error) 15%, transparent);
+        color: var(--mat-sys-error);
+      }
+    }
+
+    button {
+      color: var(--mat-sys-on-surface-variant);
+      font-size: 0.85rem;
+
+      &:hover {
+        color: var(--mat-sys-error);
+      }
+    }
+  }
+
+  mat-list {
+    padding: 0;
+    max-height: 360px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+
+    mat-list-item {
+      border-radius: 10px;
+      background: var(--mat-sys-surface-container);
+      transition: background 0.2s ease;
+
+      &:hover {
+        background: var(--mat-sys-surface-container-high);
+      }
+
+      mat-icon {
+        color: var(--mat-sys-error);
+        font-size: 20px;
+        width: 20px;
+        height: 20px;
+      }
+
+      [matListItemTitle] {
         font-size: 0.9rem;
+        font-weight: 600;
         color: var(--mat-sys-on-surface);
         overflow: hidden;
         text-overflow: ellipsis;
         white-space: nowrap;
       }
 
-      span {
+      [matListItemLine] {
         font-size: 0.75rem;
         color: var(--mat-sys-on-surface-variant);
         overflow: hidden;
         text-overflow: ellipsis;
         white-space: nowrap;
       }
-    }
 
-    .meta {
-      display: flex;
-      align-items: center;
-      gap: 0.75rem;
-      flex-shrink: 0;
+      [matListItemMeta] {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        flex-shrink: 0;
 
-      em {
-        font-style: normal;
-        font-size: 0.7rem;
-        font-weight: 700;
-        text-transform: uppercase;
-        padding: 0.1rem 0.4rem;
-        border-radius: 4px;
-        background: var(--mat-sys-surface-container-highest);
-        color: var(--mat-sys-primary);
-      }
+        em {
+          font-style: normal;
+          font-size: 0.7rem;
+          font-weight: 700;
+          text-transform: uppercase;
+          padding: 0.1rem 0.4rem;
+          border-radius: 4px;
+          background: var(--mat-sys-surface-container-highest);
+          color: var(--mat-sys-primary);
+        }
 
-      .size {
-        font-size: 0.8rem;
-        font-weight: 600;
-        color: #34d399;
-      }
+        span {
+          font-size: 0.8rem;
+          font-weight: 600;
+          color: var(--mat-sys-tertiary);
+        }
 
-      time {
-        font-size: 0.75rem;
-        color: var(--mat-sys-on-surface-variant);
+        time {
+          font-size: 0.75rem;
+          color: var(--mat-sys-on-surface-variant);
+        }
       }
     }
   }
 }
+
+
+

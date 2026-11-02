@@ -7,11 +7,11 @@
 }
 
 button {
-  color: rgba(255, 255, 255, 0.6);
+  color: var(--mat-sys-on-surface-variant);
   transition: color 0.2s ease;
 
   &:hover {
-    color: #fff;
+    color: var(--mat-sys-on-surface);
   }
 
   &.active {
@@ -19,6 +19,7 @@ button {
   }
 
   &.delete-btn:hover {
-    color: var(--mat-sys-error, #f87171);
+    color: var(--mat-sys-error);
   }
 }
+

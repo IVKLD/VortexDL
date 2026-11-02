@@ -1,83 +1,76 @@
 :host {
-  display: block;
+  display: flex;
+  flex-direction: column;
   background: var(--mat-sys-surface-container-low);
   border: 1px solid var(--mat-sys-outline-variant);
   border-radius: 16px;
   padding: 1.5rem;
-}
+  gap: 1.5rem;
 
-.format-list {
-  display: flex;
-  flex-direction: column;
-  gap: 1.25rem;
-  margin-top: 1rem;
-}
+  header {
+    h2 {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      font-size: 1.25rem;
+      font-weight: 600;
+      margin: 0;
+      color: var(--mat-sys-on-surface);
 
-.format-item {
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-}
-
-.format-info {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-
-  .format-dot {
-    width: 10px;
-    height: 10px;
-    border-radius: 50%;
+      mat-icon {
+        color: var(--mat-sys-on-surface-variant);
+      }
+    }
   }
 
-  .format-name {
-    flex: 1;
-    font-weight: 600;
-    color: var(--mat-sys-on-surface);
-  }
-
-  .format-count {
-    font-weight: 700;
-    color: var(--mat-sys-on-surface-variant);
-    background: var(--mat-sys-surface-container-lowest);
-    padding: 0.1rem 0.5rem;
-    border-radius: 4px;
-    font-size: 0.85rem;
-  }
-}
-
-.format-bar-bg {
-  width: 100%;
-  height: 6px;
-  background: var(--mat-sys-surface-container-lowest);
-  border-radius: 3px;
-  overflow: hidden;
-}
-
-.format-bar-fill {
-  height: 100%;
-  border-radius: 3px;
-  transition: width 0.5s ease-out;
-}
-
-.section-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 1.5rem;
-
-  h2 {
+  section {
     display: flex;
-    align-items: center;
-    gap: 0.75rem;
-    font-size: 1.25rem;
-    font-weight: 600;
+    flex-direction: column;
+    gap: 1.25rem;
 
-    color: var(--mat-sys-on-surface);
+    > div {
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
 
-    mat-icon {
-      color: var(--mat-sys-on-surface-variant);
+      > div {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+
+        span {
+          width: 10px;
+          height: 10px;
+          border-radius: 50%;
+        }
+
+        strong {
+          flex: 1;
+          font-weight: 600;
+          color: var(--mat-sys-on-surface);
+        }
+
+        em {
+          font-style: normal;
+          font-weight: 700;
+          color: var(--mat-sys-on-surface-variant);
+          background: var(--mat-sys-surface-container-lowest);
+          padding: 0.1rem 0.5rem;
+          border-radius: 4px;
+          font-size: 0.85rem;
+        }
+      }
+
+      mat-progress-bar {
+        border-radius: 3px;
+        height: 6px;
+        --mdc-linear-progress-track-color: var(--mat-sys-surface-container-lowest);
+        --mdc-linear-progress-track-shape: 3px;
+      }
     }
   }
 }
+
+
+
 

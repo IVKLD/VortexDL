@@ -1,15 +1,6 @@
-import {AudioFormat} from '@shared/models/music-track.model';
+import { DeletedTrack } from './components/deleted-tracks/deleted-tracks.model';
 
-export interface DeletedTrack {
-    id: number;
-    title: string;
-    artist: string;
-    format: string;
-    size: number;
-    deletedAt: number;
-}
-
-export interface LibraryStats {
+export type LibraryStats = {
     totalTracks: number;
     totalSize: number;
     totalDownloaded: number;
@@ -17,20 +8,4 @@ export interface LibraryStats {
     totalDeleted: number;
     totalDeletedBytes: number;
     recentDeleted: DeletedTrack[];
-}
-
-export interface ActivityDay {
-    label: string;
-    downloadCount: number;
-    deleteCount: number;
-    downloadHeightPercent: number;
-    deleteHeightPercent: number;
-}
-
-export interface FormatItem {
-    format: AudioFormat;
-    count: number;
-    percentage: number;
-    color: string;
-    sizeBytes?: number;
-}
+};

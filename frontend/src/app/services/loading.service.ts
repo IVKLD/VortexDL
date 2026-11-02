@@ -1,18 +1,16 @@
-import {computed, Injectable, signal} from '@angular/core';
+import { computed, Injectable, signal } from '@angular/core';
 
-@Injectable({
-    providedIn: 'root',
-})
+@Injectable({ providedIn: 'platform' })
 export class LoadingService {
-    private readonly _loadingCount = signal(0);
+    private readonly _count = signal(0);
 
-    public readonly isLoading = computed(() => this._loadingCount() > 0);
+    public readonly isLoading = computed(() => this._count() > 0);
 
-    public start(): void {
-        this._loadingCount.update(count => count + 1);
+    public start() {
+        this._count.update((c) => c + 1);
     }
 
-    public stop(): void {
-        this._loadingCount.update(count => Math.max(0, count - 1));
+    public stop() {
+        this._count.update((c) => Math.max(0, c - 1));
     }
 }
