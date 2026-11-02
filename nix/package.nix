@@ -6,7 +6,7 @@ pkgs.stdenv.mkDerivation rec {
 
   src = pkgs.fetchurl {
     url = "https://github.com/IVKLD/VortexDL/releases/download/v${version}/vortex-dl";
-    hash = "sha256-tvsKIXeVpRvaUnp0thLa0O/rDH5cQfaWRgai1jPD6gA=";
+    hash = "sha256-ZrHdH/ym2V4Pl609vn2gw/+UtOqP4wnnKs7HnotzjbA=";
   };
 
   dontUnpack = true;
