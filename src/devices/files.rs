@@ -1,6 +1,6 @@
 use std::collections::HashSet;
 
-use super::{DeviceError, adb};
+use crate::devices::{DeviceError, adb};
 
 pub async fn ensure_dir(device: &str, dir: &str) -> Result<(), DeviceError> {
     adb::exec(

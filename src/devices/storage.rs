@@ -2,7 +2,7 @@ use anyhow::Result;
 use serde::Serialize;
 use utoipa::ToSchema;
 
-use super::adb;
+use crate::devices::adb;
 
 #[derive(Serialize, Debug, Clone, ToSchema)]
 #[serde(rename_all = "camelCase")]

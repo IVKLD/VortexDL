@@ -10,13 +10,14 @@ use notify::{
     Config as WatcherConfig, Event, RecommendedWatcher, RecursiveMode, Result as NotifyResult,
     Watcher,
 };
-use tokio::sync::{RwLock, mpsc};
+use tokio::sync::mpsc;
 
 use crate::{
-    devices,
+    devices::DeviceService,
     domain::AudioFormat,
     downloader::{DownloadManager, MessageLevel, ServerEvent},
-    library::{self, Library},
+    infra::EventBus,
+    library::LibraryService,
     settings::SettingsManager,
 };
 
@@ -24,9 +25,11 @@ use crate::{
 /// Debounces incoming file events so that completed downloads/copies trigger a single clean re-scan,
 /// and dynamically rebinds if output_path changes in settings.
 pub async fn start_library_watcher(
-    storage: Arc<RwLock<Library>>,
+    library: LibraryService,
+    devices: DeviceService,
     settings: SettingsManager,
     dm: Arc<DownloadManager>,
+    events: EventBus,
 ) -> Result<()> {
     let (tx, mut rx) = mpsc::unbounded_channel();
 
@@ -91,20 +94,19 @@ pub async fn start_library_watcher(
 
                         tracing::info!("Library watcher: changes detected, reindexing library");
 
-                        dm.broadcast_event(ServerEvent::Message {
+                        events.publish(ServerEvent::Message {
                             message: "Library changes detected, reindexing...".to_string(),
                             level: MessageLevel::Info,
                         });
 
-                        let tracks = library::scan_directory(&path_to_watch).await;
-                        storage.write().await.update_tracks(tracks);
-                        devices::sync_connected(storage.clone(), settings.clone()).await;
+                        library.reindex().await;
+                        devices.sync_connected().await;
 
-                        dm.broadcast_event(ServerEvent::Message {
+                        events.publish(ServerEvent::Message {
                             message: "Library reindexing and sync completed".to_string(),
                             level: MessageLevel::Info,
                         });
-                        dm.broadcast_event(ServerEvent::SyncFinished { url: None });
+                        events.publish(ServerEvent::SyncFinished { url: None });
                     }
                 }
             }

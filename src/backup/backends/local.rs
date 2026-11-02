@@ -2,7 +2,7 @@ use std::path::{Path, PathBuf};
 
 use tracing::{debug, instrument};
 
-use super::super::{backend::BackupBackend, error::BackupError};
+use crate::backup::{backend::BackupBackend, error::BackupError};
 
 pub struct LocalBackend {
     remote_path: PathBuf,

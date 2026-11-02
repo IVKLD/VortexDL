@@ -3,8 +3,7 @@ use std::sync::Arc;
 use anyhow::Result;
 use tokio::sync::{RwLock, RwLockReadGuard, watch};
 
-use super::types::UserSettings;
-use crate::infra::db;
+use crate::{infra::db, settings::types::UserSettings};
 
 #[derive(Clone)]
 pub struct SettingsManager {
@@ -33,7 +32,7 @@ impl SettingsManager {
     }
 
     pub async fn update(&self, new_settings: UserSettings) -> Result<()> {
-        db::update_settings(&new_settings)?;
+        db::SettingsRepo::update(&new_settings)?;
         *self.inner.write().await = new_settings;
         let _ = self.change_tx.send(());
         Ok(())

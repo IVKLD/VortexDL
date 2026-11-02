@@ -1,26 +1,14 @@
 use std::{future::Future, sync::Arc};
 
-use anyhow::{Result, anyhow, bail};
 use soundcloud_rs::{
     Client, ClientBuilder as RawClientBuilder, Identifier, ProxyUrlProvider, StreamType, Track,
 };
-use url::Url;
 
 use crate::{
     infra::net,
+    providers::ProviderError,
     settings::{SettingsManager, UserSettings},
 };
-
-pub async fn update_cached_client_id(client: &Client, settings: &SettingsManager) {
-    let active_client_id = client.get_client_id_value().await;
-    let mut current_settings = settings.read().await.clone();
-    if current_settings.soundcloud.cached_client_id.as_ref() != Some(&active_client_id) {
-        current_settings.soundcloud.cached_client_id = Some(active_client_id);
-        if let Err(e) = settings.update(current_settings).await {
-            tracing::error!("Failed to save refreshed SoundCloud client ID: {e}");
-        }
-    }
-}
 
 pub struct ClientBuilder<'a> {
     settings: &'a UserSettings,
@@ -47,7 +35,7 @@ impl<'a> ClientBuilder<'a> {
         self
     }
 
-    pub async fn build(self) -> Result<Client> {
+    pub async fn build(self) -> Result<Client, ProviderError> {
         let mut builder = RawClientBuilder::new()
             .with_max_retries(self.settings.system.max_retries)
             .with_retry_on_401(true);
@@ -63,10 +51,7 @@ impl<'a> ClientBuilder<'a> {
             builder = builder.with_proxy(proxy.to_string());
         }
 
-        let client = builder
-            .build()
-            .await
-            .map_err(|e| anyhow!("Failed to build SoundCloud client: {e}"))?;
+        let client = builder.build().await?;
 
         if let Some(mgr) = self.settings_manager {
             let provider = ProxyUrlProvider(Arc::new(move || mgr.get_proxy_url_sync()));
@@ -75,25 +60,55 @@ impl<'a> ClientBuilder<'a> {
             Ok(client)
         }
     }
+
+    pub async fn race_stream(
+        settings: &UserSettings,
+        id: i64,
+    ) -> Result<(String, StreamType, Option<String>), ProviderError> {
+        let settings_clone = settings.clone();
+        let res = net::race_proxies(
+            &settings.network.fallback_proxies,
+            settings.network.max_concurrent_proxies,
+            move |proxy| {
+                let settings = settings_clone.clone();
+                async move {
+                    let client = ClientBuilder::new(&settings)
+                        .with_proxy(Some(&proxy))
+                        .build()
+                        .await?;
+                    let (url, stype) = client.resolve_stream(id).await?;
+                    Ok((url, stype, Some(proxy)))
+                }
+            },
+        )
+        .await?;
+        Ok(res)
+    }
 }
 
 pub trait SoundcloudExt {
     fn resolve_stream_from_track(
         &self,
         track: &Track,
-    ) -> impl Future<Output = Result<(String, StreamType)>> + Send;
+    ) -> impl Future<Output = Result<(String, StreamType), ProviderError>> + Send;
 
-    fn resolve_stream(&self, id: i64) -> impl Future<Output = Result<(String, StreamType)>> + Send;
+    fn resolve_stream(
+        &self,
+        id: i64,
+    ) -> impl Future<Output = Result<(String, StreamType), ProviderError>> + Send;
 
     fn resolve_stream_url(
         &self,
         track: Option<&Track>,
         id: i64,
-    ) -> impl Future<Output = Result<String>> + Send;
+    ) -> impl Future<Output = Result<String, ProviderError>> + Send;
 }
 
 impl SoundcloudExt for Client {
-    async fn resolve_stream_from_track(&self, track: &Track) -> Result<(String, StreamType)> {
+    async fn resolve_stream_from_track(
+        &self,
+        track: &Track,
+    ) -> Result<(String, StreamType), ProviderError> {
         if let Ok(url) = self
             .resolve_stream_url_from_track(track, Some(&StreamType::Progressive))
             .await
@@ -107,51 +122,25 @@ impl SoundcloudExt for Client {
             return Ok((url, StreamType::Hls));
         }
 
-        bail!("No playable stream URL found for track")
+        Err(ProviderError::InvalidStream(
+            "No playable stream URL found for track".to_string(),
+        ))
     }
 
-    async fn resolve_stream(&self, id: i64) -> Result<(String, StreamType)> {
+    async fn resolve_stream(&self, id: i64) -> Result<(String, StreamType), ProviderError> {
         let track = self.get_track(&Identifier::Id(id)).await?;
         self.resolve_stream_from_track(&track).await
     }
 
-    async fn resolve_stream_url(&self, track: Option<&Track>, id: i64) -> Result<String> {
+    async fn resolve_stream_url(
+        &self,
+        track: Option<&Track>,
+        id: i64,
+    ) -> Result<String, ProviderError> {
         let (url, _) = match track {
             Some(t) => self.resolve_stream_from_track(t).await?,
             None => self.resolve_stream(id).await?,
         };
         Ok(url)
     }
-}
-
-pub async fn resolve_soundcloud_stream_with_fallback(
-    settings: &UserSettings,
-    id: i64,
-) -> Result<(String, StreamType, Option<String>)> {
-    let settings_clone = settings.clone();
-    net::race_proxies(
-        &settings.network.fallback_proxies,
-        settings.network.max_concurrent_proxies,
-        move |proxy| {
-            let settings = settings_clone.clone();
-            async move {
-                let client = ClientBuilder::new(&settings)
-                    .with_proxy(Some(&proxy))
-                    .build()
-                    .await?;
-                let (url, stype) = client.resolve_stream(id).await?;
-                Ok((url, stype, Some(proxy)))
-            }
-        },
-    )
-    .await
-}
-
-pub fn resize_artwork_url(mut url: Url, size: &str) -> Url {
-    let path = url.path();
-    if path.contains("-large") {
-        let new_path = path.replacen("-large", size, 1);
-        url.set_path(&new_path);
-    }
-    url
 }

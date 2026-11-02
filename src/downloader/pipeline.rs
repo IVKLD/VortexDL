@@ -1,274 +1,295 @@
 use std::{
-    collections::{HashMap, HashSet},
-    path::PathBuf,
+    path::{Path, PathBuf},
+    sync::Arc,
     time::SystemTime,
 };
 
-use anyhow::{Error as AnyhowError, Result};
-use colored::Colorize;
 use futures::stream::{self, StreamExt};
-use indicatif::{MultiProgress, ProgressBar};
-use tokio::task::JoinHandle;
+use soundcloud_rs::Client as SoundcloudClient;
 use url::Url;
 
-use super::{cancellation, types::{DownloadContext, DownloadTask}};
 use crate::{
-    devices,
-    domain::{AudioFormat, DiscoveredTrack},
-    infra::{
-        db::{self, cache::{self, CachedTrack}},
-        system_time_to_secs,
+    api::{
+        errors::{ApiError, ErrorCode},
+        types::{ApiStatus, DownloadStartResponse},
     },
-    library::{
-        LibraryTrack,
-        metadata::{self, SaveTrackArgs},
+    devices::DeviceService,
+    domain::DiscoveredTrack,
+    downloader::{
+        error::DownloadError,
+        manager::DownloadManager,
+        types::{DownloadItem, DownloadTask, ServerEvent},
+        worker::{DownloadedTrackInfo, TrackDownloader},
     },
-    providers::{self, soundcloud},
-    terminal,
+    infra::{EventBus, net::HttpClientPool, system_time_to_secs},
+    library::{LibraryService, RegisterDownloadedTrackArgs},
+    providers::{ProgressCallback, SoundCloudProvider, YouTubeProvider},
+    settings::SettingsManager,
 };
 
-/// End-to-end pipeline that takes a URL (SoundCloud/YouTube) and processes all tracks to completion.
-pub async fn run_download_pipeline(ctx: &DownloadContext, url: &Url) -> Result<()> {
-    let all_tracks = providers::discover_tracks(ctx, url).await?;
-    let to_download = exclude_already_downloaded_tracks(ctx, all_tracks).await;
-
-    if !to_download.is_empty() {
-        if let Some(ref m) = ctx.manager {
-            for track in &to_download {
-                m.add_task(track.clone());
-            }
-        }
-        run_parallel_downloads(ctx, to_download).await;
-    } else {
-        tracing::info!("Everything synced!");
-    }
-
-    finalize_pipeline_sync(ctx, url).await?;
-    Ok(())
+#[derive(Clone)]
+pub struct DownloadService {
+    library: LibraryService,
+    manager: Arc<DownloadManager>,
+    worker: TrackDownloader,
+    settings: SettingsManager,
+    events: EventBus,
 }
 
-async fn exclude_already_downloaded_tracks(
-    ctx: &DownloadContext,
-    tracks: Vec<DiscoveredTrack>,
-) -> Vec<DiscoveredTrack> {
-    let storage = ctx.library.read().await;
+impl DownloadService {
+    pub fn new(
+        library: LibraryService,
+        soundcloud_client: Arc<SoundcloudClient>,
+        manager: Arc<DownloadManager>,
+        settings: SettingsManager,
+        http_clients: HttpClientPool,
+        events: EventBus,
+    ) -> Self {
+        let soundcloud =
+            SoundCloudProvider::new(soundcloud_client, settings.clone(), http_clients.clone());
+        let youtube = YouTubeProvider::new(settings.clone(), http_clients);
+        let worker = TrackDownloader::new(soundcloud, youtube);
 
-    tracks
-        .into_iter()
-        .filter(|track| {
-            let exists = storage.is_track_downloaded(track.id);
+        Self {
+            library,
+            manager,
+            worker,
+            settings,
+            events,
+        }
+    }
+
+    pub fn manager(&self) -> &Arc<DownloadManager> {
+        &self.manager
+    }
+
+    pub fn worker(&self) -> &TrackDownloader {
+        &self.worker
+    }
+
+    pub fn events(&self) -> &EventBus {
+        &self.events
+    }
+
+    pub fn get_queue(&self) -> Vec<DownloadItem> {
+        self.manager.get_queue()
+    }
+
+    pub fn get_reserved_urls(&self) -> Vec<String> {
+        self.manager.get_reserved_urls()
+    }
+
+    pub fn remove_from_queue(&self, id: i64) {
+        self.manager.remove_task(id);
+    }
+
+    pub fn is_idle(&self) -> bool {
+        self.manager.is_idle()
+    }
+
+    pub async fn enqueue(&self, url: Url) -> Result<DownloadStartResponse, ApiError> {
+        if !self.manager.reserve_url(&url) {
+            return Err(ApiError::conflict("This URL is already being processed")
+                .with_code(ErrorCode::AlreadyProcessing));
+        }
+
+        self.events.publish(ServerEvent::SyncStarted {
+            url: url.to_string(),
+        });
+
+        let service = self.clone();
+        let target_url = url.clone();
+        tokio::spawn(async move {
+            struct Guard<'a>(&'a DownloadManager, &'a EventBus, &'a Url);
+            impl Drop for Guard<'_> {
+                fn drop(&mut self) {
+                    self.0.release_url(self.2);
+                    self.1.publish(ServerEvent::SyncFinished {
+                        url: Some(self.2.to_string()),
+                    });
+                }
+            }
+
+            let _guard = Guard(&service.manager, &service.events, &target_url);
+            if let Err(e) = service.download_url(&target_url).await {
+                service.events.publish(ServerEvent::Error {
+                    message: format!("Download failed: {e}"),
+                });
+            }
+        });
+
+        Ok(DownloadStartResponse {
+            status: ApiStatus::Queued,
+            message: format!("Started for: {url}"),
+        })
+    }
+
+    pub async fn download_url(&self, url: &Url) -> Result<(), DownloadError> {
+        let all_tracks = self.worker.discover_tracks(url).await?;
+        let to_download = self.filter_pending_tracks(all_tracks).await;
+
+        if !to_download.is_empty() {
+            for track in &to_download {
+                self.manager.add_task(track.clone());
+            }
+            self.download_batch(to_download).await;
+        } else {
+            tracing::info!("Everything synced!");
+        }
+
+        self.finalize_sync().await;
+        Ok(())
+    }
+
+    pub async fn discover_tracks(&self, url: &Url) -> Result<Vec<DiscoveredTrack>, DownloadError> {
+        self.worker.discover_tracks(url).await
+    }
+
+    async fn filter_pending_tracks(&self, tracks: Vec<DiscoveredTrack>) -> Vec<DiscoveredTrack> {
+        let mut pending = Vec::with_capacity(tracks.len());
+        for track in tracks {
+            let exists = self.library.is_track_downloaded(track.id).await;
             if exists {
                 tracing::info!(
                     "Skipping {} - {} (already downloaded)",
                     track.artist,
                     track.title
                 );
+            } else {
+                pending.push(track);
             }
-            !exists
-        })
-        .collect()
-}
-
-pub async fn run_parallel_downloads(ctx: &DownloadContext, tracks: Vec<DiscoveredTrack>) {
-    let mp = MultiProgress::new();
-    let total_tracks = tracks.len();
-    let total_pb = terminal::create_total_progress_bar(&mp, total_tracks as u64);
-
-    let (max_concurrent, naming_template, output_dir) = {
-        let s = ctx.settings.read().await;
-        (
-            s.downloads.max_concurrent as usize,
-            s.downloads.naming_template.clone(),
-            PathBuf::from(&s.downloads.output_path),
-        )
-    };
-
-    let results: Vec<bool> = stream::iter(tracks)
-        .map(|track| {
-            let ctx = ctx.clone();
-            let naming_template = naming_template.clone();
-            let output_dir = output_dir.clone();
-            let pb = total_pb.clone();
-
-            async move { process_track(ctx, track, naming_template, output_dir, pb).await }
-        })
-        .buffer_unordered(max_concurrent)
-        .collect()
-        .await;
-
-    total_pb.finish_and_clear();
-    let succeeded = results.iter().filter(|&&ok| ok).count();
-    let failed = total_tracks.saturating_sub(succeeded);
-    tracing::info!("Sync complete. {succeeded} downloaded, {failed} failed or canceled.");
-}
-
-async fn process_track(
-    ctx: DownloadContext,
-    track: DiscoveredTrack,
-    naming_template: String,
-    output_dir: PathBuf,
-    pb: ProgressBar,
-) -> bool {
-    let mut task = DownloadTask::new(&track, &naming_template, &output_dir);
-    let cancel_rx = ctx
-        .manager
-        .as_ref()
-        .and_then(|m| m.get_cancel_receiver(task.track.id));
-
-    if let Some(m) = &ctx.manager {
-        m.update_downloading(task.track.id);
+        }
+        pending
     }
 
-    let artwork_handle = providers::spawn_artwork_fetch(&ctx, &task);
-    let download_result =
-        cancellation::run_with_cancellation(cancel_rx, providers::download_track(&ctx, &mut task))
+    async fn download_batch(&self, tracks: Vec<DiscoveredTrack>) {
+        let total_tracks = tracks.len();
+
+        let (max_concurrent, naming_template, output_dir) = {
+            let s = self.settings.read().await;
+            (
+                s.downloads.max_concurrent as usize,
+                s.downloads.naming_template.clone(),
+                PathBuf::from(&s.downloads.output_path),
+            )
+        };
+
+        let results: Vec<bool> = stream::iter(tracks)
+            .map(|track| {
+                let service = self.clone();
+                let naming_template = naming_template.clone();
+                let output_dir = output_dir.clone();
+
+                async move {
+                    service
+                        .process_track(track, &naming_template, &output_dir)
+                        .await
+                }
+            })
+            .buffer_unordered(max_concurrent)
+            .collect()
             .await;
 
-    let success = match download_result {
-        Some(Ok(())) => {
-            finalize_single_track(ctx, task, artwork_handle, pb.clone()).await;
-            true
-        }
-        Some(Err(err)) => {
-            handle_track_failure(&ctx, &task, err, &pb).await;
-            false
-        }
-        None => {
-            tracing::info!("Track download canceled: {}", task.display_name());
-            if let Some(h) = artwork_handle {
-                h.abort();
+        let succeeded = results.iter().filter(|&&ok| ok).count();
+        let failed = total_tracks.saturating_sub(succeeded);
+        tracing::info!("Sync complete. {succeeded} downloaded, {failed} failed or canceled.");
+    }
+
+    async fn process_track(
+        &self,
+        track: DiscoveredTrack,
+        naming_template: &str,
+        output_dir: &Path,
+    ) -> bool {
+        let mut task = DownloadTask::new(&track, naming_template, output_dir);
+        let cancel_rx = self.manager.get_cancel_receiver(task.track.id);
+
+        self.manager.update_downloading(task.track.id);
+
+        let manager = self.manager.clone();
+        let track_id = task.track.id;
+        let on_progress: ProgressCallback = Arc::new(move |pos, total| {
+            manager.update_progress(track_id, pos, total);
+        });
+
+        let artwork_handle = self.worker.spawn_artwork_fetch(&task);
+        let download_result = self
+            .worker
+            .download(&mut task, cancel_rx, Some(on_progress))
+            .await;
+
+        match download_result {
+            Ok(Some(info)) => {
+                self.finalize_track(task, info, artwork_handle).await;
+                true
             }
-            if task.file_path.exists() {
-                let _ = tokio::fs::remove_file(&task.file_path).await;
+            Ok(None) => {
+                tracing::info!("Track download canceled: {}", task.display_name());
+                if let Some(h) = artwork_handle {
+                    h.abort();
+                }
+                false
             }
-            false
+            Err(err) => {
+                self.record_failure(&task, &err);
+                false
+            }
         }
-    };
+    }
 
-    pb.inc(1);
-    success
-}
+    async fn finalize_track(
+        &self,
+        task: DownloadTask,
+        info: DownloadedTrackInfo,
+        artwork_handle: Option<tokio::task::JoinHandle<Option<Vec<u8>>>>,
+    ) {
+        tracing::info!("[OK] {}", task.display_name());
 
-async fn finalize_single_track(
-    context: DownloadContext,
-    task: DownloadTask,
-    artwork_handle: Option<JoinHandle<Option<Vec<u8>>>>,
-    pb: ProgressBar,
-) {
-    pb.println(format!("{} {}", "[OK]".green().bold(), task.display_name()));
+        let artwork_data = match artwork_handle {
+            Some(handle) => handle.await.unwrap_or_default(),
+            None => None,
+        };
 
-    let artwork_data = match artwork_handle {
-        Some(handle) => handle.await.unwrap_or_default(),
-        None => None,
-    };
+        let permalink_url = task.track.permalink_url.clone();
+        let track_id = task.track.id;
+        let size = info.size;
 
-    let file_metadata = tokio::fs::metadata(&task.file_path).await.ok();
-    let size = file_metadata.as_ref().map_or(0, |m| m.len());
-    let now = system_time_to_secs(SystemTime::now());
-    let mtime = file_metadata
-        .and_then(|m| m.modified().ok())
-        .map(system_time_to_secs)
-        .unwrap_or(now);
-
-    let permalink_url = task.track.permalink_url.clone();
-    let metadata = task.track.to_metadata(permalink_url.as_ref());
-    let track_id = task.track.id;
-    let path_str = task.file_path.to_string_lossy().into_owned();
-    let file_path = task.file_path.clone();
-    let track_title = task.track.title.clone();
-    let track_artist = task.track.artist.clone();
-    let artwork_url = task.track.artwork_url.clone();
-    let metadata_clone = metadata.clone();
-
-    tokio::task::spawn_blocking(move || {
-        let sc_id = track_id.to_string();
-        if let Err(err) = metadata::save_track_info(SaveTrackArgs {
-            path: &file_path,
-            sc_id: &sc_id,
-            title: &track_title,
-            artist: &track_artist,
-            artwork_url: artwork_url.as_ref(),
-            source_url: permalink_url.as_ref(),
-            artwork_data,
-        }) {
-            tracing::warn!(track_id, "Failed to save track metadata: {err:#}");
-        }
-
-        let mut to_update = HashMap::new();
-        to_update.insert(
-            path_str,
-            CachedTrack {
-                metadata: metadata_clone,
-                created_at: now,
+        if let Err(err) = self
+            .library
+            .register_downloaded_track(RegisterDownloadedTrackArgs {
+                id: track_id,
+                path: task.file_path.clone(),
+                title: task.track.title.clone(),
+                artist: task.track.artist.clone(),
+                artwork_url: task.track.artwork_url.clone(),
+                source_url: permalink_url.clone(),
+                artwork_data,
                 size,
-                mtime,
-            },
-        );
-        if let Err(err) = cache::update_cached_tracks_batch(&to_update, &HashSet::new()) {
-            tracing::error!(track_id, "Failed to update track cache: {err:#}");
+            })
+            .await
+        {
+            tracing::warn!(track_id, "Failed to register downloaded track: {err:#}");
         }
-    })
-    .await
-    .ok();
 
-    context.library.write().await.update_track(
-        task.track.id,
-        LibraryTrack {
-            path: task.file_path.clone(),
-            metadata,
-            created_at: now,
-            size,
-            is_archived: false,
-        },
-    );
-
-    if let Some(ref manager) = context.manager {
-        let format = AudioFormat::from_path(&task.file_path);
-        manager.update_finished(
+        let now = system_time_to_secs(SystemTime::now());
+        self.manager.update_finished(
             task.track.id,
-            format,
+            info.format,
             now,
-            task.track.permalink_url.as_ref(),
+            permalink_url.as_ref(),
             size,
         );
     }
 
-    let _ = tokio::task::spawn_blocking(move || {
-        let _ = db::record_download(size);
-    })
-    .await;
-}
-
-async fn handle_track_failure(
-    context: &DownloadContext,
-    task: &DownloadTask,
-    err: AnyhowError,
-    pb: &ProgressBar,
-) {
-    let full_err_msg = format!("{:#}", err);
-    let mut short_err = full_err_msg;
-    if let Some(idx) = short_err.find("url (") {
-        short_err.truncate(idx + 4);
-        short_err.push_str("...)");
-    } else if let Some(idx) = short_err.find("for url") {
-        short_err.truncate(idx + 7);
-        short_err.push_str(" (...)");
+    fn record_failure(&self, task: &DownloadTask, err: &DownloadError) {
+        let short_err = err.user_message();
+        self.manager.update_failed(task.track.id, &short_err);
+        tracing::error!("[ERROR] {} — {short_err}", task.display_name());
     }
 
-    if let Some(manager) = &context.manager {
-        manager.update_failed(task.track.id, &short_err);
+    async fn finalize_sync(&self) {
+        let device_service = DeviceService::new(self.library.clone(), self.settings.clone());
+        device_service.sync_connected().await;
+        self.worker.soundcloud.sync_client_id().await;
     }
-
-    pb.println(format!(
-        "{} {} — {}",
-        "[ERROR]".red().bold(),
-        task.display_name(),
-        short_err
-    ));
-}
-
-pub async fn finalize_pipeline_sync(context: &DownloadContext, _url: &Url) -> Result<()> {
-    devices::sync_connected(context.library.clone(), context.settings.clone()).await;
-    soundcloud::update_cached_client_id(&context.soundcloud, &context.settings).await;
-    Ok(())
 }

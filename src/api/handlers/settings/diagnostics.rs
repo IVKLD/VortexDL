@@ -7,13 +7,12 @@ use axum::{
     http::StatusCode,
     response::IntoResponse,
 };
-use serde::{Deserialize, Serialize};
-use soundcloud_rs::ClientBuilder;
-use tokio::task::JoinSet;
+use serde::Deserialize;
 use url::Url;
 use utoipa::ToSchema;
 
-use crate::{api::errors::ApiError, app::AppState};
+pub use crate::infra::net::ProxyHealthResult as ProxyTestResult;
+use crate::{api::errors::ApiError, app::AppState, infra::net};
 
 #[derive(Deserialize, ToSchema)]
 #[serde(rename_all = "camelCase")]
@@ -39,13 +38,6 @@ pub async fn test_soundcloud(
         StatusCode::OK,
         Json("SoundCloud URL is valid and accessible"),
     ))
-}
-#[derive(Serialize, ToSchema)]
-#[serde(rename_all = "camelCase")]
-pub struct ProxyTestResult {
-    pub url: String,
-    pub valid: bool,
-    pub error: Option<String>,
 }
 
 #[utoipa::path(
@@ -76,41 +68,12 @@ async fn handle_proxy_ws(mut socket: WebSocket, state: AppState) {
             .cached_client_id
             .clone();
 
-        let mut tasks = JoinSet::new();
-
-        for url in proxies {
-            let cached_id = cached_client_id.clone();
-            tasks.spawn(async move {
-                let mut builder = ClientBuilder::new().with_proxy(url.clone());
-                if let Some(id) = cached_id {
-                    builder = builder.with_client_id(id);
-                }
-                match builder.build().await {
-                    Ok(client) if client.health_check().await => ProxyTestResult {
-                        url,
-                        valid: true,
-                        error: None,
-                    },
-                    Ok(_) => ProxyTestResult {
-                        url,
-                        valid: false,
-                        error: Some("Proxy is not able to reach SoundCloud API".to_string()),
-                    },
-                    Err(e) => ProxyTestResult {
-                        url,
-                        valid: false,
-                        error: Some(format!("Failed to build client: {e}")),
-                    },
-                }
-            });
-        }
-
-        while let Some(res) = tasks.join_next().await {
-            if let Ok(Ok(msg_str)) = res.map(|result| serde_json::to_string(&result)) {
-                let send_res = socket.send(Message::Text(msg_str.into())).await;
-                if send_res.is_err() {
-                    break;
-                }
+        let mut rx = net::test_proxies(proxies, cached_client_id);
+        while let Some(result) = rx.recv().await {
+            if let Ok(msg_str) = serde_json::to_string(&result)
+                && socket.send(Message::Text(msg_str.into())).await.is_err()
+            {
+                break;
             }
         }
     }

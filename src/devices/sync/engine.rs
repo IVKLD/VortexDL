@@ -1,7 +1,6 @@
-use std::{collections::HashSet, path::PathBuf, sync::Arc, time::Duration};
+use std::{collections::HashSet, path::PathBuf, time::Duration};
 
 use anyhow::Result;
-use tokio::sync::RwLock;
 use tracing::{error, info, warn};
 
 use crate::{
@@ -11,8 +10,7 @@ use crate::{
         registry::{self, SyncGuard},
     },
     domain,
-    library::Library,
-    terminal,
+    library::{LibraryService, LibraryTrack},
 };
 
 struct PushTask {
@@ -26,7 +24,7 @@ struct SyncDiff {
     to_delete: Vec<String>,
 }
 
-fn diff_local_and_remote(storage: &Library, remote_files: &HashSet<String>) -> SyncDiff {
+fn diff_local_and_remote(tracks: &[LibraryTrack], remote_files: &HashSet<String>) -> SyncDiff {
     let mut local_paths_lower = HashSet::new();
     let mut to_push = Vec::new();
 
@@ -35,7 +33,7 @@ fn diff_local_and_remote(storage: &Library, remote_files: &HashSet<String>) -> S
         remote_lower.insert(rf.to_lowercase());
     }
 
-    for track in storage.values() {
+    for track in tracks {
         if track.is_archived {
             continue;
         }
@@ -71,7 +69,7 @@ fn diff_local_and_remote(storage: &Library, remote_files: &HashSet<String>) -> S
 pub async fn sync_device(
     device: &str,
     remote_dir: &str,
-    storage: Arc<RwLock<Library>>,
+    library: LibraryService,
     force: bool,
 ) -> Result<(), DeviceError> {
     if !force
@@ -99,11 +97,11 @@ pub async fn sync_device(
     let remote_files = files::list_files(device, remote_dir).await?;
 
     let diff = {
-        let storage_read = storage.read().await;
-        if storage_read.is_empty() {
+        let tracks = library.active_tracks().await;
+        if tracks.is_empty() {
             return Ok(());
         }
-        diff_local_and_remote(&storage_read, &remote_files)
+        diff_local_and_remote(&tracks, &remote_files)
     };
 
     if diff.to_push.is_empty() && diff.to_delete.is_empty() {
@@ -140,27 +138,23 @@ async fn push_tracks(
     remote_dir: &str,
     tracks: Vec<PushTask>,
 ) -> Result<(), DeviceError> {
-    let pb = terminal::create_device_progress_bar(tracks.len() as u64, device);
     let (mut pushed, mut failed) = (0u64, 0u64);
 
     for task in &tracks {
         let Some(local) = task.local_path.to_str() else {
-            terminal::pb_warn(&pb, format!("Invalid path: {}", task.local_path.display()));
+            warn!("Invalid path: {}", task.local_path.display());
             failed += 1;
-            pb.inc(1);
             continue;
         };
 
         let parent = format!("{remote_dir}/{}", task.artist_dir);
         if let Err(e) = files::ensure_dir(device, &parent).await {
-            terminal::pb_err(&pb, format!("mkdir {parent}: {e}"));
+            error!("mkdir {parent}: {e}");
             failed += 1;
-            pb.inc(1);
             continue;
         };
 
         let remote = format!("{remote_dir}/{}", task.rel_path);
-        pb.set_message(task.rel_path.clone());
 
         match files::push(device, local, &remote).await {
             Ok(()) => {
@@ -168,14 +162,11 @@ async fn push_tracks(
             }
             Err(e) => {
                 failed += 1;
-                terminal::pb_err(&pb, format!("push {}: {e}", task.rel_path));
+                error!("push {}: {e}", task.rel_path);
             }
         }
-
-        pb.inc(1);
     }
 
-    pb.finish_and_clear();
     if failed > 0 {
         warn!("Track push completed with failures (pushed: {pushed}, failed: {failed})");
     } else {

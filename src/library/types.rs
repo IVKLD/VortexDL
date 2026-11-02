@@ -1,6 +1,12 @@
 use std::path::PathBuf;
 
-use crate::{domain::TrackMetadata, infra::db::CachedTrack};
+use serde::{Deserialize, Serialize};
+use utoipa::ToSchema;
+
+use crate::{
+    domain::TrackMetadata,
+    infra::db::{CachedTrack, DeletedTrackRecord},
+};
 
 #[derive(Default, Clone, Debug)]
 pub struct LibraryTrack {
@@ -21,4 +27,16 @@ impl LibraryTrack {
             is_archived,
         }
     }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
+#[serde(rename_all = "camelCase")]
+pub struct LibraryStats {
+    pub total_tracks: usize,
+    pub total_size: u64,
+    pub total_downloaded: u64,
+    pub total_downloaded_bytes: u64,
+    pub total_deleted: u64,
+    pub total_deleted_bytes: u64,
+    pub recent_deleted: Vec<DeletedTrackRecord>,
 }

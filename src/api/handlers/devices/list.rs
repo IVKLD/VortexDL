@@ -1,9 +1,9 @@
-use axum::{Json, extract::Path};
-
-use crate::{
-    api::errors::ApiError,
-    devices::{self, StorageInfo},
+use axum::{
+    Json,
+    extract::{Path, State},
 };
+
+use crate::{api::errors::ApiError, app::AppState, devices::StorageInfo};
 
 #[utoipa::path(
     method(get),
@@ -12,8 +12,10 @@ use crate::{
         (status = 200, description = "List connected ADB devices", body = Vec<String>)
     )
 )]
-pub async fn list_adb_devices() -> Result<Json<Vec<String>>, ApiError> {
-    let devices = devices::list_devices().await?;
+pub async fn list_adb_devices(
+    State(state): State<AppState>,
+) -> Result<Json<Vec<String>>, ApiError> {
+    let devices = state.device_service().list_devices().await?;
     let mut list: Vec<String> = devices.into_iter().collect();
     list.sort();
     Ok(Json(list))
@@ -30,8 +32,12 @@ pub async fn list_adb_devices() -> Result<Json<Vec<String>>, ApiError> {
     )
 )]
 pub async fn get_device_storage_info(
+    State(state): State<AppState>,
     Path(device_id): Path<String>,
 ) -> Result<Json<Vec<StorageInfo>>, ApiError> {
-    let storages = devices::get_device_storages(&device_id).await?;
+    let storages = state
+        .device_service()
+        .get_device_storages(&device_id)
+        .await?;
     Ok(Json(storages))
 }

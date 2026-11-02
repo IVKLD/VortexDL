@@ -1,14 +1,14 @@
 use anyhow::Result;
 use redb::{ReadableDatabase, TableDefinition};
 use serde::{Deserialize, Serialize};
+use utoipa::ToSchema;
 
-use super::get_db;
+use crate::infra::db::get_db;
 
-const STATS_TABLE: TableDefinition<u64, &str> = TableDefinition::new("stats_v1");
-const STATS_KEY: u64 = 0;
-const MAX_DELETED_HISTORY: usize = 100;
+const STATS_TABLE: TableDefinition<u64, &str> = TableDefinition::new("persistent_stats");
+const STATS_ID: u64 = 0;
 
-#[derive(Serialize, Deserialize, Clone, Debug, Default, utoipa::ToSchema)]
+#[derive(Serialize, Deserialize, Clone, Debug, ToSchema)]
 #[serde(rename_all = "camelCase")]
 pub struct DeletedTrackRecord {
     pub id: i64,
@@ -19,8 +19,7 @@ pub struct DeletedTrackRecord {
     pub deleted_at: u64,
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, Default, utoipa::ToSchema)]
-#[serde(rename_all = "camelCase")]
+#[derive(Serialize, Deserialize, Clone, Debug, Default)]
 pub struct PersistentStats {
     pub total_downloaded: u64,
     pub total_downloaded_bytes: u64,
@@ -29,69 +28,63 @@ pub struct PersistentStats {
     pub deleted_history: Vec<DeletedTrackRecord>,
 }
 
-pub fn get_stats() -> Result<PersistentStats> {
-    let db = get_db();
-    let read_txn = db.begin_read()?;
+pub struct StatsRepo;
 
-    let table = match read_txn.open_table(STATS_TABLE) {
-        Ok(t) => t,
-        Err(_) => return Ok(PersistentStats::default()),
-    };
+impl StatsRepo {
+    pub fn get() -> Result<PersistentStats> {
+        let db = get_db();
+        let read_txn = db.begin_read()?;
 
-    let Some(data) = table.get(STATS_KEY)? else {
-        return Ok(PersistentStats::default());
-    };
+        let table = match read_txn.open_table(STATS_TABLE) {
+            Ok(t) => t,
+            Err(_) => return Ok(PersistentStats::default()),
+        };
 
-    match serde_json::from_str(data.value()) {
-        Ok(stats) => Ok(stats),
-        Err(err) => {
-            tracing::error!("Failed to parse stats from database: {err}. Falling back to default.");
-            Ok(PersistentStats::default())
+        let Some(data) = table.get(STATS_ID)? else {
+            return Ok(PersistentStats::default());
+        };
+
+        Ok(serde_json::from_str(data.value()).unwrap_or_default())
+    }
+
+    pub fn save(stats: &PersistentStats) -> Result<()> {
+        let db = get_db();
+        let write_txn = db.begin_write()?;
+        {
+            let mut table = write_txn.open_table(STATS_TABLE)?;
+            let json = serde_json::to_string(stats)?;
+            table.insert(STATS_ID, json.as_str())?;
         }
-    }
-}
-
-pub fn save_stats(stats: &PersistentStats) -> Result<()> {
-    let db = get_db();
-    let write_txn = db.begin_write()?;
-    {
-        let mut table = write_txn.open_table(STATS_TABLE)?;
-        let json = serde_json::to_string(stats)?;
-        table.insert(STATS_KEY, json.as_str())?;
-    }
-    write_txn.commit()?;
-    Ok(())
-}
-
-pub fn record_download(size: u64) -> Result<()> {
-    let mut stats = get_stats().unwrap_or_default();
-    stats.total_downloaded = stats.total_downloaded.saturating_add(1);
-    stats.total_downloaded_bytes = stats.total_downloaded_bytes.saturating_add(size);
-    save_stats(&stats)
-}
-
-pub fn record_deleted_tracks(tracks: &[DeletedTrackRecord]) -> Result<()> {
-    if tracks.is_empty() {
-        return Ok(());
+        write_txn.commit()?;
+        Ok(())
     }
 
-    let mut stats = get_stats().unwrap_or_default();
-    let count = tracks.len() as u64;
-    let size_sum: u64 = tracks.iter().map(|t| t.size).sum();
+    pub fn record_download(size: u64) -> Result<()> {
+        let mut stats = Self::get().unwrap_or_default();
+        stats.total_downloaded += 1;
+        stats.total_downloaded_bytes += size;
+        Self::save(&stats)
+    }
 
-    stats.total_deleted = stats.total_deleted.saturating_add(count);
-    stats.total_deleted_bytes = stats.total_deleted_bytes.saturating_add(size_sum);
+    pub fn record_deleted_tracks(tracks: &[DeletedTrackRecord]) -> Result<()> {
+        if tracks.is_empty() {
+            return Ok(());
+        }
+        let mut stats = Self::get().unwrap_or_default();
+        for track in tracks {
+            stats.total_deleted += 1;
+            stats.total_deleted_bytes += track.size;
+            stats.deleted_history.insert(0, track.clone());
+        }
+        if stats.deleted_history.len() > 100 {
+            stats.deleted_history.truncate(100);
+        }
+        Self::save(&stats)
+    }
 
-    let mut new_history = tracks.to_vec();
-    new_history.extend(stats.deleted_history);
-    new_history.truncate(MAX_DELETED_HISTORY);
-    stats.deleted_history = new_history;
-
-    save_stats(&stats)
-}
-
-pub fn clear_deleted_history() -> Result<()> {
-    let mut stats = get_stats().unwrap_or_default();
-    stats.deleted_history.clear();
-    save_stats(&stats)
+    pub fn clear_deleted_history() -> Result<()> {
+        let mut stats = Self::get().unwrap_or_default();
+        stats.deleted_history.clear();
+        Self::save(&stats)
+    }
 }

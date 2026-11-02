@@ -1,15 +1,9 @@
-pub mod proxy;
-pub mod resolve;
 pub mod types;
 
 use axum::{
     extract::{Path, Query, Request, State},
-    http::header,
-    response::{IntoResponse, Response},
+    response::Response,
 };
-pub use proxy::proxy_audio_stream;
-use tower::ServiceExt;
-use tower_http::services::ServeFile;
 pub use types::StreamQuery;
 
 use crate::{api::errors::ApiError, app::AppState};
@@ -32,18 +26,5 @@ pub async fn stream_audio(
     Query(params): Query<StreamQuery>,
     req: Request,
 ) -> Result<Response, ApiError> {
-    if let Some(path) = state
-        .library
-        .read()
-        .await
-        .get_track(id)
-        .map(|t| t.path.clone())
-        && path.exists()
-    {
-        let res = ServeFile::new(path).oneshot(req).await?;
-        return Ok(res.into_response());
-    }
-
-    let range_header = req.headers().get(header::RANGE).cloned();
-    proxy_audio_stream(&state, id, params.url, range_header).await
+    state.stream_service().serve(id, params.url, req).await
 }

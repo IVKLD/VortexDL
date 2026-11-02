@@ -1,5 +1,6 @@
 mod audio_verify;
 pub mod db;
+pub mod events;
 mod logging;
 pub mod net;
 mod paths;
@@ -7,6 +8,7 @@ mod sync;
 mod time;
 
 pub use audio_verify::verify_audio_file;
+pub use events::EventBus;
 pub use logging::init_logging;
 pub use paths::{APP_DIR, DB_NAME, default_output_path};
 pub use sync::MutexExt;

@@ -2,7 +2,7 @@ use std::collections::HashSet;
 
 use anyhow::anyhow;
 
-use super::{DeviceError, adb};
+use crate::devices::{DeviceError, adb};
 
 pub async fn list_devices() -> Result<HashSet<String>, DeviceError> {
     let output = adb::raw(&["devices"]).await?;

@@ -6,8 +6,7 @@ use tokio::{
     net::TcpStream,
 };
 
-use super::client;
-use crate::devices::error::DeviceError;
+use crate::devices::{adb::client, error::DeviceError};
 
 pub fn server_addr() -> String {
     let host = env::var("ADB_SERVER_HOST").unwrap_or_else(|_| "127.0.0.1".to_string());

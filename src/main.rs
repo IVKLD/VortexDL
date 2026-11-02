@@ -14,7 +14,9 @@ pub mod downloader;
 pub mod infra;
 pub mod library;
 pub mod providers;
+pub mod search;
 pub mod settings;
+pub mod stream;
 pub mod terminal;
 
 #[global_allocator]

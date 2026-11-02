@@ -1,10 +1,11 @@
-pub mod index;
+mod index;
 pub mod metadata;
-pub mod scanner;
-pub mod types;
-
-pub const ARCHIVE_DIR: &str = "Archive";
+mod scanner;
+pub mod service;
+mod types;
 
 pub use index::Library;
-pub use scanner::scan_directory;
-pub use types::LibraryTrack;
+pub use service::{LibraryService, RegisterDownloadedTrackArgs};
+pub use types::{LibraryStats, LibraryTrack};
+
+pub const ARCHIVE_DIR: &str = ".archive";

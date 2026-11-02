@@ -1,13 +1,6 @@
-use std::{
-    collections::{HashMap, HashSet},
-    io,
-    path::Path,
-};
+use std::collections::HashMap;
 
-use anyhow::Result;
-
-use super::types::LibraryTrack;
-use crate::infra::db;
+use crate::library::types::LibraryTrack;
 
 #[derive(Default)]
 pub struct Library {
@@ -47,35 +40,17 @@ impl Library {
         tracing::debug!("Indexing complete. Found {} tracks.", count);
     }
 
-    pub async fn remove_tracks(
-        &mut self,
-        ids: Vec<i64>,
-    ) -> Result<Vec<LibraryTrack>, io::Error> {
-        let mut removed = Vec::new();
-        let mut to_remove_cache = HashSet::new();
+    pub fn remove_track(&mut self, id: i64) -> Option<LibraryTrack> {
+        self.tracks.remove(&id)
+    }
 
+    pub fn remove_tracks(&mut self, ids: &[i64]) -> Vec<LibraryTrack> {
+        let mut removed = Vec::with_capacity(ids.len());
         for id in ids {
-            if let Some(data) = self.tracks.remove(&id) {
-                delete_track_file(&data.path).await?;
-                to_remove_cache.insert(data.path.to_string_lossy().into_owned());
-                removed.push(data);
+            if let Some(track) = self.tracks.remove(id) {
+                removed.push(track);
             }
         }
-
-        if !to_remove_cache.is_empty() {
-            tokio::task::spawn_blocking(move || {
-                let _ = db::update_cached_tracks_batch(&HashMap::new(), &to_remove_cache);
-            })
-            .await?;
-        }
-
-        Ok(removed)
+        removed
     }
-}
-
-async fn delete_track_file(path: &Path) -> Result<(), io::Error> {
-    if path.exists() {
-        tokio::fs::remove_file(path).await?;
-    }
-    Ok(())
 }

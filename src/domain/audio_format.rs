@@ -62,4 +62,3 @@ impl std::fmt::Display for AudioFormat {
         write!(f, "{}", self.as_str())
     }
 }
-

@@ -1,57 +1,102 @@
 use std::sync::Arc;
 
-use reqwest::Client as HttpClient;
 use soundcloud_rs::Client as SoundcloudClient;
-use tokio::sync::RwLock;
 
 use crate::{
-    downloader::{DownloadContext, DownloadManager},
-    library::Library,
-    providers::cache::ProviderCache,
+    devices::DeviceService,
+    downloader::{DownloadManager, DownloadService},
+    infra::{EventBus, net::HttpClientPool},
+    library::LibraryService,
+    providers::{SoundCloudProvider, YouTubeProvider},
+    search::{SearchCache, SearchService},
     settings::SettingsManager,
+    stream::{StreamCache, StreamService},
 };
 
 #[derive(Clone)]
 pub struct AppState {
     pub soundcloud: Arc<SoundcloudClient>,
-    pub library: Arc<RwLock<Library>>,
+    pub library: LibraryService,
     pub download_manager: Arc<DownloadManager>,
+    pub events: EventBus,
     pub settings: SettingsManager,
-    pub cache: ProviderCache,
+    pub search_cache: SearchCache,
+    pub stream_cache: StreamCache,
+    pub http_clients: HttpClientPool,
 }
 
 impl AppState {
     pub fn new(
         soundcloud: SoundcloudClient,
-        library: Arc<RwLock<Library>>,
+        library: LibraryService,
         settings: SettingsManager,
     ) -> Self {
+        let events = EventBus::default();
+        let download_manager = Arc::new(DownloadManager::new(events.clone()));
+
         Self {
             soundcloud: Arc::new(soundcloud),
             library,
-            download_manager: Arc::new(DownloadManager::default()),
+            download_manager,
+            events,
             settings,
-            cache: ProviderCache::default(),
+            search_cache: SearchCache::default(),
+            stream_cache: StreamCache::default(),
+            http_clients: HttpClientPool::default(),
         }
     }
 
-    pub fn downloader_context(&self) -> DownloadContext {
-        DownloadContext::new(
+    pub fn download_service(&self) -> DownloadService {
+        DownloadService::new(
             self.library.clone(),
             self.soundcloud.clone(),
-            Some(self.download_manager.clone()),
+            self.download_manager.clone(),
             self.settings.clone(),
+            self.http_clients.clone(),
+            self.events.clone(),
         )
     }
 
-    pub async fn http_client(&self) -> HttpClient {
-        let proxy = self
-            .settings
-            .read()
-            .await
-            .network
-            .get_proxy_url()
-            .map(String::from);
-        self.cache.get_or_create_client(proxy)
+    pub fn device_service(&self) -> DeviceService {
+        DeviceService::new(self.library.clone(), self.settings.clone())
+    }
+
+    pub fn library_service(&self) -> LibraryService {
+        self.library.clone()
+    }
+
+    pub fn search_service(&self) -> SearchService {
+        SearchService::new(
+            self.soundcloud_provider(),
+            self.youtube_provider(),
+            self.search_cache.clone(),
+        )
+    }
+
+    pub fn stream_service(&self) -> StreamService {
+        StreamService::new(
+            self.library.clone(),
+            self.stream_cache.clone(),
+            self.search_cache.clone(),
+            self.http_clients.clone(),
+            self.soundcloud_provider(),
+            self.youtube_provider(),
+        )
+    }
+
+    pub fn soundcloud_provider(&self) -> SoundCloudProvider {
+        SoundCloudProvider::new(
+            self.soundcloud.clone(),
+            self.settings.clone(),
+            self.http_clients.clone(),
+        )
+    }
+
+    pub fn youtube_provider(&self) -> YouTubeProvider {
+        YouTubeProvider::new(self.settings.clone(), self.http_clients.clone())
+    }
+
+    pub fn events(&self) -> &EventBus {
+        &self.events
     }
 }

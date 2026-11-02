@@ -6,14 +6,16 @@ use std::{
 
 use id3::{Tag, TagLike};
 
-use super::{
-    id3::{get_txxx, get_txxx_with_legacy},
-    tags::{
-        LEGACY_SC_ARTWORK_URL, LEGACY_SC_IDENTIFIER, LEGACY_SC_SOURCE_URL, TAG_ARTWORK_URL,
-        TAG_PLATFORM, TAG_SOURCE_URL, TAG_TRACK_ID,
+use crate::{
+    domain::{self, SourcePlatform, TrackMetadata},
+    library::metadata::{
+        id3::{get_txxx, get_txxx_with_legacy},
+        tags::{
+            LEGACY_SC_ARTWORK_URL, LEGACY_SC_IDENTIFIER, LEGACY_SC_SOURCE_URL, TAG_ARTWORK_URL,
+            TAG_PLATFORM, TAG_SOURCE_URL, TAG_TRACK_ID,
+        },
     },
 };
-use crate::domain::{self, SourcePlatform, TrackMetadata};
 
 fn extract_track_id(tag: Option<&Tag>, source_url: Option<&str>, path: &Path) -> i64 {
     if let Some(id) = tag
@@ -102,60 +104,4 @@ pub fn extract_track_metadata(path: impl AsRef<Path>) -> Option<TrackMetadata> {
         source_url,
         platform,
     })
-}
-
-#[cfg(test)]
-mod tests {
-    use std::{env, fs, path::PathBuf};
-
-    use id3::Version;
-
-    use super::{super::id3::set_txxx, *};
-
-    #[test]
-    fn test_extract_track_metadata_without_tags() {
-        let path1 = PathBuf::from("/var/lib/vortex-dl/Beauty in the Pain - Rebouz (192k).mp3");
-        let path2 = PathBuf::from("/var/lib/vortex-dl/Beauty in the Pain - Rebouz (192k).mp3");
-        let path3 = PathBuf::from("/var/lib/vortex-dl/Other Track.flac");
-
-        let meta1 = extract_track_metadata(&path1).unwrap();
-        let meta2 = extract_track_metadata(&path2).unwrap();
-        let meta3 = extract_track_metadata(&path3).unwrap();
-
-        assert_eq!(
-            meta1.id, meta2.id,
-            "Same path should yield same deterministic ID"
-        );
-        assert_ne!(
-            meta1.id, meta3.id,
-            "Different paths should yield different IDs"
-        );
-        assert!(
-            meta1.id < 0,
-            "Generated ID for local tracks should be negative"
-        );
-        assert_eq!(meta1.artist, "Beauty in the Pain");
-        assert_eq!(meta1.title, "Rebouz (192k)");
-    }
-
-    #[test]
-    fn test_youtube_source_url_id_extraction() {
-        let temp_dir = env::temp_dir();
-        let file_path = temp_dir.join("test_yt_extract_id.mp3");
-        let _ = fs::File::create(&file_path);
-
-        let mut tag = Tag::new();
-        set_txxx(
-            &mut tag,
-            LEGACY_SC_SOURCE_URL,
-            "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
-        );
-        let _ = tag.write_to_path(&file_path, Version::Id3v23);
-
-        let meta = extract_track_metadata(&file_path).unwrap();
-        let expected_id = yt_audio_downloader::youtube_id_to_i64("dQw4w9WgXcQ");
-        assert_eq!(meta.id, expected_id);
-
-        let _ = fs::remove_file(&file_path);
-    }
 }

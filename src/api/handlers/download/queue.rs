@@ -4,38 +4,15 @@ use axum::{
     http::StatusCode,
     response::IntoResponse,
 };
-use url::Url;
 
 use crate::{
     api::{
-        errors::{ApiError, ErrorCode},
-        types::{ApiStatus, DownloadRequest, DownloadStartResponse},
+        errors::ApiError,
+        types::{DownloadRequest, DownloadStartResponse},
     },
     app::AppState,
-    downloader::{self, DownloadItem, DownloadManager, ServerEvent},
+    downloader::DownloadItem,
 };
-
-struct ReleaseUrlGuard<'a>(&'a DownloadManager, &'a Url);
-
-impl Drop for ReleaseUrlGuard<'_> {
-    fn drop(&mut self) {
-        self.0.release_url(self.1);
-        self.0.broadcast_event(ServerEvent::SyncFinished {
-            url: Some(self.1.to_string()),
-        });
-    }
-}
-
-async fn run_pipeline_bg(state: AppState, url: Url) {
-    let _guard = ReleaseUrlGuard(&state.download_manager, &url);
-    let ctx = state.downloader_context();
-
-    if let Err(e) = downloader::run_download_pipeline(&ctx, &url).await {
-        state.download_manager.broadcast_event(ServerEvent::Error {
-            message: format!("Download failed: {e}"),
-        });
-    }
-}
 
 #[utoipa::path(
     method(post),
@@ -49,26 +26,7 @@ pub async fn start_download(
     State(state): State<AppState>,
     Json(body): Json<DownloadRequest>,
 ) -> Result<impl IntoResponse, ApiError> {
-    let url = body.url;
-
-    if !state.download_manager.reserve_url(&url) {
-        return Err(ApiError::conflict("This URL is already being processed")
-            .with_code(ErrorCode::AlreadyProcessing));
-    }
-
-    state
-        .download_manager
-        .broadcast_event(ServerEvent::SyncStarted {
-            url: url.to_string(),
-        });
-
-    let status = DownloadStartResponse {
-        status: ApiStatus::Queued,
-        message: format!("Started for: {url}"),
-    };
-
-    tokio::spawn(run_pipeline_bg(state, url));
-
+    let status = state.download_service().enqueue(body.url).await?;
     Ok((StatusCode::ACCEPTED, Json(status)))
 }
 
@@ -80,7 +38,7 @@ pub async fn start_download(
     )
 )]
 pub async fn get_syncing_urls(State(state): State<AppState>) -> impl IntoResponse {
-    Json(state.download_manager.get_reserved_urls())
+    Json(state.download_service().get_reserved_urls())
 }
 
 #[utoipa::path(
@@ -91,7 +49,7 @@ pub async fn get_syncing_urls(State(state): State<AppState>) -> impl IntoRespons
     )
 )]
 pub async fn get_download_queue(State(state): State<AppState>) -> impl IntoResponse {
-    Json(state.download_manager.get_queue())
+    Json(state.download_service().get_queue())
 }
 
 #[utoipa::path(
@@ -108,6 +66,6 @@ pub async fn remove_from_queue(
     State(state): State<AppState>,
     Path(id): Path<i64>,
 ) -> impl IntoResponse {
-    state.download_manager.remove_task(id);
+    state.download_service().remove_from_queue(id);
     StatusCode::OK
 }

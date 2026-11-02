@@ -1,20 +1,23 @@
 use std::time::Duration;
 
 use axum::{
-    extract::ws::{Message, WebSocket, WebSocketUpgrade},
+    extract::{
+        State,
+        ws::{Message, WebSocket, WebSocketUpgrade},
+    },
     response::IntoResponse,
 };
 
-use crate::devices;
+use crate::{app::AppState, devices::DeviceService};
 
-async fn handle_socket(mut socket: WebSocket) {
+async fn handle_socket(mut socket: WebSocket, device_service: DeviceService) {
     let mut last_devices = Vec::new();
     let mut tick_interval = tokio::time::interval(Duration::from_secs(2));
 
     loop {
         tokio::select! {
             _ = tick_interval.tick() => {
-                if let Ok(devices) = devices::list_devices().await {
+                if let Ok(devices) = device_service.list_devices().await {
                     let mut list: Vec<String> = devices.into_iter().collect();
                     list.sort();
 
@@ -47,6 +50,7 @@ async fn handle_socket(mut socket: WebSocket) {
         (status = 101, description = "WebSocket upgrade to stream connected ADB devices")
     )
 )]
-pub async fn devices_ws(ws: WebSocketUpgrade) -> impl IntoResponse {
-    ws.on_upgrade(handle_socket)
+pub async fn devices_ws(State(state): State<AppState>, ws: WebSocketUpgrade) -> impl IntoResponse {
+    let device_service = state.device_service();
+    ws.on_upgrade(move |socket| handle_socket(socket, device_service))
 }

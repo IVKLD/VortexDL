@@ -1,11 +1,4 @@
-use std::{
-    collections::HashSet,
-    env,
-    fs,
-    io::ErrorKind,
-    process::Output,
-    sync::OnceLock,
-};
+use std::{collections::HashSet, env, fs, io::ErrorKind, process::Output, sync::OnceLock};
 
 use anyhow::{Result, anyhow};
 use tokio::process::Command;

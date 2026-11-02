@@ -7,11 +7,13 @@ use id3::{
 };
 use url::Url;
 
-use super::{
-    id3::{get_tag, set_txxx},
-    tags::{TAG_ARTWORK_URL, TAG_PLATFORM, TAG_SOURCE_URL, TAG_TRACK_ID},
+use crate::{
+    domain::SourcePlatform,
+    library::metadata::{
+        id3::{get_tag, set_txxx},
+        tags::{TAG_ARTWORK_URL, TAG_PLATFORM, TAG_SOURCE_URL, TAG_TRACK_ID},
+    },
 };
-use crate::domain::SourcePlatform;
 
 pub struct SaveTrackArgs<'a> {
     pub path: &'a Path,

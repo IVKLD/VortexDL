@@ -1,11 +1,10 @@
-use std::{sync::Arc, time::Duration};
+use std::time::Duration;
 
-use tokio::{sync::RwLock, task::JoinHandle};
+use tokio::task::JoinHandle;
 
-use super::engine;
 use crate::{
-    devices::{adb, error::DeviceError, registry},
-    library::Library,
+    devices::{adb, error::DeviceError, registry, sync::engine},
+    library::LibraryService,
     settings::SettingsManager,
 };
 
@@ -13,7 +12,7 @@ use crate::{
 /// Flow: Called during application initialization in `src/main.rs`.
 /// Why:  Periodically checks if ADB is enabled in user settings. If enabled, starts `run_device_tracker`.
 ///       If disabled, aborts the tracker task and clears connected state.
-pub fn init_device_tracker(storage: Arc<RwLock<Library>>, settings: SettingsManager) {
+pub fn init_device_tracker(library: LibraryService, settings: SettingsManager) {
     tokio::spawn(async move {
         let mut tracker_task: Option<JoinHandle<Result<(), DeviceError>>> = None;
         let mut adb_available = true;
@@ -47,16 +46,18 @@ pub fn init_device_tracker(storage: Arc<RwLock<Library>>, settings: SettingsMana
                     }
 
                     if adb_available {
-                        let s = storage.clone();
+                        let lib = library.clone();
                         let cfg = settings.clone();
                         tracker_task =
-                            Some(tokio::spawn(async move { run_device_tracker(s, cfg).await }));
+                            Some(tokio::spawn(
+                                async move { run_device_tracker(lib, cfg).await },
+                            ));
                     }
                 }
             } else if let Some(handle) = tracker_task.take() {
                 tracing::info!("ADB disabled, stopping tracker task");
                 handle.abort();
-                registry::lock_connected().clear();
+                registry::clear_connected_devices();
             }
 
             tokio::select! {
@@ -74,7 +75,7 @@ pub fn init_device_tracker(storage: Arc<RwLock<Library>>, settings: SettingsMana
 /// Why:  Subscribes directly to the ADB daemon socket (`host:track-devices`). When an authorized
 ///       device connects, it automatically triggers `sync_device` without requiring user interaction.
 async fn run_device_tracker(
-    storage: Arc<RwLock<Library>>,
+    library: LibraryService,
     settings: SettingsManager,
 ) -> Result<(), DeviceError> {
     let mut stream = adb::subscribe_track_devices().await?;
@@ -88,24 +89,22 @@ async fn run_device_tracker(
             s.adb.clone()
         };
 
-        let mut previous = registry::lock_connected();
+        let (connected_diff, disconnected_diff) = registry::update_connected_state(&current);
 
-        for id in current.difference(&previous) {
+        for id in connected_diff {
             tracing::info!("ADB device connected: {id}");
-            if let Some(cfg) = adb_settings.find_enabled_device(id) {
-                spawn_sync(id.clone(), cfg.remote_music_dir.clone(), storage.clone());
+            if let Some(cfg) = adb_settings.find_enabled_device(&id) {
+                spawn_sync(id, cfg.remote_music_dir.clone(), library.clone());
             }
         }
 
-        for id in previous.difference(&current) {
+        for id in disconnected_diff {
             tracing::info!("ADB device disconnected: {id}");
         }
-
-        *previous = current;
     }
 }
 
-pub async fn sync_connected(storage: Arc<RwLock<Library>>, settings: SettingsManager) {
+pub async fn sync_connected(library: LibraryService, settings: SettingsManager) {
     let s = settings.read().await;
     if !s.adb.enabled || !s.adb.auto_sync {
         return;
@@ -113,21 +112,21 @@ pub async fn sync_connected(storage: Arc<RwLock<Library>>, settings: SettingsMan
     let adb_settings = s.adb.clone();
     drop(s);
 
-    let connected = registry::lock_connected();
+    let connected = registry::get_connected_devices();
     for id in connected.iter() {
         if let Some(cfg) = adb_settings.find_enabled_device(id) {
             spawn_sync(
                 id.to_string(),
                 cfg.remote_music_dir.clone(),
-                storage.clone(),
+                library.clone(),
             );
         }
     }
 }
 
-fn spawn_sync(device_id: String, remote_music_dir: String, storage: Arc<RwLock<Library>>) {
+fn spawn_sync(device_id: String, remote_music_dir: String, library: LibraryService) {
     tokio::spawn(async move {
-        if let Err(e) = engine::sync_device(&device_id, &remote_music_dir, storage, false).await {
+        if let Err(e) = engine::sync_device(&device_id, &remote_music_dir, library, false).await {
             tracing::error!("ADB device {device_id} sync failed: {e}");
         }
     });

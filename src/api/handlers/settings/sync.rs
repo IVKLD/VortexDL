@@ -5,7 +5,7 @@ use utoipa::ToSchema;
 use crate::{
     api::errors::ApiError,
     app::AppState,
-    backup::{BackupAction, BackupSnapshot, BackupTarget},
+    backup::{BackupAction, BackupService, BackupTarget},
 };
 
 #[derive(Deserialize, ToSchema)]
@@ -29,7 +29,7 @@ pub struct SnapshotResponse {
     )
 )]
 pub async fn get_snapshot_handler() -> Result<impl IntoResponse, ApiError> {
-    let snapshot = BackupSnapshot::from_database()?;
+    let snapshot = BackupService::create_snapshot()?;
     let response = SnapshotResponse {
         sync_records_count: snapshot.synced_ids.len(),
     };
@@ -48,6 +48,6 @@ pub async fn sync_handler(
     State(_state): State<AppState>,
     Json(payload): Json<SyncRequest>,
 ) -> Result<StatusCode, ApiError> {
-    payload.provider.execute(payload.action).await?;
+    BackupService::execute_target(&payload.provider, payload.action).await?;
     Ok(StatusCode::OK)
 }

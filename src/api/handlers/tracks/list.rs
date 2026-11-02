@@ -32,30 +32,15 @@ pub async fn get_tracks(
     State(state): State<AppState>,
     Query(query): Query<TracksQuery>,
 ) -> Result<impl IntoResponse, ApiError> {
-    let storage = state.library.read().await;
+    let tracks = state
+        .library_service()
+        .list_tracks(query.sort.as_deref(), query.order.as_deref(), query.limit)
+        .await;
 
-    let mut tracks = storage
-        .iter()
-        .map(|(id, data)| TrackRecord::from_track(*id, data))
-        .collect::<Vec<_>>();
+    let records: Vec<TrackRecord> = tracks
+        .into_iter()
+        .map(|(id, data)| TrackRecord::from_track(id, &data))
+        .collect();
 
-    let sort = query.sort.as_deref().unwrap_or("date");
-    let order = query.order.as_deref().unwrap_or("desc");
-
-    tracks.sort_by(|a, b| {
-        let cmp = match sort {
-            "name" => a.title.to_lowercase().cmp(&b.title.to_lowercase()),
-            _ => a.created_at.cmp(&b.created_at),
-        };
-
-        let cmp = cmp.then_with(|| a.id.cmp(&b.id));
-
-        if order == "desc" { cmp.reverse() } else { cmp }
-    });
-
-    if let Some(limit) = query.limit {
-        tracks.truncate(limit);
-    }
-
-    Ok(Json(tracks))
+    Ok(Json(records))
 }

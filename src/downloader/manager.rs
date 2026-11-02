@@ -3,13 +3,13 @@ use std::{
     sync::Mutex,
 };
 
-use tokio::sync::{broadcast, watch};
+use tokio::sync::watch;
 use url::Url;
 
-use super::types::{DownloadItem, DownloadStatus, ServerEvent};
 use crate::{
     domain::{AudioFormat, DiscoveredTrack},
-    infra::MutexExt,
+    downloader::types::{DownloadItem, DownloadStatus, ServerEvent},
+    infra::{EventBus, MutexExt},
 };
 
 #[derive(Default)]
@@ -22,20 +22,23 @@ struct ManagerState {
 
 pub struct DownloadManager {
     state: Mutex<ManagerState>,
-    events: broadcast::Sender<ServerEvent>,
+    events: EventBus,
 }
 
 impl Default for DownloadManager {
     fn default() -> Self {
-        let (events, _) = broadcast::channel(10240);
+        Self::new(EventBus::default())
+    }
+}
+
+impl DownloadManager {
+    pub fn new(events: EventBus) -> Self {
         Self {
             state: Mutex::new(ManagerState::default()),
             events,
         }
     }
-}
 
-impl DownloadManager {
     pub fn reserve_url(&self, url: &Url) -> bool {
         self.state
             .lock_unpoisoned()
@@ -69,7 +72,7 @@ impl DownloadManager {
         state.tasks.insert(id, item.clone());
         drop(state);
 
-        let _ = self.events.send(ServerEvent::TrackUpdate {
+        self.events.publish(ServerEvent::TrackUpdate {
             item: Box::new(item),
         });
         rx
@@ -94,7 +97,7 @@ impl DownloadManager {
             item.progress = Some(0.0);
             item.clone()
         };
-        let _ = self.events.send(ServerEvent::TrackUpdate {
+        self.events.publish(ServerEvent::TrackUpdate {
             item: Box::new(item),
         });
     }
@@ -118,7 +121,7 @@ impl DownloadManager {
         };
 
         if let Some(item) = updated_item {
-            let _ = self.events.send(ServerEvent::TrackUpdate {
+            self.events.publish(ServerEvent::TrackUpdate {
                 item: Box::new(item),
             });
         }
@@ -147,7 +150,7 @@ impl DownloadManager {
             item.size = Some(size);
             item
         };
-        let _ = self.events.send(ServerEvent::TrackUpdate {
+        self.events.publish(ServerEvent::TrackUpdate {
             item: Box::new(item),
         });
     }
@@ -164,7 +167,7 @@ impl DownloadManager {
             item.error = Some(error_message.to_string());
             item
         };
-        let _ = self.events.send(ServerEvent::TrackUpdate {
+        self.events.publish(ServerEvent::TrackUpdate {
             item: Box::new(item),
         });
     }
@@ -184,13 +187,9 @@ impl DownloadManager {
             item.error = None;
             item
         };
-        let _ = self.events.send(ServerEvent::TrackUpdate {
+        self.events.publish(ServerEvent::TrackUpdate {
             item: Box::new(item),
         });
-    }
-
-    pub fn broadcast_event(&self, event: ServerEvent) {
-        let _ = self.events.send(event);
     }
 
     pub fn get_queue(&self) -> Vec<DownloadItem> {
@@ -206,9 +205,5 @@ impl DownloadManager {
     pub fn is_idle(&self) -> bool {
         let s = self.state.lock_unpoisoned();
         s.tasks.is_empty() && s.reserved_urls.is_empty()
-    }
-
-    pub fn subscribe(&self) -> broadcast::Receiver<ServerEvent> {
-        self.events.subscribe()
     }
 }

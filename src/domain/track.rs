@@ -2,7 +2,7 @@ use serde::{Deserialize, Serialize};
 use url::Url;
 use yt_audio_downloader::{models::VideoMetadata, youtube_id_to_i64};
 
-use super::{platform::SourcePlatform, track_name::parse_track_metadata};
+use crate::domain::{platform::SourcePlatform, track_name::parse_track_metadata};
 
 #[derive(Default, Clone, Debug, Serialize, Deserialize, PartialEq, Eq, utoipa::ToSchema)]
 pub struct TrackMetadata {

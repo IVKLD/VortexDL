@@ -1,6 +1,6 @@
 use axum::{extract::State, http::StatusCode, response::IntoResponse};
 
-use crate::{api::errors::ApiError, app::AppState, library};
+use crate::{api::errors::ApiError, app::AppState};
 
 #[utoipa::path(
     method(post),
@@ -10,8 +10,6 @@ use crate::{api::errors::ApiError, app::AppState, library};
     )
 )]
 pub async fn reindex_library(State(state): State<AppState>) -> Result<impl IntoResponse, ApiError> {
-    let base_path = state.settings.read().await.downloads.output_path.clone();
-    let tracks = library::scan_directory(&base_path).await;
-    state.library.write().await.update_tracks(tracks);
+    state.library_service().reindex().await;
     Ok(StatusCode::OK)
 }

@@ -6,7 +6,7 @@ use reqwest::{
 };
 use tracing::{debug, instrument};
 
-use super::super::{backend::BackupBackend, error::BackupError};
+use crate::backup::{backend::BackupBackend, error::BackupError};
 
 const SNAPSHOT_FILENAME: &str = "state.json";
 

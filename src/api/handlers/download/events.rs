@@ -21,8 +21,8 @@ async fn send_event(socket: &mut WebSocket, event: &ServerEvent) -> bool {
 }
 
 async fn handle_download_events(mut socket: WebSocket, state: AppState) {
-    let queue = state.download_manager.get_queue();
-    let mut rx = state.download_manager.subscribe();
+    let queue = state.download_service().get_queue();
+    let mut rx = state.events.subscribe();
 
     let welcome = ServerEvent::Message {
         message: "Connected to event stream".to_string(),
@@ -49,7 +49,7 @@ async fn handle_download_events(mut socket: WebSocket, state: AppState) {
                 }
             }
             Err(RecvError::Lagged(_)) => {
-                let queue = state.download_manager.get_queue();
+                let queue = state.download_service().get_queue();
                 for item in queue {
                     let update = ServerEvent::TrackUpdate {
                         item: Box::new(item),
@@ -58,9 +58,8 @@ async fn handle_download_events(mut socket: WebSocket, state: AppState) {
                         return;
                     }
                 }
-                continue;
             }
-            Err(_) => break,
+            Err(RecvError::Closed) => break,
         }
     }
 }
@@ -69,7 +68,7 @@ async fn handle_download_events(mut socket: WebSocket, state: AppState) {
     method(get),
     path = "/api/download/events",
     responses(
-        (status = 101, description = "WebSocket upgrade for active downloads")
+        (status = 101, description = "WebSocket upgrade to stream download events")
     )
 )]
 pub async fn download_events(

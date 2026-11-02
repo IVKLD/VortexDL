@@ -1,35 +1,49 @@
 use std::{
     collections::{HashMap, HashSet},
-    sync::{LazyLock, Mutex, MutexGuard},
+    sync::{LazyLock, Mutex},
     time::Instant,
 };
 
 use crate::infra::MutexExt;
 
-static CONNECTED_DEVICES: LazyLock<Mutex<HashSet<String>>> =
-    LazyLock::new(|| Mutex::new(HashSet::new()));
-
-static ACTIVE_SYNCS: LazyLock<Mutex<HashSet<String>>> =
-    LazyLock::new(|| Mutex::new(HashSet::new()));
-
-fn lock_syncs() -> MutexGuard<'static, HashSet<String>> {
-    ACTIVE_SYNCS.lock_unpoisoned()
+#[derive(Default)]
+struct DeviceRegistryInner {
+    connected: HashSet<String>,
+    active_syncs: HashSet<String>,
+    last_sync_times: HashMap<String, Instant>,
 }
 
-static LAST_SYNC_TIMES: LazyLock<Mutex<HashMap<String, Instant>>> =
-    LazyLock::new(|| Mutex::new(HashMap::new()));
+static REGISTRY: LazyLock<Mutex<DeviceRegistryInner>> =
+    LazyLock::new(|| Mutex::new(DeviceRegistryInner::default()));
 
-pub fn lock_connected() -> MutexGuard<'static, HashSet<String>> {
-    CONNECTED_DEVICES.lock_unpoisoned()
+pub fn get_connected_devices() -> HashSet<String> {
+    REGISTRY.lock_unpoisoned().connected.clone()
+}
+
+pub fn clear_connected_devices() {
+    REGISTRY.lock_unpoisoned().connected.clear();
+}
+
+pub fn update_connected_state(current: &HashSet<String>) -> (Vec<String>, Vec<String>) {
+    let mut inner = REGISTRY.lock_unpoisoned();
+    let connected = current.difference(&inner.connected).cloned().collect();
+    let disconnected = inner.connected.difference(current).cloned().collect();
+    inner.connected = current.clone();
+    (connected, disconnected)
 }
 
 pub fn get_last_sync_time(device_id: &str) -> Option<Instant> {
-    LAST_SYNC_TIMES.lock_unpoisoned().get(device_id).copied()
+    REGISTRY
+        .lock_unpoisoned()
+        .last_sync_times
+        .get(device_id)
+        .copied()
 }
 
 pub fn update_last_sync_time(device_id: &str) {
-    LAST_SYNC_TIMES
+    REGISTRY
         .lock_unpoisoned()
+        .last_sync_times
         .insert(device_id.to_string(), Instant::now());
 }
 
@@ -37,7 +51,9 @@ pub struct SyncGuard(String);
 
 impl SyncGuard {
     pub fn try_acquire(device_id: &str) -> Option<Self> {
-        lock_syncs()
+        let mut inner = REGISTRY.lock_unpoisoned();
+        inner
+            .active_syncs
             .insert(device_id.to_string())
             .then(|| Self(device_id.to_string()))
     }
@@ -45,6 +61,6 @@ impl SyncGuard {
 
 impl Drop for SyncGuard {
     fn drop(&mut self) {
-        lock_syncs().remove(&self.0);
+        REGISTRY.lock_unpoisoned().active_syncs.remove(&self.0);
     }
 }

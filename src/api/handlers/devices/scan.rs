@@ -1,6 +1,10 @@
-use axum::{extract::Path, http::StatusCode, response::IntoResponse};
+use axum::{
+    extract::{Path, State},
+    http::StatusCode,
+    response::IntoResponse,
+};
 
-use crate::{api::errors::ApiError, devices};
+use crate::{api::errors::ApiError, app::AppState};
 
 #[utoipa::path(
     method(post),
@@ -12,7 +16,10 @@ use crate::{api::errors::ApiError, devices};
         (status = 200, description = "Player indexing scan triggered successfully")
     )
 )]
-pub async fn scan_adb_device(Path(device_id): Path<String>) -> Result<impl IntoResponse, ApiError> {
-    devices::scan_device(&device_id).await?;
+pub async fn scan_adb_device(
+    State(state): State<AppState>,
+    Path(device_id): Path<String>,
+) -> Result<impl IntoResponse, ApiError> {
+    state.device_service().scan_device(&device_id).await?;
     Ok(StatusCode::OK)
 }

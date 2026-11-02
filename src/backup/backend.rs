@@ -1,6 +1,6 @@
 use std::path::Path;
 
-use super::error::BackupError;
+use crate::backup::error::BackupError;
 
 #[allow(async_fn_in_trait)]
 pub trait BackupBackend: Send + Sync {

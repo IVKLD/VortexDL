@@ -4,13 +4,13 @@ use std::{
     path::{Path, PathBuf},
 };
 
-use super::{ARCHIVE_DIR, metadata, types::LibraryTrack};
 use crate::{
     domain::AudioFormat,
     infra::{
-        db::cache::{self, CachedTrack},
+        db::{CachedTrack, TrackCacheRepo},
         system_time_to_secs,
     },
+    library::{ARCHIVE_DIR, metadata, types::LibraryTrack},
 };
 
 fn get_file_timestamps(metadata: &fs::Metadata) -> (u64, u64) {
@@ -49,7 +49,7 @@ pub async fn scan_directory(base_path: impl AsRef<Path>) -> HashMap<i64, Library
             tracks.insert(id, data);
         };
         let mut stack = vec![root.clone()];
-        let cached = cache::get_cached_tracks().unwrap_or_default();
+        let cached = TrackCacheRepo::get_all().unwrap_or_default();
         let mut visited = HashSet::new();
         let mut to_update = HashMap::new();
 
@@ -105,7 +105,7 @@ pub async fn scan_directory(base_path: impl AsRef<Path>) -> HashMap<i64, Library
             .cloned()
             .collect();
 
-        if let Err(e) = cache::update_cached_tracks_batch(&to_update, &to_remove) {
+        if let Err(e) = TrackCacheRepo::update_batch(&to_update, &to_remove) {
             tracing::error!("Failed to update track cache batch: {e}");
         }
 

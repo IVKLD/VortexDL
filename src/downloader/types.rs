@@ -1,20 +1,10 @@
-use std::{
-    path::{Path, PathBuf},
-    sync::Arc,
-};
+use std::path::{Path, PathBuf};
 
 use serde::{Deserialize, Serialize};
-use soundcloud_rs::Client as SoundcloudClient;
-use tokio::sync::RwLock;
 use url::Url;
 use utoipa::ToSchema;
 
-use super::manager::DownloadManager;
-use crate::{
-    domain::{AudioFormat, DiscoveredTrack, clean_filename},
-    library::Library,
-    settings::SettingsManager,
-};
+use crate::domain::{AudioFormat, DiscoveredTrack, clean_filename};
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, ToSchema)]
 #[serde(rename_all = "lowercase")]
@@ -98,30 +88,6 @@ pub enum ServerEvent {
         message: String,
         level: MessageLevel,
     },
-}
-
-#[derive(Clone)]
-pub struct DownloadContext {
-    pub library: Arc<RwLock<Library>>,
-    pub soundcloud: Arc<SoundcloudClient>,
-    pub manager: Option<Arc<DownloadManager>>,
-    pub settings: SettingsManager,
-}
-
-impl DownloadContext {
-    pub fn new(
-        library: Arc<RwLock<Library>>,
-        soundcloud: Arc<SoundcloudClient>,
-        manager: Option<Arc<DownloadManager>>,
-        settings: SettingsManager,
-    ) -> Self {
-        Self {
-            library,
-            soundcloud,
-            manager,
-            settings,
-        }
-    }
 }
 
 pub struct DownloadTask {

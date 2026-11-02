@@ -1,50 +1,17 @@
 use std::time::Duration;
 
-use anyhow::{Result, anyhow};
-use soundcloud_rs::{Client, StreamType};
+use anyhow::anyhow;
+use soundcloud_rs::StreamType;
 use tokio::task::JoinHandle;
 use url::Url;
 
-use super::client::{self, SoundcloudExt};
-use crate::{
-    downloader::DownloadContext,
-    infra::net,
-    providers::{ResolvedStreamInfo, cache::ProviderCache},
-    settings::SettingsManager,
+use crate::providers::{
+    ProviderError, ResolvedStreamInfo,
+    soundcloud::{
+        SoundCloudProvider,
+        client::{ClientBuilder, SoundcloudExt},
+    },
 };
-
-pub async fn resolve_soundcloud_stream(
-    soundcloud: &Client,
-    settings_mgr: &SettingsManager,
-    cache: &ProviderCache,
-    id: i64,
-) -> Result<ResolvedStreamInfo> {
-    let cached_track = cache.get_soundcloud_track(id);
-
-    if let Ok(url) = soundcloud
-        .resolve_stream_url(cached_track.as_ref(), id)
-        .await
-    {
-        let proxy = settings_mgr
-            .read()
-            .await
-            .network
-            .get_proxy_url()
-            .map(String::from);
-        return Ok(ResolvedStreamInfo {
-            stream_url: url,
-            proxy_used: proxy,
-        });
-    }
-
-    let settings = settings_mgr.read().await.clone();
-    let (url, _, proxy) = client::resolve_soundcloud_stream_with_fallback(&settings, id).await?;
-
-    Ok(ResolvedStreamInfo {
-        stream_url: url,
-        proxy_used: proxy,
-    })
-}
 
 #[derive(Debug, Clone)]
 pub enum StreamSource {
@@ -73,59 +40,80 @@ impl StreamSource {
     }
 }
 
-pub async fn resolve_stream_source(ctx: &DownloadContext, id: i64) -> Result<StreamSource> {
-    match resolve_with_client(&ctx.soundcloud, id, ctx.soundcloud.proxy_url.as_deref()).await {
-        Ok(proto) => Ok(proto),
-        Err(direct_err) => {
-            tracing::debug!("Direct stream resolution failed for track {id}: {direct_err}");
-
-            let settings = ctx.settings.read().await.clone();
-            if !settings.network.use_proxy || settings.network.fallback_proxies.is_empty() {
-                return Err(direct_err);
-            }
-
-            let (url, stype, proxy_url) = client::resolve_soundcloud_stream_with_fallback(&settings, id)
+impl SoundCloudProvider {
+    pub async fn resolve_stream(
+        &self,
+        cached_track: Option<&soundcloud_rs::Track>,
+        id: i64,
+    ) -> Result<ResolvedStreamInfo, ProviderError> {
+        if let Ok(url) = self.client.resolve_stream_url(cached_track, id).await {
+            let proxy = self
+                .settings
+                .read()
                 .await
-                .map_err(|e| {
-                    tracing::error!("All fallback proxies failed resolving track {id}: {e}");
-                    anyhow!("All fallback proxies failed: {e}")
-                })?;
+                .network
+                .get_proxy_url()
+                .map(String::from);
+            return Ok(ResolvedStreamInfo {
+                stream_url: url,
+                proxy_used: proxy,
+            });
+        }
 
-            Ok(StreamSource::new(stype, url, proxy_url))
+        let settings = self.settings.read().await.clone();
+        let (url, _, proxy) = ClientBuilder::race_stream(&settings, id).await?;
+
+        Ok(ResolvedStreamInfo {
+            stream_url: url,
+            proxy_used: proxy,
+        })
+    }
+
+    pub async fn resolve_stream_source(&self, id: i64) -> Result<StreamSource, ProviderError> {
+        match self.client.resolve_stream(id).await {
+            Ok((url, stype)) => Ok(StreamSource::new(stype, url, self.client.proxy_url.clone())),
+            Err(direct_err) => {
+                tracing::debug!("Direct stream resolution failed for track {id}: {direct_err}");
+
+                let settings = self.settings.read().await.clone();
+                if !settings.network.use_proxy || settings.network.fallback_proxies.is_empty() {
+                    return Err(direct_err);
+                }
+
+                let (url, stype, proxy_url) = ClientBuilder::race_stream(&settings, id)
+                    .await
+                    .map_err(|e| {
+                        tracing::error!("All fallback proxies failed resolving track {id}: {e}");
+                        ProviderError::Other(anyhow!("All fallback proxies failed: {e}"))
+                    })?;
+
+                Ok(StreamSource::new(stype, url, proxy_url))
+            }
         }
     }
-}
 
-async fn resolve_with_client(
-    client: &Client,
-    id: i64,
-    proxy_url: Option<&str>,
-) -> Result<StreamSource> {
-    let (url, stype) = client.resolve_stream(id).await?;
-    Ok(StreamSource::new(stype, url, proxy_url.map(String::from)))
-}
-
-pub fn spawn_artwork_fetch(
-    ctx: &DownloadContext,
-    artwork_url: Option<&Url>,
-) -> Option<JoinHandle<Option<Vec<u8>>>> {
-    let url = artwork_url?.clone();
-    let ctx = ctx.clone();
-    Some(tokio::spawn(async move {
-        let proxy_url = ctx
-            .settings
-            .read()
-            .await
-            .network
-            .get_proxy_url()
-            .map(String::from);
-        let client = net::build_http_client(proxy_url.as_deref(), 5, 10);
-        let resp = client
-            .get(url)
-            .timeout(Duration::from_secs(5))
-            .send()
-            .await
-            .ok()?;
-        resp.bytes().await.ok().map(|b| b.to_vec())
-    }))
+    pub fn spawn_artwork_fetch(
+        &self,
+        artwork_url: Option<&Url>,
+    ) -> Option<JoinHandle<Option<Vec<u8>>>> {
+        let url = artwork_url?.clone();
+        let settings = self.settings.clone();
+        let http_clients = self.http_clients.clone();
+        Some(tokio::spawn(async move {
+            let proxy_url = settings
+                .read()
+                .await
+                .network
+                .get_proxy_url()
+                .map(String::from);
+            let client = http_clients.get_or_create(proxy_url);
+            let resp = client
+                .get(url)
+                .timeout(Duration::from_secs(5))
+                .send()
+                .await
+                .ok()?;
+            resp.bytes().await.ok().map(|b| b.to_vec())
+        }))
+    }
 }
