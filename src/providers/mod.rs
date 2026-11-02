@@ -10,7 +10,7 @@ pub use hls::{ByteRange, HlsPlaylist, HlsSegment};
 pub use soundcloud::SoundCloudProvider;
 pub use youtube::YouTubeProvider;
 
-pub type ProgressCallback = Arc<dyn Fn(u64, u64) + Send + Sync>;
+pub type ProgressCallback = Arc<dyn Fn(u64, Option<u64>) + Send + Sync>;
 
 #[derive(Debug, Clone)]
 pub struct ResolvedStreamInfo {

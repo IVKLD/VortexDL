@@ -22,37 +22,12 @@ pub fn init_device_tracker(library: LibraryService, settings: SettingsManager) {
             let adb_enabled = settings.read().await.adb.enabled;
 
             if adb_enabled && adb_available {
-                let is_finished = tracker_task
-                    .as_ref()
-                    .map(|h| h.is_finished())
-                    .unwrap_or(true);
-                if is_finished {
-                    if let Some(h) = tracker_task.take() {
-                        match h.await {
-                            Ok(Ok(())) => {}
-                            Ok(Err(DeviceError::NotAvailable)) => {
-                                tracing::warn!(
-                                    "ADB binary not found, disabling automatic device tracking until settings update"
-                                );
-                                adb_available = false;
-                            }
-                            Ok(Err(e)) => {
-                                tracing::warn!("ADB tracker task ended with error: {e}");
-                            }
-                            Err(e) => {
-                                tracing::warn!("ADB tracker task panicked: {e}");
-                            }
-                        }
-                    }
-
-                    if adb_available {
-                        let lib = library.clone();
-                        let cfg = settings.clone();
-                        tracker_task =
-                            Some(tokio::spawn(
-                                async move { run_device_tracker(lib, cfg).await },
-                            ));
-                    }
+                if tracker_task.is_none() {
+                    let lib = library.clone();
+                    let cfg = settings.clone();
+                    tracker_task = Some(tokio::spawn(
+                        async move { run_device_tracker(lib, cfg).await },
+                    ));
                 }
             } else if let Some(handle) = tracker_task.take() {
                 tracing::info!("ADB disabled, stopping tracker task");
@@ -61,9 +36,41 @@ pub fn init_device_tracker(library: LibraryService, settings: SettingsManager) {
             }
 
             tokio::select! {
-                _ = tokio::time::sleep(Duration::from_secs(3)) => {}
-                _ = settings_rx.changed() => {
-                    adb_available = true;
+                res = async {
+                    match tracker_task.as_mut() {
+                        Some(h) => h.await,
+                        None => std::future::pending().await,
+                    }
+                } => {
+                    tracker_task = None;
+                    match res {
+                        Ok(Ok(())) => {
+                            tokio::time::sleep(Duration::from_secs(2)).await;
+                        }
+                        Ok(Err(DeviceError::NotAvailable)) => {
+                            tracing::warn!(
+                                "ADB binary not found, disabling automatic device tracking until settings update"
+                            );
+                            adb_available = false;
+                        }
+                        Ok(Err(e)) => {
+                            tracing::warn!("ADB tracker task ended with error: {e}");
+                            tokio::time::sleep(Duration::from_secs(2)).await;
+                        }
+                        Err(e) => {
+                            if !e.is_cancelled() {
+                                tracing::warn!("ADB tracker task panicked: {e}");
+                                tokio::time::sleep(Duration::from_secs(2)).await;
+                            }
+                        }
+                    }
+                }
+                res = settings_rx.changed() => {
+                    if res.is_ok() {
+                        adb_available = true;
+                    } else {
+                        break;
+                    }
                 }
             }
         }

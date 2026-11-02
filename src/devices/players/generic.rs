@@ -6,9 +6,9 @@ pub struct GenericMediaScanner;
 impl GenericMediaScanner {
     pub async fn scan(&self, device: &str) -> Result<(), DeviceError> {
         let _guard = SyncGuard::try_acquire(device).ok_or(DeviceError::AlreadyInProgress)?;
-        adb::exec(
+        adb::exec_shell(
             device,
-            &["shell", "am broadcast -a android.intent.action.MEDIA_SCANNER_SCAN_FILE -d file:///sdcard/Music"],
+            "am broadcast -a android.intent.action.MEDIA_SCANNER_SCAN_FILE -d file:///sdcard/Music",
         )
         .await?;
         Ok(())

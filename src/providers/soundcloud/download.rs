@@ -60,10 +60,6 @@ impl SoundCloudProvider {
         let client = self.http_clients.get_or_create(active_proxy);
         let response = client.get(url).send().await?.error_for_status()?;
         let exact_size = response.content_length();
-        let total = exact_size.unwrap_or_else(|| match task.track.duration_ms {
-            Some(ms) => ((ms as f64 / 1000.0).max(1.0) * 16_000.0) as u64,
-            None => 2_500_000,
-        });
 
         let mut file = fs::File::create(&task.file_path).await?;
         let mut stream = response.bytes_stream();
@@ -75,7 +71,7 @@ impl SoundCloudProvider {
             position += chunk.len() as u64;
 
             if let Some(cb) = on_progress {
-                cb(position, total);
+                cb(position, exact_size);
             }
         }
 
@@ -91,6 +87,10 @@ impl SoundCloudProvider {
         proxy_url: Option<&str>,
         on_progress: Option<&ProgressCallback>,
     ) -> Result<(), ProviderError> {
+        if let Some(cb) = on_progress {
+            cb(0, None);
+        }
+
         let (active_proxy, settings_snapshot) = {
             let settings = self.settings.read().await;
             let proxy = proxy_url
@@ -110,46 +110,10 @@ impl SoundCloudProvider {
             &self.client
         };
 
-        let path_clone = task.file_path.clone();
-        let duration_ms = task.track.duration_ms;
-        let progress_cb = on_progress.cloned();
-
-        let progress_task = tokio::spawn(async move {
-            let mut has_existed = false;
-            let mut missing_count = 0;
-            loop {
-                tokio::time::sleep(Duration::from_millis(500)).await;
-                match fs::metadata(&path_clone).await {
-                    Ok(meta) => {
-                        has_existed = true;
-                        missing_count = 0;
-                        if let Some(ref cb) = progress_cb {
-                            let estimated_total = match duration_ms {
-                                Some(ms) => ((ms as f64 / 1000.0).max(1.0) * 24_000.0) as u64,
-                                None => 3_500_000,
-                            };
-                            cb(meta.len(), estimated_total);
-                        }
-                    }
-                    Err(_) => {
-                        if has_existed {
-                            break;
-                        }
-                        missing_count += 1;
-                        if missing_count > 20 {
-                            break;
-                        }
-                    }
-                }
-            }
-        });
-
-        let download_res = client
+        client
             .download_hls_to_file(stream_url, &task.file_path)
-            .await;
-        progress_task.abort();
+            .await?;
 
-        download_res?;
         infra::verify_audio_file(&task.file_path, 0).await?;
         Ok(())
     }

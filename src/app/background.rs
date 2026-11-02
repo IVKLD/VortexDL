@@ -1,9 +1,4 @@
-use std::{
-    fs,
-    path::Path,
-    sync::Arc,
-    time::{Duration, Instant},
-};
+use std::{fs, path::Path, sync::Arc, time::Duration};
 
 use anyhow::Result;
 use notify::{
@@ -50,16 +45,17 @@ pub async fn start_library_watcher(
     tokio::spawn(async move {
         let mut watcher = watcher;
         let mut path_to_watch = path_to_watch;
-        let mut last_event_time = None;
         let debounce_duration = Duration::from_secs(2);
-        let mut check_interval = tokio::time::interval(Duration::from_millis(500));
+        let mut debounce_timer = std::pin::pin!(tokio::time::sleep(debounce_duration));
+        let mut has_pending_events = false;
         let mut settings_rx = settings.subscribe_changes();
 
         loop {
             tokio::select! {
                 Some(event) = rx.recv() => {
                     if is_relevant(&event) {
-                        last_event_time = Some(Instant::now());
+                        debounce_timer.as_mut().reset(tokio::time::Instant::now() + debounce_duration);
+                        has_pending_events = true;
                     }
                 }
                 Ok(()) = settings_rx.changed() => {
@@ -75,7 +71,8 @@ pub async fn start_library_watcher(
                             Ok(()) => {
                                 path_to_watch = current_base_path;
                                 tracing::info!("Library watcher: now monitoring directory: {}", path_to_watch);
-                                last_event_time = Some(Instant::now());
+                                debounce_timer.as_mut().reset(tokio::time::Instant::now() + debounce_duration);
+                                has_pending_events = true;
                             }
                             Err(e) => {
                                 tracing::error!("Library watcher: failed to watch new directory {}: {e}", current_base_path);
@@ -83,31 +80,30 @@ pub async fn start_library_watcher(
                         }
                     }
                 }
-                _ = check_interval.tick() => {
-                    if last_event_time.is_some_and(|t| t.elapsed() >= debounce_duration) {
-                        last_event_time = None;
-
-                        if !dm.is_idle() {
-                            tracing::debug!("Library watcher: filesystem changes detected, but downloads are active. Deferring sync.");
-                            continue;
-                        }
-
-                        tracing::info!("Library watcher: changes detected, reindexing library");
-
-                        events.publish(ServerEvent::Message {
-                            message: "Library changes detected, reindexing...".to_string(),
-                            level: MessageLevel::Info,
-                        });
-
-                        library.reindex().await;
-                        devices.sync_connected().await;
-
-                        events.publish(ServerEvent::Message {
-                            message: "Library reindexing and sync completed".to_string(),
-                            level: MessageLevel::Info,
-                        });
-                        events.publish(ServerEvent::SyncFinished { url: None });
+                () = &mut debounce_timer, if has_pending_events => {
+                    if !dm.is_idle() {
+                        tracing::debug!("Library watcher: filesystem changes detected, but downloads are active. Deferring sync.");
+                        debounce_timer.as_mut().reset(tokio::time::Instant::now() + debounce_duration);
+                        continue;
                     }
+
+                    has_pending_events = false;
+
+                    tracing::info!("Library watcher: changes detected, reindexing library");
+
+                    events.publish(ServerEvent::Message {
+                        message: "Library changes detected, reindexing...".to_string(),
+                        level: MessageLevel::Info,
+                    });
+
+                    library.reindex().await;
+                    devices.sync_connected().await;
+
+                    events.publish(ServerEvent::Message {
+                        message: "Library reindexing and sync completed".to_string(),
+                        level: MessageLevel::Info,
+                    });
+                    events.publish(ServerEvent::SyncFinished { url: None });
                 }
             }
         }

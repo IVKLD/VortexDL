@@ -23,7 +23,7 @@ impl YouTubeProvider {
                 } = event
                     && let Some(ref cb) = on_progress
                 {
-                    cb(bytes_downloaded, total_bytes.unwrap_or(0));
+                    cb(bytes_downloaded, total_bytes);
                 }
             })
             .download(url_or_id)

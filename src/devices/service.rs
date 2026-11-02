@@ -4,7 +4,7 @@ use crate::{
     devices::{
         error::DeviceError,
         list, scan,
-        storage::{StorageInfo, get_device_storages},
+        storage::{StorageInfo, StorageType, get_device_storages},
         sync,
     },
     library::LibraryService,
@@ -27,9 +27,40 @@ impl DeviceService {
     }
 
     pub async fn get_device_storages(&self, device: &str) -> Result<Vec<StorageInfo>, DeviceError> {
-        get_device_storages(device)
+        let mut storages = get_device_storages(device)
             .await
-            .map_err(DeviceError::Other)
+            .map_err(DeviceError::Other)?;
+
+        let configured_path = {
+            let settings = self.settings.read().await;
+            settings
+                .adb
+                .devices
+                .iter()
+                .find(|d| d.device_id == device)
+                .map(|d| d.remote_music_dir.clone())
+        };
+
+        if let Some(custom_path) = configured_path
+            && !custom_path.is_empty()
+            && !storages.iter().any(|s| s.path == custom_path)
+        {
+            let is_sd = custom_path.contains("/storage/") && !custom_path.contains("/emulated/");
+            storages.insert(
+                0,
+                StorageInfo {
+                    name: format!("Configured ({custom_path})"),
+                    path: custom_path,
+                    storage_type: if is_sd {
+                        StorageType::SdCard
+                    } else {
+                        StorageType::Internal
+                    },
+                },
+            );
+        }
+
+        Ok(storages)
     }
 
     pub async fn sync_device(

@@ -102,17 +102,25 @@ impl DownloadManager {
         });
     }
 
-    pub fn update_progress(&self, id: i64, current: u64, total: u64) {
-        let effective_total = if total > 0 { total } else { 3_500_000 };
-        let progress = ((current as f64 / effective_total as f64) * 100.0).min(100.0);
+    pub fn update_progress(&self, id: i64, current: u64, total: Option<u64>) {
+        let progress = total
+            .filter(|&t| t > 0)
+            .map(|t| ((current as f64 / t as f64) * 100.0).min(100.0));
 
         let updated_item = {
             let mut state = self.state.lock_unpoisoned();
             let Some(item) = state.tasks.get_mut(&id) else {
                 return;
             };
-            if item.progress.is_none_or(|p| (progress - p).abs() >= 0.5) {
-                item.progress = Some(progress);
+            let should_update = match (progress, item.progress) {
+                (Some(p), Some(prev)) => (p - prev).abs() >= 0.5,
+                (Some(_), None) => true,
+                (None, Some(_)) => true,
+                (None, None) => item.status != DownloadStatus::Downloading,
+            };
+
+            if should_update {
+                item.progress = progress;
                 item.status = DownloadStatus::Downloading;
                 Some(item.clone())
             } else {

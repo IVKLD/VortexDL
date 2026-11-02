@@ -102,6 +102,32 @@ pub async fn subscribe_track_devices() -> Result<TcpStream, DeviceError> {
     Ok(stream)
 }
 
+/// Executes an arbitrary shell command on a specific device over the direct ADB TCP socket.
+pub async fn exec_shell(device: &str, cmd: &str) -> Result<String, DeviceError> {
+    let mut stream = connect_to_adb().await?;
+    let transport_cmd = format!("host:transport:{device}");
+    send_adb_cmd(&mut stream, &transport_cmd).await?;
+    let shell_req = format!("shell:{cmd}");
+    send_adb_cmd(&mut stream, &shell_req).await?;
+
+    let mut response = Vec::new();
+    stream
+        .read_to_end(&mut response)
+        .await
+        .map_err(|e| DeviceError::Other(anyhow!("Failed reading ADB shell output: {e}")))?;
+
+    Ok(String::from_utf8_lossy(&response).into_owned())
+}
+
+/// Queries currently connected devices via the ADB server socket `host:devices`.
+pub async fn list_devices_tcp() -> Result<HashSet<String>, DeviceError> {
+    let mut stream = connect_to_adb().await?;
+    send_adb_cmd(&mut stream, "host:devices").await?;
+    let payload = read_adb_hex_packet(&mut stream).await?;
+    let text = String::from_utf8_lossy(&payload);
+    Ok(client::parse_device_list(&text))
+}
+
 /// What: Awaits the next device state event packet and parses it into a set of device IDs.
 /// Flow: Called in an infinite loop by the ADB tracker task (`start_device_tracker`).
 /// Why:  The ADB daemon keeps the socket open and pushes updates whenever an Android device connects or disconnects.
