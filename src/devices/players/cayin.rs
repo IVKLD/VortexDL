@@ -7,7 +7,7 @@ pub struct CayinN3UltraScanner;
 
 impl CayinN3UltraScanner {
     pub async fn scan(&self, device: &str) -> Result<(), DeviceError> {
-        let _guard = SyncGuard::try_acquire(device).ok_or(DeviceError::AlreadyInProgress)?;
+        let _guard = SyncGuard::acquire(device).await;
         trigger_cayin_scan_async(device).await
     }
 }

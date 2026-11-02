@@ -79,13 +79,14 @@ pub async fn sync_device(
         return Ok(());
     }
 
-    let _guard = match SyncGuard::try_acquire(device) {
-        Some(g) => g,
-        None => {
-            if force {
-                return Err(DeviceError::AlreadyInProgress);
-            }
-            return Ok(());
+    // A forced (manual) sync waits for any in-flight sync to finish so that the caller
+    // (which typically triggers a player scan next) only continues once files are on the device.
+    let _guard = if force {
+        SyncGuard::acquire(device).await
+    } else {
+        match SyncGuard::try_acquire(device) {
+            Some(g) => g,
+            None => return Ok(()),
         }
     };
 
@@ -112,18 +113,18 @@ pub async fn sync_device(
 
     info!("[{device}] Syncing ADB device -> {remote_dir}");
 
+    if !diff.to_push.is_empty() {
+        info!("[{device}] Pushing {} tracks", diff.to_push.len());
+        push_tracks(device, remote_dir, diff.to_push).await?;
+        let _ = files::sync_device_fs(device).await;
+    }
+
     if !diff.to_delete.is_empty() {
         info!(
             "[{device}] Removing {} orphaned tracks",
             diff.to_delete.len()
         );
         delete_tracks(device, remote_dir, &diff.to_delete).await;
-        let _ = files::sync_device_fs(device).await;
-    }
-
-    if !diff.to_push.is_empty() {
-        info!("[{device}] Pushing {} tracks", diff.to_push.len());
-        push_tracks(device, remote_dir, diff.to_push).await?;
         let _ = files::sync_device_fs(device).await;
     }
 
@@ -156,7 +157,7 @@ async fn push_tracks(
 
         let remote = format!("{remote_dir}/{}", task.rel_path);
 
-        match files::push(device, local, &remote).await {
+        match files::push_atomic(device, local, &remote).await {
             Ok(()) => {
                 pushed += 1;
             }
@@ -169,6 +170,9 @@ async fn push_tracks(
 
     if failed > 0 {
         warn!("Track push completed with failures (pushed: {pushed}, failed: {failed})");
+        return Err(DeviceError::Other(anyhow::anyhow!(
+            "Failed to push {failed} track(s) to the device"
+        )));
     } else {
         info!("Track push completed successfully ({pushed} tracks)");
     }

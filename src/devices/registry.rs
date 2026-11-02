@@ -50,6 +50,18 @@ pub fn update_last_sync_time(device_id: &str) {
 pub struct SyncGuard(String);
 
 impl SyncGuard {
+    /// Waits until the device is free, then acquires exclusive access.
+    /// Lets a manual sync/scan queue behind an in-flight (e.g. automatic) sync
+    /// instead of failing or running concurrently with it.
+    pub async fn acquire(device_id: &str) -> Self {
+        loop {
+            if let Some(g) = Self::try_acquire(device_id) {
+                return g;
+            }
+            tokio::time::sleep(std::time::Duration::from_millis(250)).await;
+        }
+    }
+
     pub fn try_acquire(device_id: &str) -> Option<Self> {
         let mut inner = REGISTRY.lock_unpoisoned();
         inner

@@ -14,12 +14,40 @@ pub async fn list_files(device: &str, dir: &str) -> Result<HashSet<String>, Devi
     let prefix = format!("{}/", dir.trim_end_matches('/'));
     Ok(stdout
         .lines()
-        .filter_map(|line| line.trim().strip_prefix(&prefix).map(String::from))
+        .filter_map(|line| {
+            line.trim_end_matches(['\r', '\n'])
+                .strip_prefix(&prefix)
+                .map(String::from)
+        })
         .collect())
 }
 
 pub async fn push(device: &str, local: &str, remote: &str) -> Result<(), DeviceError> {
     adb::exec(device, &["push", local, remote]).await?;
+    Ok(())
+}
+
+/// Pushes to a temporary `.part` name and renames on success, so an interrupted transfer
+/// never leaves a truncated file under the final name (which sync would treat as present).
+pub async fn push_atomic(device: &str, local: &str, remote: &str) -> Result<(), DeviceError> {
+    let tmp = format!("{remote}.part");
+    if let Err(e) = push(device, local, &tmp).await {
+        let _ = delete_file(device, &tmp).await;
+        return Err(e);
+    }
+    let cmd = format!(
+        "mv -f {} {} && echo OK",
+        adb::shell_escape(&tmp),
+        adb::shell_escape(remote)
+    );
+    let out = adb::exec_shell(device, &cmd).await?;
+    if !out.trim_end().ends_with("OK") {
+        let _ = delete_file(device, &tmp).await;
+        return Err(DeviceError::Other(anyhow::anyhow!(
+            "Failed to finalize {remote}: {}",
+            out.trim()
+        )));
+    }
     Ok(())
 }
 
