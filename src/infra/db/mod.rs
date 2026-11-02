@@ -43,7 +43,7 @@ pub fn init() -> Result<(), Error> {
     Ok(())
 }
 
-pub fn get_singleton<T: serde::de::DeserializeOwned>(
+pub fn read_value<T: serde::de::DeserializeOwned>(
     table_def: redb::TableDefinition<u64, &str>,
 ) -> Result<Option<T>, Error> {
     let db = get_db();
@@ -58,7 +58,7 @@ pub fn get_singleton<T: serde::de::DeserializeOwned>(
     Ok(serde_json::from_str(data.value()).ok())
 }
 
-pub fn set_singleton<T: serde::Serialize>(
+pub fn write_value<T: serde::Serialize>(
     table_def: redb::TableDefinition<u64, &str>,
     value: &T,
 ) -> Result<(), Error> {

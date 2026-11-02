@@ -2,7 +2,7 @@ use anyhow::Error;
 use redb::TableDefinition;
 
 use crate::{
-    infra::db::{get_singleton, set_singleton},
+    infra::db::{read_value, write_value},
     settings::UserSettings,
 };
 
@@ -12,10 +12,10 @@ pub struct SettingsRepo;
 
 impl SettingsRepo {
     pub fn get() -> Result<UserSettings, Error> {
-        Ok(get_singleton(SETTINGS_TABLE)?.unwrap_or_default())
+        Ok(read_value(SETTINGS_TABLE)?.unwrap_or_default())
     }
 
     pub fn update(settings: &UserSettings) -> Result<(), Error> {
-        set_singleton(SETTINGS_TABLE, settings)
+        write_value(SETTINGS_TABLE, settings)
     }
 }

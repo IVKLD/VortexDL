@@ -3,7 +3,7 @@ use redb::TableDefinition;
 use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
 
-use crate::infra::db::{get_singleton, set_singleton};
+use crate::infra::db::{read_value, write_value};
 
 const STATS_TABLE: TableDefinition<u64, &str> = TableDefinition::new("persistent_stats");
 
@@ -31,11 +31,11 @@ pub struct StatsRepo;
 
 impl StatsRepo {
     pub fn get() -> Result<PersistentStats> {
-        Ok(get_singleton(STATS_TABLE)?.unwrap_or_default())
+        Ok(read_value(STATS_TABLE)?.unwrap_or_default())
     }
 
     pub fn save(stats: &PersistentStats) -> Result<()> {
-        set_singleton(STATS_TABLE, stats)
+        write_value(STATS_TABLE, stats)
     }
 
     pub fn record_download(size: u64) -> Result<()> {
