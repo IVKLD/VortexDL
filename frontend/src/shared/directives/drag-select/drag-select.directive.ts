@@ -1,5 +1,7 @@
 import { Directive, inject, input, output } from '@angular/core';
-import { DragSelectService } from './drag-select.service';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { EMPTY, filter, fromEvent, Subject, switchMap, takeUntil, tap, timer } from 'rxjs';
+import { DragAction, DragSelectService } from './drag-select.service';
 
 export interface SelectableItem {
     id: number;
@@ -18,9 +20,7 @@ export interface SelectionHandler {
     host: {
         '(mousedown)': 'onMouseDown($event)',
         '(mouseenter)': 'onMouseEnter()',
-        '(mousemove)': 'onMouseMove($event)',
         '(click)': 'onClick($event)',
-        '(window:mouseup)': 'onWindowMouseUp()',
     },
 })
 export class DragSelectDirective<T extends SelectableItem = SelectableItem> {
@@ -28,10 +28,44 @@ export class DragSelectDirective<T extends SelectableItem = SelectableItem> {
 
     public readonly item = input.required<T>({ alias: 'appDragSelect' });
     public readonly selection = input.required<SelectionHandler>();
+    private readonly _press$ = new Subject<MouseEvent>();
     public readonly itemClick = output<T>();
 
-    private applyAction(): void {
-        if (this._dragService.dragAction === 'deselect') {
+    constructor() {
+        this._press$
+            .pipe(
+                switchMap((event) => {
+                    const isSelected = this.selection().has(this.item().id);
+                    const action: DragAction = isSelected ? 'deselect' : 'select';
+
+                    if (this.selection().hasSelection()) {
+                        this._dragService.startDrag(action);
+                        this.applyAction(action);
+                        return EMPTY;
+                    }
+
+                    const { clientX: startX, clientY: startY } = event;
+
+                    return timer(250).pipe(
+                        takeUntil(
+                            fromEvent<MouseEvent>(window, 'mousemove').pipe(
+                                filter((m) => Math.hypot(m.clientX - startX, m.clientY - startY) > 8),
+                            ),
+                        ),
+                        takeUntil(fromEvent(window, 'mouseup')),
+                        tap(() => {
+                            this._dragService.startDrag(action);
+                            this.applyAction(action);
+                        }),
+                    );
+                }),
+                takeUntilDestroyed(),
+            )
+            .subscribe();
+    }
+
+    private applyAction(action: DragAction): void {
+        if (action === 'deselect') {
             this.selection().deselect(this.item().id);
         } else {
             this.selection().select(this.item().id);
@@ -40,46 +74,13 @@ export class DragSelectDirective<T extends SelectableItem = SelectableItem> {
 
     protected onMouseDown(event: MouseEvent): void {
         if (event.button !== 0) return;
-
-        const isSelected = this.selection().has(this.item().id);
-        this._dragService.startPress(event.clientX, event.clientY, isSelected ? 'deselect' : 'select');
-
-        if (this.selection().hasSelection()) {
-            this._dragService.startDrag();
-            this.applyAction();
-        } else {
-            this._dragService.longPressTimer = setTimeout(() => {
-                if (this._dragService.isMouseDown()) {
-                    this._dragService.startDrag();
-                    this.applyAction();
-                }
-            }, 250);
-        }
+        this._press$.next(event);
     }
 
     protected onMouseEnter(): void {
-        if (this._dragService.isMouseDown()) {
-            this._dragService.startDrag();
-            this.applyAction();
+        if (this._dragService.isDragActive()) {
+            this.applyAction(this._dragService.dragAction);
         }
-    }
-
-    protected onMouseMove(event: MouseEvent): void {
-        if (
-            this._dragService.isMouseDown() &&
-            !this._dragService.isDragActive() &&
-            !this.selection().hasSelection()
-        ) {
-            const dx = Math.abs(event.clientX - this._dragService.pressStartX);
-            const dy = Math.abs(event.clientY - this._dragService.pressStartY);
-            if (dx > 8 || dy > 8) {
-                this._dragService.clearTimer();
-            }
-        }
-    }
-
-    protected onWindowMouseUp(): void {
-        this._dragService.endDrag();
     }
 
     protected onClick(event: MouseEvent): void {

@@ -65,6 +65,7 @@ export class WebSocketService {
             };
 
             return () => {
+                ws.onclose = ws.onerror = ws.onmessage = null;
                 ws.close();
             };
         });

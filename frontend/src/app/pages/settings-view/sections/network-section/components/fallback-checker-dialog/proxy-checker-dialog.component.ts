@@ -1,4 +1,5 @@
 import { Component, computed, inject, signal } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import {MatIcon} from '@angular/material/icon';
 import {MatButton} from '@angular/material/button';
 import {
@@ -10,7 +11,7 @@ import {
 import {MatTooltip} from '@angular/material/tooltip';
 import {SettingsTestingService} from '@app/pages/settings-view/settings.service';
 import { FixedSizeVirtualScrollStrategy, RxVirtualFor, RxVirtualScrollViewportComponent } from '@rx-angular/template/virtual-scrolling';
-import {finalize} from 'rxjs';
+import { finalize, Subject, switchMap } from 'rxjs';
 
 export interface ProxyStatus {
     url: string;
@@ -31,6 +32,7 @@ export interface ProxyStatus {
 })
 export class ProxyCheckerDialogComponent {
     private readonly _testingService = inject(SettingsTestingService);
+    private readonly _startTest$ = new Subject<string[]>();
 
     protected readonly importStatuses = signal<ProxyStatus[]>([]);
     protected readonly workingProxies = signal<string[]>([]);
@@ -50,34 +52,42 @@ export class ProxyCheckerDialogComponent {
 
     public readonly checkingCount = computed(() => this.importStatuses().filter(s => s.loading).length);
 
+    constructor() {
+        this._startTest$
+            .pipe(
+                switchMap((proxies) => {
+                    this.isTesting.set(true);
+                    this.workingProxies.set([]);
+                    this.importStatuses.set(proxies.map(url => ({ url, loading: true })));
+
+                    return this._testingService
+                        .testProxy(proxies)
+                        .pipe(finalize(() => this.isTesting.set(false)));
+                }),
+                takeUntilDestroyed(),
+            )
+            .subscribe((result) => {
+                this.importStatuses.update(statuses =>
+                    statuses.map(s => s.url === result.url ? {
+                        ...s,
+                        loading: false,
+                        valid: result.valid,
+                        error: result.error || undefined
+                    } : s)
+                );
+                if (result.valid) this.workingProxies.update(prev => [...prev, result.url]);
+            });
+    }
+
     protected onTextChange(event: Event): void {
         if (event.target instanceof HTMLTextAreaElement) this.pastedText.set(event.target.value);
     }
 
     protected testAll(): void {
         const proxies = this.parsedProxies();
-        if (proxies.length === 0) return;
-
-        this.isTesting.set(true);
-        this.workingProxies.set([]);
-        this.importStatuses.set(proxies.map(url => ({ url, loading: true })));
-
-        this._testingService
-            .testProxy(proxies)
-            .pipe(finalize(() => this.isTesting.set(false)))
-            .subscribe({
-                next: (result) => {
-                    this.importStatuses.update(statuses =>
-                        statuses.map(s => s.url === result.url ? {
-                            ...s,
-                            loading: false,
-                            valid: result.valid,
-                            error: result.error || undefined
-                        } : s)
-                    );
-                    if (result.valid) this.workingProxies.update(prev => [...prev, result.url]);
-                }
-            });
+        if (proxies.length > 0) {
+            this._startTest$.next(proxies);
+        }
     }
 
     protected copyToClipboard(): void {
