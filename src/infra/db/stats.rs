@@ -1,12 +1,11 @@
 use anyhow::Result;
-use redb::{ReadableDatabase, TableDefinition};
+use redb::TableDefinition;
 use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
 
-use crate::infra::db::get_db;
+use crate::infra::db::{get_singleton, set_singleton};
 
 const STATS_TABLE: TableDefinition<u64, &str> = TableDefinition::new("persistent_stats");
-const STATS_ID: u64 = 0;
 
 #[derive(Serialize, Deserialize, Clone, Debug, ToSchema)]
 #[serde(rename_all = "camelCase")]
@@ -32,31 +31,11 @@ pub struct StatsRepo;
 
 impl StatsRepo {
     pub fn get() -> Result<PersistentStats> {
-        let db = get_db();
-        let read_txn = db.begin_read()?;
-
-        let table = match read_txn.open_table(STATS_TABLE) {
-            Ok(t) => t,
-            Err(_) => return Ok(PersistentStats::default()),
-        };
-
-        let Some(data) = table.get(STATS_ID)? else {
-            return Ok(PersistentStats::default());
-        };
-
-        Ok(serde_json::from_str(data.value()).unwrap_or_default())
+        Ok(get_singleton(STATS_TABLE)?.unwrap_or_default())
     }
 
     pub fn save(stats: &PersistentStats) -> Result<()> {
-        let db = get_db();
-        let write_txn = db.begin_write()?;
-        {
-            let mut table = write_txn.open_table(STATS_TABLE)?;
-            let json = serde_json::to_string(stats)?;
-            table.insert(STATS_ID, json.as_str())?;
-        }
-        write_txn.commit()?;
-        Ok(())
+        set_singleton(STATS_TABLE, stats)
     }
 
     pub fn record_download(size: u64) -> Result<()> {

@@ -2,8 +2,9 @@ use std::collections::HashSet;
 
 use crate::{
     devices::{
+        adb,
         error::DeviceError,
-        list, scan,
+        players,
         storage::{StorageInfo, StorageType, get_device_storages},
         sync,
     },
@@ -23,7 +24,7 @@ impl DeviceService {
     }
 
     pub async fn list_devices(&self) -> Result<HashSet<String>, DeviceError> {
-        list::list_devices().await
+        adb::list_devices().await
     }
 
     pub async fn get_device_storages(&self, device: &str) -> Result<Vec<StorageInfo>, DeviceError> {
@@ -73,7 +74,7 @@ impl DeviceService {
     }
 
     pub async fn scan_device(&self, device: &str) -> Result<(), DeviceError> {
-        scan::scan_device(device).await
+        players::scan_device(device).await
     }
 
     pub async fn scan_all_players(&self) -> Result<(), DeviceError> {

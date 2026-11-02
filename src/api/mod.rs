@@ -17,10 +17,7 @@ use handlers::{
     download::{
         download_events, get_download_queue, get_syncing_urls, remove_from_queue, start_download,
     },
-    search::{
-        search_tracks,
-        types::{SearchResponse, SearchTrackItem},
-    },
+    search::search_tracks,
     settings::{
         config::{get_settings, update_settings},
         diagnostics::{ProxyTestResult, TestSoundCloudRequest, test_proxy_ws, test_soundcloud},
@@ -46,6 +43,7 @@ use crate::{
     domain::AudioFormat,
     downloader::{DownloadItem, DownloadStatus, MessageLevel},
     infra::db::DeletedTrackRecord,
+    search::{SearchResponse, SearchTrackItem},
     settings::{
         AdbDeviceSettings, AdbSettings, DownloadSettings, NetworkSettings, SoundcloudSettings,
         SystemSettings, UserSettings, WebDavSettings,

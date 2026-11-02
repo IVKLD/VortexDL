@@ -128,6 +128,19 @@ pub async fn list_devices_tcp() -> Result<HashSet<String>, DeviceError> {
     Ok(client::parse_device_list(&text))
 }
 
+pub async fn list_devices() -> Result<HashSet<String>, DeviceError> {
+    match list_devices_tcp().await {
+        Ok(devices) => Ok(devices),
+        Err(DeviceError::NotAvailable) => Err(DeviceError::NotAvailable),
+        Err(_) => {
+            let output = client::raw(&["devices"]).await?;
+            let stdout = String::from_utf8_lossy(&output.stdout);
+            let body = stdout.lines().skip(1).collect::<Vec<_>>().join("\n");
+            Ok(client::parse_device_list(&body))
+        }
+    }
+}
+
 /// What: Awaits the next device state event packet and parses it into a set of device IDs.
 /// Flow: Called in an infinite loop by the ADB tracker task (`start_device_tracker`).
 /// Why:  The ADB daemon keeps the socket open and pushes updates whenever an Android device connects or disconnects.

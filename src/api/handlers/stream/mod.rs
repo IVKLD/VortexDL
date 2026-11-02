@@ -1,12 +1,15 @@
-pub mod types;
-
 use axum::{
     extract::{Path, Query, Request, State},
     response::Response,
 };
-pub use types::StreamQuery;
+use serde::Deserialize;
 
 use crate::{api::errors::ApiError, app::AppState};
+
+#[derive(Debug, Deserialize, Clone)]
+pub struct StreamQuery {
+    pub url: Option<String>,
+}
 
 #[utoipa::path(
     method(get),

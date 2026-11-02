@@ -24,3 +24,7 @@ impl PlayerScanner {
 pub fn get_scanner_for_device(_device_id: &str) -> PlayerScanner {
     PlayerScanner::Cayin(CayinN3UltraScanner)
 }
+
+pub async fn scan_device(device_id: &str) -> Result<(), DeviceError> {
+    get_scanner_for_device(device_id).scan(device_id).await
+}
