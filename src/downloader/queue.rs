@@ -13,28 +13,28 @@ use crate::{
 };
 
 #[derive(Default)]
-struct ManagerState {
+struct QueueState {
     tasks: HashMap<i64, DownloadItem>,
     reserved_urls: HashSet<String>,
     cancel_senders: HashMap<i64, watch::Sender<bool>>,
     canceled_ids: HashSet<i64>,
 }
 
-pub struct DownloadManager {
-    state: Mutex<ManagerState>,
+pub struct DownloadQueue {
+    state: Mutex<QueueState>,
     events: EventBus,
 }
 
-impl Default for DownloadManager {
+impl Default for DownloadQueue {
     fn default() -> Self {
         Self::new(EventBus::default())
     }
 }
 
-impl DownloadManager {
+impl DownloadQueue {
     pub fn new(events: EventBus) -> Self {
         Self {
-            state: Mutex::new(ManagerState::default()),
+            state: Mutex::new(QueueState::default()),
             events,
         }
     }

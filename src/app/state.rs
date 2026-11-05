@@ -4,7 +4,7 @@ use soundcloud_rs::Client as SoundcloudClient;
 
 use crate::{
     devices::DeviceService,
-    downloader::{DownloadManager, DownloadService, TrackDownloader},
+    downloader::{DownloadQueue, DownloadService, TrackDownloader},
     infra::{EventBus, net::HttpClientPool},
     library::LibraryService,
     providers::{SoundCloudProvider, YouTubeProvider},
@@ -17,7 +17,7 @@ use crate::{
 pub struct AppState {
     pub soundcloud: Arc<SoundcloudClient>,
     pub library: LibraryService,
-    pub download_manager: Arc<DownloadManager>,
+    pub download_queue: Arc<DownloadQueue>,
     pub events: EventBus,
     pub settings: SettingsManager,
     pub search_cache: SearchCache,
@@ -32,12 +32,12 @@ impl AppState {
         settings: SettingsManager,
     ) -> Self {
         let events = EventBus::default();
-        let download_manager = Arc::new(DownloadManager::new(events.clone()));
+        let download_queue = Arc::new(DownloadQueue::new(events.clone()));
 
         Self {
             soundcloud: Arc::new(soundcloud),
             library,
-            download_manager,
+            download_queue,
             events,
             settings,
             search_cache: SearchCache::default(),
@@ -51,7 +51,7 @@ impl AppState {
         DownloadService::new(
             self.library.clone(),
             worker,
-            self.download_manager.clone(),
+            self.download_queue.clone(),
             self.settings.clone(),
         )
     }

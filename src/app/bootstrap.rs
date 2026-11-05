@@ -27,7 +27,7 @@ pub async fn run(args: Args) -> Result<()> {
             state.library.clone(),
             state.device_service(),
             state.settings.clone(),
-            state.download_manager.clone(),
+            state.download_queue.clone(),
             state.events.clone(),
         )
         .await?;

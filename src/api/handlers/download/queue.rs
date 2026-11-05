@@ -38,7 +38,7 @@ pub async fn start_download(
     )
 )]
 pub async fn get_syncing_urls(State(state): State<AppState>) -> impl IntoResponse {
-    Json(state.download_manager.get_reserved_urls())
+    Json(state.download_queue.get_reserved_urls())
 }
 
 #[utoipa::path(
@@ -49,7 +49,7 @@ pub async fn get_syncing_urls(State(state): State<AppState>) -> impl IntoRespons
     )
 )]
 pub async fn get_download_queue(State(state): State<AppState>) -> impl IntoResponse {
-    Json(state.download_manager.get_queue())
+    Json(state.download_queue.get_queue())
 }
 
 #[utoipa::path(
@@ -66,6 +66,6 @@ pub async fn remove_from_queue(
     State(state): State<AppState>,
     Path(id): Path<i64>,
 ) -> impl IntoResponse {
-    state.download_manager.remove_task(id);
+    state.download_queue.remove_task(id);
     StatusCode::OK
 }

@@ -10,7 +10,7 @@ use tokio::sync::mpsc;
 use crate::{
     devices::DeviceService,
     domain::AudioFormat,
-    downloader::{DownloadManager, MessageLevel, ServerEvent},
+    downloader::{DownloadQueue, MessageLevel, ServerEvent},
     infra::EventBus,
     library::LibraryService,
     settings::SettingsManager,
@@ -23,7 +23,7 @@ pub async fn start_library_watcher(
     library: LibraryService,
     devices: DeviceService,
     settings: SettingsManager,
-    dm: Arc<DownloadManager>,
+    queue: Arc<DownloadQueue>,
     events: EventBus,
 ) -> Result<()> {
     let (tx, mut rx) = mpsc::unbounded_channel();
@@ -81,7 +81,7 @@ pub async fn start_library_watcher(
                     }
                 }
                 () = &mut debounce_timer, if has_pending_events => {
-                    if !dm.is_idle() {
+                    if !queue.is_idle() {
                         tracing::debug!("Library watcher: filesystem changes detected, but downloads are active. Deferring sync.");
                         debounce_timer.as_mut().reset(tokio::time::Instant::now() + debounce_duration);
                         continue;

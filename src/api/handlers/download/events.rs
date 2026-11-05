@@ -21,7 +21,7 @@ async fn send_event(socket: &mut WebSocket, event: &ServerEvent) -> bool {
 }
 
 async fn handle_download_events(mut socket: WebSocket, state: AppState) {
-    let queue = state.download_manager.get_queue();
+    let queue = state.download_queue.get_queue();
     let mut rx = state.events.subscribe();
 
     let welcome = ServerEvent::Message {
@@ -49,7 +49,7 @@ async fn handle_download_events(mut socket: WebSocket, state: AppState) {
                 }
             }
             Err(RecvError::Lagged(_)) => {
-                let queue = state.download_manager.get_queue();
+                let queue = state.download_queue.get_queue();
                 for item in queue {
                     let update = ServerEvent::TrackUpdate {
                         item: Box::new(item),

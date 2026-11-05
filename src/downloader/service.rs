@@ -16,9 +16,9 @@ use crate::{
     domain::DiscoveredTrack,
     downloader::{
         error::DownloadError,
-        manager::DownloadManager,
+        queue::DownloadQueue,
+        track::{DownloadedTrackInfo, TrackDownloader},
         types::{DownloadTask, ServerEvent},
-        worker::{DownloadedTrackInfo, TrackDownloader},
     },
     infra::system_time_to_secs,
     library::{LibraryService, RegisterDownloadedTrackArgs},
@@ -30,7 +30,7 @@ use crate::{
 pub struct DownloadService {
     library: LibraryService,
     worker: TrackDownloader,
-    manager: Arc<DownloadManager>,
+    queue: Arc<DownloadQueue>,
     settings: SettingsManager,
 }
 
@@ -38,31 +38,31 @@ impl DownloadService {
     pub fn new(
         library: LibraryService,
         worker: TrackDownloader,
-        manager: Arc<DownloadManager>,
+        queue: Arc<DownloadQueue>,
         settings: SettingsManager,
     ) -> Self {
         Self {
             library,
             worker,
-            manager,
+            queue,
             settings,
         }
     }
 
     pub async fn enqueue(&self, url: Url) -> Result<DownloadStartResponse, ApiError> {
-        if !self.manager.reserve_url(&url) {
+        if !self.queue.reserve_url(&url) {
             return Err(ApiError::conflict("This URL is already being processed")
                 .with_code(ErrorCode::AlreadyProcessing));
         }
 
-        self.manager.publish(ServerEvent::SyncStarted {
+        self.queue.publish(ServerEvent::SyncStarted {
             url: url.to_string(),
         });
 
         let service = self.clone();
         let target_url = url.clone();
         tokio::spawn(async move {
-            struct Guard<'a>(&'a DownloadManager, &'a Url);
+            struct Guard<'a>(&'a DownloadQueue, &'a Url);
             impl Drop for Guard<'_> {
                 fn drop(&mut self) {
                     self.0.release_url(self.1);
@@ -72,9 +72,9 @@ impl DownloadService {
                 }
             }
 
-            let _guard = Guard(&service.manager, &target_url);
+            let _guard = Guard(&service.queue, &target_url);
             if let Err(e) = service.download_url(&target_url).await {
-                service.manager.publish(ServerEvent::Error {
+                service.queue.publish(ServerEvent::Error {
                     message: format!("Download failed: {e}"),
                 });
             }
@@ -92,7 +92,7 @@ impl DownloadService {
 
         if !to_download.is_empty() {
             for track in &to_download {
-                self.manager.add_task(track.clone());
+                self.queue.add_task(track.clone());
             }
             self.download_batch(to_download).await;
         } else {
@@ -170,13 +170,13 @@ impl DownloadService {
     }
 
     async fn execute_track(&self, task: &mut DownloadTask) -> Result<bool, DownloadError> {
-        let cancel_rx = self.manager.get_cancel_receiver(task.track.id);
-        self.manager.update_downloading(task.track.id);
+        let cancel_rx = self.queue.get_cancel_receiver(task.track.id);
+        self.queue.update_downloading(task.track.id);
 
-        let manager = self.manager.clone();
+        let queue = self.queue.clone();
         let track_id = task.track.id;
         let on_progress: ProgressCallback = Arc::new(move |pos, total| {
-            manager.update_progress(track_id, pos, total);
+            queue.update_progress(track_id, pos, total);
         });
 
         let artwork_handle = self.worker.spawn_artwork_fetch(task);
@@ -227,7 +227,7 @@ impl DownloadService {
             .await?;
 
         let now = system_time_to_secs(SystemTime::now());
-        self.manager.update_finished(
+        self.queue.update_finished(
             task.track.id,
             info.format,
             now,
@@ -239,7 +239,7 @@ impl DownloadService {
 
     fn record_failure(&self, task: &DownloadTask, err: &DownloadError) {
         let short_err = err.user_message();
-        self.manager.update_failed(task.track.id, &short_err);
+        self.queue.update_failed(task.track.id, &short_err);
     }
 
     async fn finalize_sync(&self) -> Result<(), DownloadError> {
