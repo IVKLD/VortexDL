@@ -9,34 +9,20 @@ impl YouTubeProvider {
         let configured_proxy = settings.network.get_proxy_url().map(String::from);
         let active_fallback = self.http_clients.active_fallback_proxy();
 
-        let client = self.http_clients.get_or_create(configured_proxy.clone());
-        if let Ok(info) = yt_audio_downloader::get_stream_info_with_client(
-            target,
-            client,
-            configured_proxy.clone(),
-        )
-        .await
-        {
-            return Ok(ResolvedStreamInfo {
-                stream_url: info.stream_url,
-                proxy_used: configured_proxy,
-            });
+        let mut candidates = vec![configured_proxy];
+        if let Some(fallback) = active_fallback {
+            candidates.push(Some(fallback));
         }
 
-        if let Some(ref fallback_proxy) = active_fallback {
-            let fallback_client = self
-                .http_clients
-                .get_or_create(Some(fallback_proxy.clone()));
-            if let Ok(info) = yt_audio_downloader::get_stream_info_with_client(
-                target,
-                fallback_client,
-                Some(fallback_proxy.clone()),
-            )
-            .await
+        for proxy in candidates {
+            let client = self.http_clients.get_or_create(proxy.clone());
+            if let Ok(info) =
+                yt_audio_downloader::get_stream_info_with_client(target, client, proxy.clone())
+                    .await
             {
                 return Ok(ResolvedStreamInfo {
                     stream_url: info.stream_url,
-                    proxy_used: Some(fallback_proxy.clone()),
+                    proxy_used: proxy,
                 });
             }
         }

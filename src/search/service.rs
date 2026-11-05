@@ -107,9 +107,7 @@ impl SearchService {
         limit: usize,
         offset: usize,
     ) -> Result<SearchResponse, ApiError> {
-        let Some(sc_results) = self.soundcloud.search_tracks(query, limit, offset).await else {
-            return Ok(SearchResponse::empty());
-        };
+        let sc_results = self.soundcloud.search_tracks(query, limit, offset).await?;
 
         let has_more = sc_results.next_href.is_some();
         let mut tracks = Vec::new();

@@ -40,7 +40,7 @@ svg {
 
   circle:last-child {
     fill: none;
-    stroke: var(--mat-sys-primary);
+    stroke: var(--mat-sys-on-surface);
     stroke-width: 6px;
     stroke-linecap: round;
     stroke-dasharray: 276.46;
@@ -64,13 +64,17 @@ button {
   --mat-button-tonal-icon-offset: 0;
   --mat-button-tonal-icon-spacing: 0;
 
-  background-color: var(--mat-sys-primary);
-  color: var(--mat-sys-on-primary);
+  --mat-button-tonal-container-color: var(--mat-sys-on-surface);
+  --mat-button-tonal-label-text-color: var(--mat-sys-surface);
+  --mat-button-tonal-state-layer-color: var(--mat-sys-surface);
+
+  background-color: var(--mat-sys-on-surface);
+  color: var(--mat-sys-surface);
 
   mat-spinner {
-    --mat-sys-primary: var(--mat-sys-on-primary);
-    --mat-progress-spinner-color: var(--mat-sys-on-primary);
-    --mdc-circular-progress-active-indicator-color: var(--mat-sys-on-primary);
+    --mat-sys-primary: var(--mat-sys-surface);
+    --mat-progress-spinner-color: var(--mat-sys-surface);
+    --mdc-circular-progress-active-indicator-color: var(--mat-sys-surface);
     --mdc-circular-progress-size: 20px;
     width: 20px;
     height: 20px;

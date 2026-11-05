@@ -1,6 +1,7 @@
 use std::{future::Future, sync::Arc};
 
 use anyhow::{Result, anyhow, bail};
+use soundcloud_rs::ClientBuilder;
 use tokio::{sync::Semaphore, task::JoinSet};
 
 /// What: Concurrently tests an async operation across multiple fallback proxies and returns the first success.
@@ -76,7 +77,7 @@ pub fn test_proxies(
         for url in proxies {
             let cached_id = cached_client_id.clone();
             tasks.spawn(async move {
-                let mut builder = soundcloud_rs::ClientBuilder::new().with_proxy(url.clone());
+                let mut builder = ClientBuilder::new().with_proxy(url.clone());
                 if let Some(id) = cached_id {
                     builder = builder.with_client_id(id);
                 }

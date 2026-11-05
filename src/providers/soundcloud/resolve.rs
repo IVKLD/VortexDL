@@ -1,93 +1,48 @@
 use std::time::Duration;
 
-use anyhow::anyhow;
-use soundcloud_rs::StreamType;
+use soundcloud_rs::{StreamSource, StreamType, Track};
 use tokio::task::JoinHandle;
 use url::Url;
 
-use crate::providers::{
-    ProviderError, ResolvedStreamInfo,
-    soundcloud::{
-        SoundCloudProvider,
-        client::{ClientBuilder, SoundcloudExt},
+use crate::{
+    infra::net,
+    providers::{
+        ProviderError,
+        soundcloud::{ClientBuilder, SoundCloudProvider},
     },
+    settings::UserSettings,
 };
-
-#[derive(Debug, Clone)]
-pub enum StreamSource {
-    Progressive {
-        url: String,
-        proxy_url: Option<String>,
-    },
-    Hls {
-        url: String,
-        proxy_url: Option<String>,
-    },
-}
-
-impl StreamSource {
-    pub fn new(stream_type: StreamType, url: String, proxy_url: Option<String>) -> Self {
-        match stream_type {
-            StreamType::Hls => Self::Hls { url, proxy_url },
-            _ => Self::Progressive { url, proxy_url },
-        }
-    }
-
-    pub fn url(&self) -> &str {
-        match self {
-            Self::Progressive { url, .. } | Self::Hls { url, .. } => url,
-        }
-    }
-}
 
 impl SoundCloudProvider {
     pub async fn resolve_stream(
         &self,
-        cached_track: Option<&soundcloud_rs::Track>,
+        cached_track: Option<&Track>,
         id: i64,
-    ) -> Result<ResolvedStreamInfo, ProviderError> {
-        if let Ok(url) = self.client.resolve_stream_url(cached_track, id).await {
-            let proxy = self
-                .settings
-                .read()
-                .await
-                .network
-                .get_proxy_url()
-                .map(String::from);
-            return Ok(ResolvedStreamInfo {
-                stream_url: url,
-                proxy_used: proxy,
-            });
-        }
+    ) -> Result<StreamSource, ProviderError> {
+        let direct = match cached_track {
+            Some(t) => self.client.resolve_stream_from_track(t).await,
+            None => self.client.resolve_stream(id).await,
+        };
 
-        let settings = self.settings.read().await.clone();
-        let (url, _, proxy) = ClientBuilder::race_stream(&settings, id).await?;
-
-        Ok(ResolvedStreamInfo {
-            stream_url: url,
-            proxy_used: proxy,
-        })
-    }
-
-    pub async fn resolve_stream_source(&self, id: i64) -> Result<StreamSource, ProviderError> {
-        match self.client.resolve_stream(id).await {
-            Ok((url, stype)) => Ok(StreamSource::new(stype, url, self.client.proxy_url.clone())),
+        match direct {
+            Ok((url, stream_type)) => Ok(StreamSource {
+                url,
+                stream_type,
+                proxy_url: self.client.proxy_url.clone(),
+            }),
             Err(direct_err) => {
-                tracing::debug!("Direct stream resolution failed for track {id}: {direct_err}");
-
+                let direct_err = ProviderError::from(direct_err);
                 let settings = self.settings.read().await.clone();
                 if !settings.network.use_proxy || settings.network.fallback_proxies.is_empty() {
                     return Err(direct_err);
                 }
 
-                let (url, stype, proxy_url) = ClientBuilder::race_stream(&settings, id)
-                    .await
-                    .map_err(|e| {
-                        tracing::error!("All fallback proxies failed resolving track {id}: {e}");
-                        ProviderError::Other(anyhow!("All fallback proxies failed: {e}"))
-                    })?;
-
-                Ok(StreamSource::new(stype, url, proxy_url))
+                let (url, stream_type, proxy_url) = race_stream(&settings, id).await?;
+                Ok(StreamSource {
+                    url,
+                    stream_type,
+                    proxy_url,
+                })
             }
         }
     }
@@ -115,5 +70,53 @@ impl SoundCloudProvider {
                 .ok()?;
             resp.bytes().await.ok().map(|b| b.to_vec())
         }))
+    }
+}
+
+async fn race_stream(
+    settings: &UserSettings,
+    id: i64,
+) -> Result<(String, StreamType, Option<String>), ProviderError> {
+    let settings_clone = settings.clone();
+    let res = net::race_proxies(
+        &settings.network.fallback_proxies,
+        settings.network.max_concurrent_proxies,
+        move |proxy| {
+            let settings = settings_clone.clone();
+            async move {
+                let client = ClientBuilder::new(&settings)
+                    .with_proxy(Some(&proxy))
+                    .build()
+                    .await?;
+                let (url, stype) = client.resolve_stream(id).await?;
+                Ok((url, stype, Some(proxy)))
+            }
+        },
+    )
+    .await?;
+    Ok(res)
+}
+
+#[cfg(test)]
+mod tests {
+    use soundcloud_rs::ClientBuilder;
+
+    use super::*;
+
+    #[tokio::test]
+    async fn test_resolve_soundcloud() {
+        let client = ClientBuilder::new().build().await.unwrap();
+        for track_id in [1736012493i64, 2233171517i64] {
+            let track = client
+                .get_track(track_id)
+                .await
+                .expect("track fetch failed");
+            let (stream_url, stream_type) = client
+                .resolve_stream_from_track(&track)
+                .await
+                .expect("resolve stream failed");
+            assert!(!stream_url.is_empty(), "Stream URL should not be empty");
+            assert_eq!(stream_type, StreamType::Hls);
+        }
     }
 }

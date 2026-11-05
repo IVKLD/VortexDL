@@ -4,7 +4,7 @@ use soundcloud_rs::Client as SoundcloudClient;
 
 use crate::{
     devices::DeviceService,
-    downloader::{DownloadManager, DownloadService},
+    downloader::{DownloadManager, DownloadService, TrackDownloader},
     infra::{EventBus, net::HttpClientPool},
     library::LibraryService,
     providers::{SoundCloudProvider, YouTubeProvider},
@@ -47,13 +47,12 @@ impl AppState {
     }
 
     pub fn download_service(&self) -> DownloadService {
+        let worker = TrackDownloader::new(self.soundcloud_provider(), self.youtube_provider());
         DownloadService::new(
             self.library.clone(),
-            self.soundcloud.clone(),
+            worker,
             self.download_manager.clone(),
             self.settings.clone(),
-            self.http_clients.clone(),
-            self.events.clone(),
         )
     }
 

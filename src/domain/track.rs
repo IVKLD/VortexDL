@@ -1,4 +1,5 @@
 use serde::{Deserialize, Serialize};
+use soundcloud_rs::Track;
 use url::Url;
 use yt_audio_downloader::{models::VideoMetadata, youtube_id_to_i64};
 
@@ -26,56 +27,30 @@ pub struct DiscoveredTrack {
     pub duration_ms: Option<u64>,
 }
 
-fn resize_sc_artwork(mut url: Url, size: &str) -> Url {
-    let path = url.path();
-    if path.contains("-large") {
-        let new_path = path.replacen("-large", size, 1);
-        url.set_path(&new_path);
-    }
-    url
-}
-
 impl DiscoveredTrack {
-    pub fn new(
-        id: i64,
-        title: Option<&str>,
-        artist: Option<&soundcloud_rs::UserSummary>,
-        artwork_url: Option<Url>,
-        permalink_url: Option<Url>,
-        duration_ms: Option<u64>,
-    ) -> Self {
-        let uploader = artist
+    pub fn from_track(track: Track) -> Option<Self> {
+        let id = track.id?;
+        let uploader = track
+            .user
+            .as_ref()
             .and_then(|u| u.username.as_deref())
             .unwrap_or("Unknown");
-        let raw_title = title.unwrap_or("Unknown");
-
+        let raw_title = track.title.as_deref().unwrap_or("Unknown");
         let (artist, title) = parse_track_metadata(raw_title, uploader);
+        let artwork_url = track
+            .artwork_url_with_size("t1080x1080")
+            .and_then(|s| Url::parse(&s).ok());
+        let permalink_url = track.permalink_url.and_then(|s| Url::parse(&s).ok());
+        let duration_ms = track.duration.map(|d| d as u64);
 
-        let artwork_url = artwork_url.map(|url| resize_sc_artwork(url, "-t1080x1080"));
-
-        Self {
+        Some(Self {
             id,
             title,
             artist,
             artwork_url,
             permalink_url,
             duration_ms,
-        }
-    }
-
-    pub fn from_track(track: soundcloud_rs::Track) -> Option<Self> {
-        let id = track.id?;
-        let artwork_url = track.artwork_url.and_then(|s| Url::parse(&s).ok());
-        let permalink_url = track.permalink_url.and_then(|s| Url::parse(&s).ok());
-        let duration_ms = track.duration.map(|d| d as u64);
-        Some(Self::new(
-            id,
-            track.title.as_deref(),
-            track.user.as_ref(),
-            artwork_url,
-            permalink_url,
-            duration_ms,
-        ))
+        })
     }
 
     pub fn to_metadata(&self, source_url: Option<&Url>) -> TrackMetadata {

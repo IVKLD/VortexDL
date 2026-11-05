@@ -39,6 +39,10 @@ impl DownloadManager {
         }
     }
 
+    pub fn publish(&self, event: ServerEvent) {
+        self.events.publish(event);
+    }
+
     pub fn reserve_url(&self, url: &Url) -> bool {
         self.state
             .lock_unpoisoned()

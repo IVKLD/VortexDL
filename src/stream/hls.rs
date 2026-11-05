@@ -110,10 +110,16 @@ impl HlsStreamer {
             Err(e) => return Err(e.into()),
         };
 
+        let content_type = if first_chunk.get(4..8) == Some(b"ftyp") {
+            "audio/mp4"
+        } else {
+            "audio/mpeg"
+        };
+
         let stream = state.into_response_stream(first_chunk);
         let mut builder = Response::builder()
             .status(status)
-            .header(CONTENT_TYPE, "audio/mpeg")
+            .header(CONTENT_TYPE, content_type)
             .header(ACCEPT_RANGES, "bytes");
 
         if let Some((start, end)) = req_range {

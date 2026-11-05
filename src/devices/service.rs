@@ -86,10 +86,8 @@ impl DeviceService {
 
         for id in &devices {
             tracing::info!("Scanning music library on device: {id}...");
-            match self.scan_device(id).await {
-                Ok(()) => tracing::info!("Scan triggered successfully on device: {id}"),
-                Err(e) => tracing::error!("Failed to scan device {id}: {e}"),
-            }
+            self.scan_device(id).await?;
+            tracing::info!("Scan triggered successfully on device: {id}");
         }
 
         Ok(())

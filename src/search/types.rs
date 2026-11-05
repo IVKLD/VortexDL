@@ -1,10 +1,9 @@
 use serde::{Deserialize, Serialize};
 use soundcloud_rs::Track as SoundCloudTrack;
-use url::Url;
 use utoipa::ToSchema;
 use yt_audio_downloader::VideoMetadata;
 
-use crate::{domain, providers::SoundCloudProvider};
+use crate::domain;
 
 #[derive(Debug, Deserialize, Serialize, ToSchema, PartialEq, Eq, Clone, Copy)]
 #[serde(rename_all = "snake_case")]
@@ -81,11 +80,7 @@ impl SearchTrackItem {
             .as_ref()
             .and_then(|u| u.username.clone())
             .unwrap_or_else(|| "Unknown".to_string());
-        let artwork_url = track
-            .artwork_url
-            .as_deref()
-            .and_then(|url| Url::parse(url).ok())
-            .map(|url| SoundCloudProvider::resize_artwork_url(url, "-t200x200").to_string());
+        let artwork_url = track.artwork_url_with_size("t200x200");
 
         Self {
             id,

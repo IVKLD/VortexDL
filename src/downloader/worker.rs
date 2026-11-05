@@ -82,11 +82,7 @@ impl TrackDownloader {
                 Ok(())
             }
             SourcePlatform::SoundCloud => {
-                let stream = self.soundcloud.resolve_stream_source(task.track.id).await?;
-                if task.track.permalink_url.is_none() {
-                    task.track.permalink_url = Url::parse(stream.url()).ok();
-                }
-                self.soundcloud.download(task, stream, on_progress).await?;
+                self.soundcloud.download(task, on_progress).await?;
                 Ok(())
             }
             SourcePlatform::Local => Err(DownloadError::LocalTrack {

@@ -1,11 +1,11 @@
 use std::{
     collections::{HashMap, HashSet},
-    io,
     path::PathBuf,
     sync::Arc,
     time::SystemTime,
 };
 
+use anyhow::Result;
 use tokio::sync::RwLock;
 use url::Url;
 
@@ -147,14 +147,12 @@ impl LibraryService {
         }
     }
 
-    pub async fn clear_deleted_stats(&self) -> Result<(), io::Error> {
-        tokio::task::spawn_blocking(StatsRepo::clear_deleted_history)
-            .await
-            .map_err(|e| io::Error::other(e.to_string()))?
-            .map_err(|e| io::Error::other(e.to_string()))
+    pub async fn clear_deleted_stats(&self) -> Result<()> {
+        tokio::task::spawn_blocking(StatsRepo::clear_deleted_history).await??;
+        Ok(())
     }
 
-    pub async fn remove_tracks(&self, ids: Vec<i64>) -> Result<Vec<LibraryTrack>, io::Error> {
+    pub async fn remove_tracks(&self, ids: Vec<i64>) -> Result<Vec<LibraryTrack>> {
         let removed = self.inner.write().await.remove_tracks(&ids);
         if removed.is_empty() {
             return Ok(removed);
@@ -181,12 +179,12 @@ impl LibraryService {
             });
         }
 
-        tokio::task::spawn_blocking(move || {
-            let _ = TrackCacheRepo::update_batch(&HashMap::new(), &to_remove_cache);
-            let _ = StatsRepo::record_deleted_tracks(&audit_records);
+        tokio::task::spawn_blocking(move || -> Result<()> {
+            TrackCacheRepo::update_batch(&HashMap::new(), &to_remove_cache)?;
+            StatsRepo::record_deleted_tracks(&audit_records)?;
+            Ok(())
         })
-        .await
-        .map_err(|e| io::Error::other(e.to_string()))?;
+        .await??;
 
         Ok(removed)
     }
@@ -194,7 +192,7 @@ impl LibraryService {
     pub async fn register_downloaded_track(
         &self,
         args: RegisterDownloadedTrackArgs,
-    ) -> Result<TrackMetadata, io::Error> {
+    ) -> Result<TrackMetadata> {
         let now = system_time_to_secs(SystemTime::now());
         let mtime = tokio::fs::metadata(&args.path)
             .await
@@ -228,8 +226,8 @@ impl LibraryService {
         let metadata_clone = metadata.clone();
         let size = args.size;
 
-        tokio::task::spawn_blocking(move || {
-            if let Err(err) = metadata::save_track_info(SaveTrackArgs {
+        tokio::task::spawn_blocking(move || -> Result<()> {
+            metadata::save_track_info(SaveTrackArgs {
                 path: &file_path,
                 sc_id: &track_id_str,
                 title: &track_title,
@@ -237,12 +235,7 @@ impl LibraryService {
                 artwork_url: artwork_url.as_ref(),
                 source_url: source_url.as_ref(),
                 artwork_data,
-            }) {
-                tracing::warn!(
-                    track_id = track_id_str,
-                    "Failed to save track metadata: {err:#}"
-                );
-            }
+            })?;
 
             let mut to_update = HashMap::new();
             to_update.insert(
@@ -254,16 +247,11 @@ impl LibraryService {
                     mtime,
                 },
             );
-            if let Err(err) = TrackCacheRepo::update_batch(&to_update, &HashSet::new()) {
-                tracing::error!(
-                    track_id = track_id_str,
-                    "Failed to update track cache: {err:#}"
-                );
-            }
-            let _ = StatsRepo::record_download(size);
+            TrackCacheRepo::update_batch(&to_update, &HashSet::new())?;
+            StatsRepo::record_download(size)?;
+            Ok(())
         })
-        .await
-        .map_err(|e| io::Error::other(e.to_string()))?;
+        .await??;
 
         self.inner.write().await.update_track(
             args.id,

@@ -7,8 +7,8 @@ use crate::{infra::net::HttpClientPool, settings::SettingsManager};
 
 #[derive(Clone)]
 pub struct YouTubeProvider {
-    pub(crate) settings: SettingsManager,
-    pub(crate) http_clients: HttpClientPool,
+    settings: SettingsManager,
+    http_clients: HttpClientPool,
 }
 
 impl YouTubeProvider {

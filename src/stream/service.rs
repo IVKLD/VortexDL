@@ -17,7 +17,9 @@ use crate::{
     domain::SourcePlatform,
     infra::net::HttpClientPool,
     library::LibraryService,
-    providers::{HlsPlaylist, ProviderError, SoundCloudProvider, YouTubeProvider},
+    providers::{
+        HlsPlaylist, ProviderError, ResolvedStreamInfo, SoundCloudProvider, YouTubeProvider,
+    },
     search::cache::SearchCache,
     stream::{
         cache::{CachedStream, StreamCache},
@@ -82,57 +84,39 @@ impl StreamService {
 
         if let Some(ref playlist) = cached.hls_playlist {
             let client = self.http_clients.get_or_create(cached.proxy.clone());
-            match HlsStreamer::new(client, playlist.clone())
-                .stream(range_header.as_ref())
+            if let Some(res) = self
+                .stream_hls_playlist(id, client, playlist.clone(), range_header.as_ref())
                 .await?
             {
-                HlsStreamOutcome::Response(res) => return Ok(res),
-                HlsStreamOutcome::Expired => {
-                    self.cache.remove(id);
-                    cached = self.resolve_stream(id, url_param.clone()).await?;
-                }
+                return Ok(res);
             }
+            cached = self.resolve_stream(id, url_param.clone()).await?;
         }
 
         let mut active_client = self.http_clients.get_or_create(cached.proxy.clone());
         let mut active_url = cached.url.clone();
-        let mut upstream_range = if HlsPlaylist::is_hls_url(&active_url) {
-            None
-        } else {
-            range_header.as_ref()
-        };
+        let mut upstream_res = self
+            .fetch_upstream(&active_client, &active_url, range_header.as_ref())
+            .await?;
 
-        let mut upstream_res =
-            Self::send_upstream_request(&active_client, &active_url, upstream_range).await?;
-
-        let status = upstream_res.status().as_u16();
-        if matches!(status, 401 | 403 | 404 | 410) {
+        if matches!(upstream_res.status().as_u16(), 401 | 403 | 404 | 410) {
             self.cache.remove(id);
             if let Ok(fresh) = self.resolve_stream(id, url_param).await {
                 let fresh_client = self.http_clients.get_or_create(fresh.proxy);
-                let fresh_range = if HlsPlaylist::is_hls_url(&fresh.url) {
-                    None
-                } else {
-                    range_header.as_ref()
-                };
-                if let Ok(res) =
-                    Self::send_upstream_request(&fresh_client, &fresh.url, fresh_range).await
+                if let Ok(res) = self
+                    .fetch_upstream(&fresh_client, &fresh.url, range_header.as_ref())
+                    .await
                     && (res.status().is_success() || res.status().as_u16() == 206)
                 {
                     active_client = fresh_client;
                     active_url = fresh.url;
-                    upstream_range = fresh_range;
                     upstream_res = res;
                 }
             }
         }
 
         if HlsPlaylist::is_hls_response(&upstream_res, &active_url) {
-            let is_full_body = upstream_range.is_none()
-                || upstream_range
-                    .and_then(|h| h.to_str().ok())
-                    .is_some_and(|s| s.trim() == "bytes=0-");
-            if !is_full_body {
+            if range_header.is_some() {
                 upstream_res =
                     Self::send_upstream_request(&active_client, &active_url, None).await?;
             }
@@ -141,21 +125,48 @@ impl StreamService {
                 HlsStreamer::resolve_playlist(&active_client, upstream_res, &active_url).await?;
             self.cache.set_hls_playlist(id, playlist.clone());
 
-            return match HlsStreamer::new(active_client, playlist)
-                .stream(range_header.as_ref())
+            if let Some(res) = self
+                .stream_hls_playlist(id, active_client, playlist, range_header.as_ref())
                 .await?
             {
-                HlsStreamOutcome::Response(res) => Ok(res),
-                HlsStreamOutcome::Expired => {
-                    self.cache.remove(id);
-                    Err(ProviderError::InvalidStream(
-                        "Upstream HLS stream expired immediately after resolution".to_string(),
-                    ))
-                }
-            };
+                return Ok(res);
+            }
+            return Err(ProviderError::InvalidStream(
+                "Upstream HLS stream expired immediately after resolution".to_string(),
+            ));
         }
 
         Self::build_passthrough_response(upstream_res)
+    }
+
+    async fn stream_hls_playlist(
+        &self,
+        id: i64,
+        client: Client,
+        playlist: HlsPlaylist,
+        range: Option<&HeaderValue>,
+    ) -> Result<Option<Response>, ProviderError> {
+        match HlsStreamer::new(client, playlist).stream(range).await? {
+            HlsStreamOutcome::Response(res) => Ok(Some(res)),
+            HlsStreamOutcome::Expired => {
+                self.cache.remove(id);
+                Ok(None)
+            }
+        }
+    }
+
+    async fn fetch_upstream(
+        &self,
+        client: &Client,
+        url: &str,
+        range: Option<&HeaderValue>,
+    ) -> Result<ReqwestResponse, ProviderError> {
+        let req_range = if HlsPlaylist::is_hls_url(url) {
+            None
+        } else {
+            range
+        };
+        Self::send_upstream_request(client, url, req_range).await
     }
 
     pub async fn resolve_stream(
@@ -188,9 +199,14 @@ impl StreamService {
             }
             _ => {
                 let cached_track = self.search_cache.get_soundcloud_track(id);
-                self.soundcloud
+                let stream = self
+                    .soundcloud
                     .resolve_stream(cached_track.as_ref(), id)
-                    .await?
+                    .await?;
+                ResolvedStreamInfo {
+                    stream_url: stream.url,
+                    proxy_used: stream.proxy_url,
+                }
             }
         };
 

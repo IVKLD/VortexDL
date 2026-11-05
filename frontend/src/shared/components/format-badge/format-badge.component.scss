@@ -1,5 +1,7 @@
 :host {
   display: inline-flex;
+  align-self: flex-start;
+  width: fit-content;
   align-items: center;
   justify-content: center;
   vertical-align: middle;

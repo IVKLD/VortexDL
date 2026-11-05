@@ -1,7 +1,7 @@
 use std::fmt::{Display, Formatter, Result as FmtResult};
 
 use serde::{Deserialize, Serialize};
-use url::Url;
+use soundcloud_rs::is_soundcloud_url;
 use utoipa::ToSchema;
 use yt_audio_downloader::is_youtube_url;
 
@@ -14,27 +14,10 @@ pub enum SourcePlatform {
 }
 
 impl SourcePlatform {
-    pub fn is_soundcloud_url(url: &str) -> bool {
-        if let Ok(parsed) = Url::parse(url)
-            && let Some(host) = parsed.host_str()
-        {
-            let host = host.to_lowercase();
-            return host == "soundcloud.com"
-                || host.ends_with(".soundcloud.com")
-                || host == "on.soundcloud.com"
-                || host == "soundcloud.cloud"
-                || host.ends_with(".soundcloud.cloud");
-        }
-        let lower = url.to_lowercase();
-        lower.contains("soundcloud.com")
-            || lower.contains("on.soundcloud.com")
-            || lower.contains("soundcloud.cloud")
-    }
-
     pub fn detect_from_url_str(url: &str) -> Self {
         if is_youtube_url(url) {
             Self::YouTube
-        } else if Self::is_soundcloud_url(url) {
+        } else if is_soundcloud_url(url) {
             Self::SoundCloud
         } else {
             Self::Local

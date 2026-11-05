@@ -50,14 +50,14 @@
       position: absolute;
       inset: 0;
       border-radius: inherit;
-      background: color-mix(in srgb, var(--mat-sys-scrim) 50%, transparent);
+      background: color-mix(in srgb, var(--mat-sys-scrim) 45%, transparent);
       backdrop-filter: blur(4px);
       display: flex;
       align-items: center;
       justify-content: center;
       opacity: 0;
       transition: opacity 0.25s cubic-bezier(0.4, 0, 0.2, 1);
-      color: var(--mat-sys-on-primary);
+      color: var(--mat-sys-on-surface);
 
       mat-icon {
         font-size: 32px;
@@ -69,12 +69,12 @@
     }
 
     &:hover {
-      border-color: var(--mat-sys-primary);
-      box-shadow: 0 16px 40px rgba(0, 0, 0, 0.6);
+      border-color: var(--mat-sys-outline);
+      box-shadow: 0 16px 40px rgba(0, 0, 0, 0.7);
 
       img {
-        transform: scale(1.08);
-        filter: brightness(0.85);
+        transform: scale(1.06);
+        filter: brightness(0.88);
       }
 
       .overlay-hint {
@@ -87,7 +87,7 @@
     }
 
     &:focus-visible {
-      outline: 2px solid var(--mat-sys-primary);
+      outline: 2px solid var(--mat-sys-outline);
       outline-offset: 2px;
     }
   }

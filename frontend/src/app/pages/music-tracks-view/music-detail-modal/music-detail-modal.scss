@@ -89,6 +89,10 @@ mat-dialog-content {
         font-size: 0.95rem;
         font-weight: 500;
       }
+
+      app-format-badge {
+        align-self: flex-start;
+      }
     }
   }
 }

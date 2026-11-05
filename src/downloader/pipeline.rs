@@ -5,7 +5,6 @@ use std::{
 };
 
 use futures::stream::{self, StreamExt};
-use soundcloud_rs::Client as SoundcloudClient;
 use url::Url;
 
 use crate::{
@@ -18,73 +17,36 @@ use crate::{
     downloader::{
         error::DownloadError,
         manager::DownloadManager,
-        types::{DownloadItem, DownloadTask, ServerEvent},
+        types::{DownloadTask, ServerEvent},
         worker::{DownloadedTrackInfo, TrackDownloader},
     },
-    infra::{EventBus, net::HttpClientPool, system_time_to_secs},
+    infra::system_time_to_secs,
     library::{LibraryService, RegisterDownloadedTrackArgs},
-    providers::{ProgressCallback, SoundCloudProvider, YouTubeProvider},
+    providers::ProgressCallback,
     settings::SettingsManager,
 };
 
 #[derive(Clone)]
 pub struct DownloadService {
     library: LibraryService,
-    manager: Arc<DownloadManager>,
     worker: TrackDownloader,
+    manager: Arc<DownloadManager>,
     settings: SettingsManager,
-    events: EventBus,
 }
 
 impl DownloadService {
     pub fn new(
         library: LibraryService,
-        soundcloud_client: Arc<SoundcloudClient>,
+        worker: TrackDownloader,
         manager: Arc<DownloadManager>,
         settings: SettingsManager,
-        http_clients: HttpClientPool,
-        events: EventBus,
     ) -> Self {
-        let soundcloud =
-            SoundCloudProvider::new(soundcloud_client, settings.clone(), http_clients.clone());
-        let youtube = YouTubeProvider::new(settings.clone(), http_clients);
-        let worker = TrackDownloader::new(soundcloud, youtube);
-
         Self {
             library,
-            manager,
             worker,
+            manager,
             settings,
-            events,
         }
-    }
-
-    pub fn manager(&self) -> &Arc<DownloadManager> {
-        &self.manager
-    }
-
-    pub fn worker(&self) -> &TrackDownloader {
-        &self.worker
-    }
-
-    pub fn events(&self) -> &EventBus {
-        &self.events
-    }
-
-    pub fn get_queue(&self) -> Vec<DownloadItem> {
-        self.manager.get_queue()
-    }
-
-    pub fn get_reserved_urls(&self) -> Vec<String> {
-        self.manager.get_reserved_urls()
-    }
-
-    pub fn remove_from_queue(&self, id: i64) {
-        self.manager.remove_task(id);
-    }
-
-    pub fn is_idle(&self) -> bool {
-        self.manager.is_idle()
     }
 
     pub async fn enqueue(&self, url: Url) -> Result<DownloadStartResponse, ApiError> {
@@ -93,26 +55,26 @@ impl DownloadService {
                 .with_code(ErrorCode::AlreadyProcessing));
         }
 
-        self.events.publish(ServerEvent::SyncStarted {
+        self.manager.publish(ServerEvent::SyncStarted {
             url: url.to_string(),
         });
 
         let service = self.clone();
         let target_url = url.clone();
         tokio::spawn(async move {
-            struct Guard<'a>(&'a DownloadManager, &'a EventBus, &'a Url);
+            struct Guard<'a>(&'a DownloadManager, &'a Url);
             impl Drop for Guard<'_> {
                 fn drop(&mut self) {
-                    self.0.release_url(self.2);
-                    self.1.publish(ServerEvent::SyncFinished {
-                        url: Some(self.2.to_string()),
+                    self.0.release_url(self.1);
+                    self.0.publish(ServerEvent::SyncFinished {
+                        url: Some(self.1.to_string()),
                     });
                 }
             }
 
-            let _guard = Guard(&service.manager, &service.events, &target_url);
+            let _guard = Guard(&service.manager, &target_url);
             if let Err(e) = service.download_url(&target_url).await {
-                service.events.publish(ServerEvent::Error {
+                service.manager.publish(ServerEvent::Error {
                     message: format!("Download failed: {e}"),
                 });
             }
@@ -137,12 +99,8 @@ impl DownloadService {
             tracing::info!("Everything synced!");
         }
 
-        self.finalize_sync().await;
+        self.finalize_sync().await?;
         Ok(())
-    }
-
-    pub async fn discover_tracks(&self, url: &Url) -> Result<Vec<DiscoveredTrack>, DownloadError> {
-        self.worker.discover_tracks(url).await
     }
 
     async fn filter_pending_tracks(&self, tracks: Vec<DiscoveredTrack>) -> Vec<DiscoveredTrack> {
@@ -202,8 +160,17 @@ impl DownloadService {
         output_dir: &Path,
     ) -> bool {
         let mut task = DownloadTask::new(&track, naming_template, output_dir);
-        let cancel_rx = self.manager.get_cancel_receiver(task.track.id);
+        match self.execute_track(&mut task).await {
+            Ok(completed) => completed,
+            Err(err) => {
+                self.record_failure(&task, &err);
+                false
+            }
+        }
+    }
 
+    async fn execute_track(&self, task: &mut DownloadTask) -> Result<bool, DownloadError> {
+        let cancel_rx = self.manager.get_cancel_receiver(task.track.id);
         self.manager.update_downloading(task.track.id);
 
         let manager = self.manager.clone();
@@ -212,37 +179,29 @@ impl DownloadService {
             manager.update_progress(track_id, pos, total);
         });
 
-        let artwork_handle = self.worker.spawn_artwork_fetch(&task);
-        let download_result = self
+        let artwork_handle = self.worker.spawn_artwork_fetch(task);
+        let Some(info) = self
             .worker
-            .download(&mut task, cancel_rx, Some(on_progress))
-            .await;
+            .download(task, cancel_rx, Some(on_progress))
+            .await?
+        else {
+            tracing::info!("Track download canceled: {}", task.display_name());
+            if let Some(h) = artwork_handle {
+                h.abort();
+            }
+            return Ok(false);
+        };
 
-        match download_result {
-            Ok(Some(info)) => {
-                self.finalize_track(task, info, artwork_handle).await;
-                true
-            }
-            Ok(None) => {
-                tracing::info!("Track download canceled: {}", task.display_name());
-                if let Some(h) = artwork_handle {
-                    h.abort();
-                }
-                false
-            }
-            Err(err) => {
-                self.record_failure(&task, &err);
-                false
-            }
-        }
+        self.finalize_track(task, info, artwork_handle).await?;
+        Ok(true)
     }
 
     async fn finalize_track(
         &self,
-        task: DownloadTask,
+        task: &DownloadTask,
         info: DownloadedTrackInfo,
         artwork_handle: Option<tokio::task::JoinHandle<Option<Vec<u8>>>>,
-    ) {
+    ) -> Result<(), DownloadError> {
         tracing::info!("[OK] {}", task.display_name());
 
         let artwork_data = match artwork_handle {
@@ -254,8 +213,7 @@ impl DownloadService {
         let track_id = task.track.id;
         let size = info.size;
 
-        if let Err(err) = self
-            .library
+        self.library
             .register_downloaded_track(RegisterDownloadedTrackArgs {
                 id: track_id,
                 path: task.file_path.clone(),
@@ -266,10 +224,7 @@ impl DownloadService {
                 artwork_data,
                 size,
             })
-            .await
-        {
-            tracing::warn!(track_id, "Failed to register downloaded track: {err:#}");
-        }
+            .await?;
 
         let now = system_time_to_secs(SystemTime::now());
         self.manager.update_finished(
@@ -279,17 +234,18 @@ impl DownloadService {
             permalink_url.as_ref(),
             size,
         );
+        Ok(())
     }
 
     fn record_failure(&self, task: &DownloadTask, err: &DownloadError) {
         let short_err = err.user_message();
         self.manager.update_failed(task.track.id, &short_err);
-        tracing::error!("[ERROR] {} — {short_err}", task.display_name());
     }
 
-    async fn finalize_sync(&self) {
+    async fn finalize_sync(&self) -> Result<(), DownloadError> {
         let device_service = DeviceService::new(self.library.clone(), self.settings.clone());
         device_service.sync_connected().await;
-        self.worker.soundcloud.sync_client_id().await;
+        self.worker.soundcloud.sync_client_id().await?;
+        Ok(())
     }
 }

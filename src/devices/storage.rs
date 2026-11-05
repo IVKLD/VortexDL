@@ -44,57 +44,58 @@ done
             let mut current_root: Option<(String, String)> = None;
             let mut found_subs = Vec::new();
 
-            let process_volume = |root_entry: Option<(String, String)>,
-                                      subs: Vec<String>,
-                                      storages: &mut Vec<StorageInfo>| {
-                if let Some((name, root)) = root_entry {
-                    let is_internal = name == "emulated";
-                    let storage_type = if is_internal {
-                        StorageType::Internal
-                    } else {
-                        StorageType::SdCard
-                    };
-
-                    if subs.is_empty() {
-                        let default_music = format!("{root}/Music");
-                        let default_label = if is_internal {
-                            "Internal Storage (Music)".to_string()
+            let process_volume =
+                |root_entry: Option<(String, String)>,
+                 subs: Vec<String>,
+                 storages: &mut Vec<StorageInfo>| {
+                    if let Some((name, root)) = root_entry {
+                        let is_internal = name == "emulated";
+                        let storage_type = if is_internal {
+                            StorageType::Internal
                         } else {
-                            format!("SD Card ({name}/Music)")
+                            StorageType::SdCard
                         };
-                        storages.push(StorageInfo {
-                            name: default_label,
-                            path: default_music,
-                            storage_type: storage_type.clone(),
-                        });
-                    } else {
-                        for sub_path in subs {
-                            let folder_name = sub_path.rsplit('/').next().unwrap_or("Music");
-                            let label = if is_internal {
-                                format!("Internal Storage ({folder_name})")
+
+                        if subs.is_empty() {
+                            let default_music = format!("{root}/Music");
+                            let default_label = if is_internal {
+                                "Internal Storage (Music)".to_string()
                             } else {
-                                format!("SD Card ({name}/{folder_name})")
+                                format!("SD Card ({name}/Music)")
                             };
                             storages.push(StorageInfo {
-                                name: label,
-                                path: sub_path,
+                                name: default_label,
+                                path: default_music,
                                 storage_type: storage_type.clone(),
                             });
+                        } else {
+                            for sub_path in subs {
+                                let folder_name = sub_path.rsplit('/').next().unwrap_or("Music");
+                                let label = if is_internal {
+                                    format!("Internal Storage ({folder_name})")
+                                } else {
+                                    format!("SD Card ({name}/{folder_name})")
+                                };
+                                storages.push(StorageInfo {
+                                    name: label,
+                                    path: sub_path,
+                                    storage_type: storage_type.clone(),
+                                });
+                            }
                         }
-                    }
 
-                    let root_label = if is_internal {
-                        "Internal Storage (Root)".to_string()
-                    } else {
-                        format!("SD Card ({name})")
-                    };
-                    storages.push(StorageInfo {
-                        name: root_label,
-                        path: root,
-                        storage_type,
-                    });
-                }
-            };
+                        let root_label = if is_internal {
+                            "Internal Storage (Root)".to_string()
+                        } else {
+                            format!("SD Card ({name})")
+                        };
+                        storages.push(StorageInfo {
+                            name: root_label,
+                            path: root,
+                            storage_type,
+                        });
+                    }
+                };
 
             for line in output.lines() {
                 let line = line.trim();
