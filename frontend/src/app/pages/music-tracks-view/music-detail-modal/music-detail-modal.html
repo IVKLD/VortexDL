@@ -26,7 +26,7 @@
         @if (track.format && track.format !== AudioFormat.UNKNOWN) {
             <div>
                 <span class="info-label">Format</span>
-                <b [attr.data-format]="track.format">{{ track.format }}</b>
+                <app-format-badge [format]="track.format" />
             </div>
         }
         @if (track.size) {

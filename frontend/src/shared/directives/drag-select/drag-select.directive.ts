@@ -23,7 +23,7 @@ export interface SelectionHandler {
         '(click)': 'onClick($event)',
     },
 })
-export class DragSelectDirective<T extends SelectableItem = SelectableItem> {
+export class DragSelectDirective<T extends SelectableItem> {
     private readonly _dragService = inject(DragSelectService);
 
     public readonly item = input.required<T>({ alias: 'appDragSelect' });

@@ -50,14 +50,14 @@
       position: absolute;
       inset: 0;
       border-radius: inherit;
-      background: color-mix(in srgb, var(--mat-sys-scrim, #000) 50%, transparent);
+      background: color-mix(in srgb, var(--mat-sys-scrim) 50%, transparent);
       backdrop-filter: blur(4px);
       display: flex;
       align-items: center;
       justify-content: center;
       opacity: 0;
       transition: opacity 0.25s cubic-bezier(0.4, 0, 0.2, 1);
-      color: var(--mat-sys-on-primary, #fff);
+      color: var(--mat-sys-on-primary);
 
       mat-icon {
         font-size: 32px;
@@ -104,18 +104,12 @@
       font-weight: 700;
       font-size: 15px;
       color: var(--mat-sys-on-surface);
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
     }
 
     p {
       margin: 0;
       font-size: 13px;
       color: var(--mat-sys-on-surface-variant);
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
     }
   }
 }

@@ -17,3 +17,23 @@
     --mat-button-text-icon-offset: 0;
   }
 }
+
+.pill-group {
+  display: flex;
+
+  button {
+    --mat-button-filled-horizontal-padding: 0px;
+
+    &:first-of-type {
+      --mat-button-filled-container-shape: 10em 0 0 10em;
+    }
+
+    &:last-of-type {
+      --mat-button-filled-container-shape: 0 10em 10em 0;
+    }
+
+    &:first-of-type:last-of-type {
+      --mat-button-filled-container-shape: 10em;
+    }
+  }
+}

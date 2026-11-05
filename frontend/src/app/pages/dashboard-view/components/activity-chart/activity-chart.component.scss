@@ -1,68 +1,44 @@
-:host {
-  display: flex;
-  flex-direction: column;
-  background: var(--mat-sys-surface-container-low);
-  border: 1px solid var(--mat-sys-outline-variant);
-  border-radius: 16px;
-  padding: 1.5rem;
-  gap: 1.5rem;
+@use '../../styles/dashboard-card';
 
-  header {
+:host header {
+
+  .legend {
     display: flex;
-    align-items: center;
-    justify-content: space-between;
+    gap: 1rem;
+    font-size: 0.8rem;
+    color: var(--mat-sys-on-surface-variant);
 
-    h2 {
+    span {
       display: flex;
       align-items: center;
-      gap: 0.75rem;
-      font-size: 1.25rem;
-      font-weight: 600;
-      margin: 0;
-      color: var(--mat-sys-on-surface);
+      gap: 0.4rem;
 
-      mat-icon {
-        color: var(--mat-sys-on-surface-variant);
+      &::before {
+        content: '';
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
       }
-    }
 
-    .legend {
-      display: flex;
-      gap: 1rem;
-      font-size: 0.8rem;
-      color: var(--mat-sys-on-surface-variant);
+      &.dl::before {
+        background: var(--mat-sys-primary);
+      }
 
-      span {
-        display: flex;
-        align-items: center;
-        gap: 0.4rem;
-
-        &::before {
-          content: '';
-          width: 8px;
-          height: 8px;
-          border-radius: 50%;
-        }
-
-        &.dl::before {
-          background: var(--mat-sys-primary);
-        }
-
-        &.del::before {
-          background: var(--mat-sys-error);
-        }
+      &.del::before {
+        background: var(--mat-sys-error);
       }
     }
   }
+}
 
-  .chart {
-    display: flex;
-    align-items: flex-end;
-    justify-content: space-between;
-    height: 180px;
-    gap: 0.5rem;
+.chart {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  height: 180px;
+  gap: 0.5rem;
 
-    > div {
+    >div {
       display: flex;
       flex-direction: column;
       align-items: center;
@@ -70,7 +46,7 @@
       height: 100%;
       gap: 0.5rem;
 
-      > div {
+      >div {
         display: flex;
         align-items: flex-end;
         justify-content: center;
@@ -102,7 +78,3 @@
       }
     }
   }
-}
-
-
-

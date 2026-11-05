@@ -1,13 +1,11 @@
 @let fields = form();
 
 @if (fields.length === 0) {
-  <div class="empty">
-    <mat-icon>cable</mat-icon>
-    <p>
-      No devices configured. Connect an ADB device to your PC to automatically
-      list it here.
-    </p>
-  </div>
+  <app-empty-pane
+    icon="cable"
+    heading="No devices configured"
+    description="Connect an ADB device to your PC to automatically list it here."
+  />
 } @else {
   <div class="list">
     @for (field of fields; track $index) {
@@ -18,13 +16,13 @@
         <header>
           <div>
             <mat-icon>phone_android</mat-icon>
-            <span>{{ device.deviceId }}</span>
-            <span
-              [class]="'badge ' + (isConnected ? 'connected' : 'disconnected')"
+            <span class="truncate">{{ device.deviceId }}</span>
+            <app-status-badge
+              [variant]="isConnected ? 'success' : 'error'"
+              dot
             >
-              <span></span>
               {{ isConnected ? "active" : "disconnected" }}
-            </span>
+            </app-status-badge>
           </div>
 
           <div>

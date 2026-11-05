@@ -1,0 +1,7 @@
+@if (dot()) {
+  <span class="status-dot"></span>
+}
+@if (icon(); as iconName) {
+  <mat-icon [class.rotating]="rotating()">{{ iconName }}</mat-icon>
+}
+<ng-content />

@@ -6,6 +6,7 @@ import { MatIconButton } from '@angular/material/button';
 import { MatIcon } from '@angular/material/icon';
 import { MatTooltip } from '@angular/material/tooltip';
 import { FileSizePipe } from '@shared/pipes/file-size.pipe';
+import { FormatBadgeComponent } from '@shared/components/format-badge/format-badge.component';
 import { PlayerService } from '@app/services/player.service';
 import { TrackActionsService } from '@app/services/track-actions.service';
 import { MusicTracksViewState } from '@app/pages/music-tracks-view/music-tracks-view.state';
@@ -23,6 +24,7 @@ import { MusicTracksViewState } from '@app/pages/music-tracks-view/music-tracks-
         FileSizePipe,
         DatePipe,
         MatDialogTitle,
+        FormatBadgeComponent,
     ],
     templateUrl: './music-detail-modal.html',
     styleUrl: './music-detail-modal.scss',

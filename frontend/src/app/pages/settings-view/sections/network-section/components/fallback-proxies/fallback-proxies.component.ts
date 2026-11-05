@@ -13,15 +13,17 @@ import {
 import {NetworkSettings} from "@app/pages/settings-view/models/settings-form.model";
 import {SettingsTestingService} from "@app/pages/settings-view/settings.service";
 import {parseErrorMessage} from '@shared/error-utils';
+import { StatusBadgeComponent } from '@shared/components/status-badge/status-badge.component';
+import { EmptyPaneComponent } from '@shared/components/empty-pane/empty-pane';
 
 @Component({
     selector: 'app-fallback-proxies',
     imports: [
-        MatIcon, MatIconButton, MatTooltip, MatDivider
+        MatIcon, MatIconButton, MatTooltip, MatDivider, StatusBadgeComponent, EmptyPaneComponent
     ],
     templateUrl: './fallback-proxies.component.html',
     styleUrl: './fallback-proxies.component.scss',
-    })
+})
 export class FallbackProxiesComponent {
     private readonly _testingService = inject(SettingsTestingService);
     private readonly _dialog = inject(MatDialog);

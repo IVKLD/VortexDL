@@ -1,0 +1,56 @@
+:host {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: 20px;
+  border: 1px solid transparent;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  line-height: 1;
+  vertical-align: middle;
+
+  mat-icon {
+    font-size: 14px;
+    width: 14px;
+    height: 14px;
+  }
+
+  .status-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: currentColor;
+  }
+
+  &.success {
+    color: var(--vortex-success);
+    background: var(--vortex-success-bg);
+    border-color: var(--vortex-success-border);
+
+    .status-dot {
+      box-shadow: 0 0 8px currentColor;
+    }
+  }
+
+  &.error {
+    color: var(--vortex-error);
+    background: var(--vortex-error-bg);
+    border-color: var(--vortex-error-border);
+  }
+
+  &.checking,
+  &.info {
+    color: var(--vortex-info);
+    background: var(--vortex-info-bg);
+    border-color: var(--vortex-info-border);
+  }
+
+  &.idle {
+    color: var(--vortex-text-secondary);
+    background: rgba(255, 255, 255, 0.05);
+    border-color: var(--vortex-divider);
+  }
+}

@@ -1,3 +1,5 @@
+@use '../../styles/player-common';
+
 :host {
   display: flex;
   justify-content: center;
@@ -7,13 +9,6 @@
 }
 
 button {
-  color: var(--mat-sys-on-surface-variant);
-  transition: color 0.2s ease;
-
-  &:hover {
-    color: var(--mat-sys-on-surface);
-  }
-
   &.active {
     color: var(--mat-sys-primary);
   }
@@ -22,4 +17,3 @@ button {
     color: var(--mat-sys-error);
   }
 }
-

@@ -1,38 +1,36 @@
 @let data = item();
 
-<div [class.failed]="data.status === DownloadStatus.Failed" class="item" [style.--progress-width.%]="progressPercent">
-    @if (hasProgress) {
-        <div class="progress-fill"></div>
+@if (hasProgress) {
+    <div class="progress-fill"></div>
+}
+
+<div class="img-container">
+    @if (data.artworkUrl) {
+        <img [alt]="data.title" [ngSrc]="data.artworkUrl" height="40" width="40"/>
+    } @else {
+        <mat-icon>music_note</mat-icon>
     }
-
-    <div class="img-container">
-        @if (data.artworkUrl) {
-            <img [alt]="data.title" [ngSrc]="data.artworkUrl" height="40" width="40"/>
-        } @else {
-            <mat-icon>music_note</mat-icon>
-        }
-    </div>
-
-    <div class="info">
-        <div class="title-row">
-            <strong>{{ data.title }}</strong>
-        </div>
-
-        @if (data.status === DownloadStatus.Failed) {
-            <small class="error-text">Failed</small>
-        } @else {
-            <div class="download-status-row">
-                @if (hasProgress) {
-                    <small class="progress-text">{{ progressPercent }}%</small>
-                    <mat-progress-bar mode="determinate" [value]="progressPercent"/>
-                } @else {
-                    <mat-progress-bar mode="indeterminate"/>
-                }
-            </div>
-        }
-    </div>
-
-    <button (click)="onRemove()" class="item-remove-btn" mat-icon-button>
-        <mat-icon>close</mat-icon>
-    </button>
 </div>
+
+<div class="info">
+    <div class="title-row">
+        <strong class="truncate">{{ data.title }}</strong>
+    </div>
+
+    @if (data.status === DownloadStatus.Failed) {
+        <small class="error-text">Failed</small>
+    } @else {
+        <div class="download-status-row">
+            @if (hasProgress) {
+                <small class="progress-text">{{ progressPercent }}%</small>
+                <mat-progress-bar mode="determinate" [value]="progressPercent"/>
+            } @else {
+                <mat-progress-bar mode="indeterminate"/>
+            }
+        </div>
+    }
+</div>
+
+<button (click)="onRemove()" class="item-remove-btn" mat-icon-button>
+    <mat-icon>close</mat-icon>
+</button>

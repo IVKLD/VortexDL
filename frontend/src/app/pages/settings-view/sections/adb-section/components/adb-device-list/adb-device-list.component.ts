@@ -18,6 +18,8 @@ import { SettingsService } from "@app/pages/settings-view/settings.service";
 import { AsyncPipe } from "@angular/common";
 import { finalize, Observable, shareReplay, switchMap } from "rxjs";
 import { takeUntilDestroyed } from "@angular/core/rxjs-interop";
+import { StatusBadgeComponent } from "@shared/components/status-badge/status-badge.component";
+import { EmptyPaneComponent } from "@shared/components/empty-pane/empty-pane";
 
 @Component({
   selector: "app-adb-device-list",
@@ -31,6 +33,8 @@ import { takeUntilDestroyed } from "@angular/core/rxjs-interop";
     MatSelect,
     MatOption,
     AsyncPipe,
+    StatusBadgeComponent,
+    EmptyPaneComponent,
   ],
   templateUrl: "./adb-device-list.component.html",
   styleUrl: "./adb-device-list.component.scss",

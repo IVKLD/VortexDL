@@ -1,28 +1,13 @@
+@use '../../styles/dashboard-card';
+
 :host {
-  display: flex;
-  flex-direction: column;
-  background: var(--mat-sys-surface-container-low);
-  border: 1px solid var(--mat-sys-outline-variant);
-  border-radius: 16px;
-  padding: 1.5rem;
   gap: 1rem;
 
   header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
     flex-wrap: wrap;
     gap: 1rem;
 
     h2 {
-      display: flex;
-      align-items: center;
-      gap: 0.75rem;
-      font-size: 1.25rem;
-      font-weight: 600;
-      margin: 0;
-      color: var(--mat-sys-on-surface);
-
       mat-icon {
         color: var(--mat-sys-error);
       }
@@ -75,17 +60,11 @@
         font-size: 0.9rem;
         font-weight: 600;
         color: var(--mat-sys-on-surface);
-        overflow: hidden;
-        text-overflow: ellipsis;
-        white-space: nowrap;
       }
 
       [matListItemLine] {
         font-size: 0.75rem;
         color: var(--mat-sys-on-surface-variant);
-        overflow: hidden;
-        text-overflow: ellipsis;
-        white-space: nowrap;
       }
 
       [matListItemMeta] {
@@ -93,17 +72,6 @@
         align-items: center;
         gap: 0.75rem;
         flex-shrink: 0;
-
-        em {
-          font-style: normal;
-          font-size: 0.7rem;
-          font-weight: 700;
-          text-transform: uppercase;
-          padding: 0.1rem 0.4rem;
-          border-radius: 4px;
-          background: var(--mat-sys-surface-container-highest);
-          color: var(--mat-sys-primary);
-        }
 
         span {
           font-size: 0.8rem;

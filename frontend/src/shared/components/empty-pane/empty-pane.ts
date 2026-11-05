@@ -1,4 +1,4 @@
-import { Component, input } from '@angular/core';
+import { booleanAttribute, Component, input } from '@angular/core';
 import { MatIcon } from '@angular/material/icon';
 
 @Component({
@@ -11,5 +11,5 @@ export class EmptyPaneComponent {
     public icon = input.required<string>();
     public heading = input.required<string>();
     public description = input<string>();
-    public accent = input<boolean>(false);
+    public accent = input(false, { transform: booleanAttribute });
 }

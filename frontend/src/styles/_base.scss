@@ -28,21 +28,6 @@ html {
     color: var(--mat-sys-on-surface-variant);
     opacity: 0.5;
   }
-
-  ::-webkit-input-placeholder {
-    color: var(--mat-sys-on-surface-variant);
-    opacity: 0.5;
-  }
-
-  ::-moz-placeholder {
-    color: var(--mat-sys-on-surface-variant);
-    opacity: 0.5;
-  }
-
-  :-ms-input-placeholder {
-    color: var(--mat-sys-on-surface-variant);
-    opacity: 0.5;
-  }
 }
 
 body {
@@ -68,7 +53,6 @@ body {
   scrollbar-width: thin;
 }
 
-//test
 .mat-drawer-container,
 .mat-drawer-content {
   overflow: visible !important;

@@ -39,7 +39,7 @@
           justify-content: flex-start;
 
           &.active {
-            background: #1e2129;
+            background: var(--mat-sys-surface-container-high);
           }
 
           mat-icon {

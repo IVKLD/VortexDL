@@ -85,28 +85,17 @@ mat-form-field {
     padding-left: 0 !important;
     padding-right: 0 !important;
 
-    &.mdc-text-field--focused {
-
-    }
-
     &.mdc-text-field--invalid {
-      --mdc-outlined-text-field-outline-color: var(--mat-sys-error, #f44336);
-      --mdc-outlined-text-field-hover-outline-color: var(--mat-sys-error, #f44336);
-      --mdc-outlined-text-field-focus-outline-color: var(--mat-sys-error, #f44336);
-      --mdc-outlined-text-field-label-text-color: var(--mat-sys-error, #f44336);
-      --mdc-outlined-text-field-hover-label-text-color: var(--mat-sys-error, #f44336);
-      --mdc-outlined-text-field-focus-label-text-color: var(--mat-sys-error, #f44336);
+      --mdc-outlined-text-field-outline-color: var(--vortex-error);
+      --mdc-outlined-text-field-hover-outline-color: var(--vortex-error);
+      --mdc-outlined-text-field-focus-outline-color: var(--vortex-error);
+      --mdc-outlined-text-field-label-text-color: var(--vortex-error);
+      --mdc-outlined-text-field-hover-label-text-color: var(--vortex-error);
+      --mdc-outlined-text-field-focus-label-text-color: var(--vortex-error);
 
-      &.mdc-text-field--focused {
-
-      }
-
-      .mat-mdc-form-field-icon-prefix {
-        color: var(--mat-sys-error, #f44336) !important;
-      }
-      
+      .mat-mdc-form-field-icon-prefix,
       .mat-mdc-form-field-icon-suffix {
-        color: var(--mat-sys-error, #f44336) !important;
+        color: var(--vortex-error) !important;
       }
     }
 
@@ -172,9 +161,7 @@ mat-form-field {
   }
 
   .mat-mdc-text-field-wrapper:hover:not(.mdc-text-field--focused):not(.mdc-text-field--disabled) {
-    .mat-mdc-form-field-icon-prefix {
-      color: rgba(255, 255, 255, 0.6) !important;
-    }
+    .mat-mdc-form-field-icon-prefix,
     .mat-mdc-form-field-icon-suffix {
       color: rgba(255, 255, 255, 0.6) !important;
     }

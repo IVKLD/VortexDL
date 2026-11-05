@@ -1,12 +1,6 @@
 :host {
-  display: flex;
-  width: 100%;
-}
-
-.item {
   position: relative;
-  flex: 1;
-
+  width: 100%;
   display: flex;
   gap: .5rem;
   align-items: center;
@@ -41,12 +35,11 @@
   }
 
   &.failed {
-    border-color: rgba(255, 82, 82, 0.1);
-    background: rgba(255, 82, 82, 0.03);
+    border-color: var(--vortex-error-border);
+    background: var(--vortex-error-bg);
 
     &:hover {
-      border-color: rgba(255, 82, 82, 0.2);
-      background: rgba(255, 82, 82, 0.05);
+      background: color-mix(in srgb, var(--vortex-error) 15%, transparent);
     }
   }
 
@@ -55,7 +48,7 @@
     height: 40px;
     flex-shrink: 0;
     border-radius: 4px;
-    background: #1e2129;
+    background: var(--mat-sys-surface-container);
     position: relative;
     display: flex;
     align-items: center;
@@ -100,9 +93,6 @@
         min-width: 0;
         font-size: 0.85rem;
         font-weight: 500;
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
       }
     }
 
@@ -113,7 +103,7 @@
       text-transform: capitalize;
 
       &.error-text {
-        color: #ff8a80;
+        color: var(--vortex-error);
         opacity: 1;
         font-weight: 600;
       }
@@ -128,7 +118,7 @@
       .progress-text {
         font-size: 0.72rem;
         font-weight: 600;
-        color: #c084fc;
+        color: var(--mat-sys-tertiary);
         min-width: 2.2rem;
         line-height: 1;
       }

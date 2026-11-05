@@ -1,3 +1,5 @@
+@use '../../styles/player-common';
+
 :host {
   display: flex;
   justify-content: center;
@@ -5,13 +7,4 @@
   gap: 16px;
   width: 100%;
   margin: 8px 0;
-}
-
-button {
-  color: var(--mat-sys-on-surface-variant);
-  transition: color 0.2s ease;
-
-  &:hover {
-    color: var(--mat-sys-on-surface);
-  }
 }

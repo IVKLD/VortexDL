@@ -28,7 +28,7 @@
                 @for (item of history(); track item) {
                     <mat-list-item (click)="selectHistory(item)" [class.active]="urlField().value() === item">
                         <div class="item">
-                            <span class="url-text">{{ item }}</span>
+                            <span class="url-text truncate">{{ item }}</span>
                             <button (click)="removeFromHistory(item)" mat-icon-button>
                                 <mat-icon>close</mat-icon>
                             </button>

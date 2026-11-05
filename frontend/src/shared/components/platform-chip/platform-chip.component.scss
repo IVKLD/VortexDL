@@ -2,23 +2,18 @@
     display: inline-flex;
     align-items: center;
     vertical-align: middle;
-}
-
-.platform-chip {
-    display: inline-flex;
-    align-items: center;
     gap: 4px;
     padding: 2px 8px;
     border-radius: 12px;
     font-size: 11px;
-    font-weight: 600;
-    letter-spacing: 0.3px;
+    font-weight: 500;
+    letter-spacing: 0.2px;
     text-transform: uppercase;
     backdrop-filter: blur(8px);
     transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
     line-height: 1.4;
 
-    .chip-icon {
+    mat-icon {
         font-size: 14px;
         width: 14px;
         height: 14px;
@@ -26,23 +21,14 @@
     }
 
     &.youtube {
-        background: rgba(255, 0, 0, 0.15);
-        border: 1px solid rgba(255, 60, 60, 0.35);
-        color: #ff5252;
-        box-shadow: 0 2px 8px rgba(255, 0, 0, 0.12);
-
-        .chip-icon {
-            color: #ff5252;
-        }
+        background: var(--vortex-platform-youtube-bg);
+        border: 1px solid var(--vortex-platform-youtube-border);
+        color: var(--vortex-platform-youtube);
     }
 
     &.soundcloud {
-        background: rgba(255, 85, 0, 0.15);
-        border: 1px solid rgba(255, 120, 0, 0.35);
-        color: #ff7700;
-
-        .chip-icon {
-            color: #ff7700;
-        }
+        background: var(--vortex-platform-soundcloud-bg);
+        border: 1px solid var(--vortex-platform-soundcloud-border);
+        color: var(--vortex-platform-soundcloud);
     }
 }

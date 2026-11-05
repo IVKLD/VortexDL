@@ -119,6 +119,7 @@ pub async fn sync_device(
         let _ = files::sync_device_fs(device).await;
     }
 
+    files::sync_device_fs(device).await?;
     registry::update_last_sync_time(device);
     info!("[{device}] Sync complete");
 

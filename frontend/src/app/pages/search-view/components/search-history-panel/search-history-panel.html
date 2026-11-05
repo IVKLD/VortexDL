@@ -12,7 +12,7 @@
 <div class="chips">
     @for (item of history.history(); track item) {
         <div class="chip" (mousedown)="$event.preventDefault(); selectItem.emit(item)" role="button" tabindex="0">
-            <span class="label">{{ item }}</span>
+            <span class="label truncate">{{ item }}</span>
             <button type="button" class="remove-btn" (click)="$event.stopPropagation(); history.remove(item)"
                     aria-label="Remove item" matTooltip="Remove">
                 <mat-icon>close</mat-icon>

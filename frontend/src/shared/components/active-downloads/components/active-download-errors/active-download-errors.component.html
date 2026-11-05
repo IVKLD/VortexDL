@@ -1,25 +1,23 @@
 @let error = errors()[0];
 
-<div class="plate">
-    <div class="header">
-        <span>Errors</span>
+<div class="header">
+    <span>Errors</span>
 
-        <div class="clear-open-block">
-            <button (click)="clear.emit()" mat-flat-button
-                    matTooltip="Clear All">
-                <mat-icon>delete_sweep</mat-icon>
-            </button>
+    <div class="clear-open-block pill-group">
+        <button (click)="clear.emit()" mat-flat-button
+                matTooltip="Clear All">
+            <mat-icon>delete_sweep</mat-icon>
+        </button>
 
-            <mat-divider vertical/>
+        <mat-divider vertical/>
 
-            <button (click)="openErrorsDialog.emit()" mat-flat-button
-                    matTooltip="View all">
-                <mat-icon>arrow_outward</mat-icon>
-            </button>
-        </div>
+        <button (click)="openErrorsDialog.emit()" mat-flat-button
+                matTooltip="View all">
+            <mat-icon>arrow_outward</mat-icon>
+        </button>
     </div>
+</div>
 
-    <div class="list">
-        <span class="message">{{ error }}</span>
-    </div>
+<div class="list">
+    <span class="message">{{ error }}</span>
 </div>

@@ -41,7 +41,6 @@
   min-height: 38px !important;
   color: rgba(255, 255, 255, 0.75) !important;
   transition: background-color 0.15s ease, color 0.15s ease !important;
-  font-family: "Manrope", sans-serif !important;
   font-size: 0.85rem !important;
   padding: 0 16px !important;
 
@@ -64,10 +63,10 @@
 }
 
 .mat-mdc-menu-item.delete-menu-item {
-  color: var(--mat-sys-error, #ff5252) !important;
+  color: var(--vortex-error) !important;
 
   .mat-icon {
-    color: var(--mat-sys-error, #ff5252) !important;
+    color: var(--vortex-error) !important;
   }
 }
 

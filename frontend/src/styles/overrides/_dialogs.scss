@@ -1,3 +1,5 @@
+@use "../utilities";
+
 :root {
     --mat-dialog-headline-padding: 0.6em 0.8em 0.6em 1.2em;
 }
@@ -33,10 +35,8 @@
     color: var(--mat-sys-on-surface);
 
     h2 {
+        @extend .truncate;
         font-size: 1.2rem;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        white-space: nowrap;
         max-width: 375px;
     }
 

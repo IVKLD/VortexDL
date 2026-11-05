@@ -1,39 +1,17 @@
+@use '../../styles/dashboard-card';
+
 :host {
-  display: flex;
-  flex-direction: column;
-  background: var(--mat-sys-surface-container-low);
-  border: 1px solid var(--mat-sys-outline-variant);
-  border-radius: 16px;
-  padding: 1.5rem;
-  gap: 1.5rem;
-
-  header {
-    h2 {
-      display: flex;
-      align-items: center;
-      gap: 0.75rem;
-      font-size: 1.25rem;
-      font-weight: 600;
-      margin: 0;
-      color: var(--mat-sys-on-surface);
-
-      mat-icon {
-        color: var(--mat-sys-on-surface-variant);
-      }
-    }
-  }
-
   section {
     display: flex;
     flex-direction: column;
     gap: 1.25rem;
 
-    > div {
+    >div {
       display: flex;
       flex-direction: column;
       gap: 0.5rem;
 
-      > div {
+      >div {
         display: flex;
         align-items: center;
         gap: 0.75rem;
@@ -70,7 +48,3 @@
     }
   }
 }
-
-
-
-

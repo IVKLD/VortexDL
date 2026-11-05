@@ -2,11 +2,11 @@ import { MonoTypeOperatorFunction, catchError, pipe, tap, throwError } from 'rxj
 import { NotificationService } from '@app/services/notification.service';
 import { parseErrorMessage } from '@shared/error-utils';
 
-export function withNotification<T>(
+export const withNotification = <T>(
     notification: NotificationService,
     successMsg?: string | (() => string) | null,
     errorFallback: string | (() => string) = 'Operation failed'
-): MonoTypeOperatorFunction<T> {
+): MonoTypeOperatorFunction<T> => {
     return pipe(
         tap(() => {
             if (!successMsg) return;

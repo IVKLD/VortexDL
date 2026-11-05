@@ -10,7 +10,10 @@ export enum SupportedPlatform {
     selector: 'app-platform-chip',
     imports: [MatIcon],
     templateUrl: './platform-chip.component.html',
-    styleUrl: './platform-chip.component.scss'
+    styleUrl: './platform-chip.component.scss',
+    host: {
+        '[class]': 'platform()',
+    },
 })
 export class PlatformChipComponent {
     public readonly platform = input.required<SupportedPlatform>();

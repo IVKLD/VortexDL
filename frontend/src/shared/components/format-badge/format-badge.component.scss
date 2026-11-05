@@ -1,0 +1,48 @@
+:host {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  vertical-align: middle;
+  padding: 2px 7px;
+  border-radius: 6px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  line-height: 1.2;
+  user-select: none;
+  font-variant-numeric: tabular-nums;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: var(--mat-sys-on-surface-variant);
+  transition: all 0.2s ease;
+
+  &[data-format="flac"],
+  &[data-format="wav"],
+  &[data-format="alac"],
+  &[data-format="aiff"],
+  &[data-format="m4a"],
+  &[data-format="aac"],
+  &[data-format="ogg"],
+  &[data-format="opus"] {
+    background: color-mix(in srgb, currentColor 12%, transparent);
+    border-color: color-mix(in srgb, currentColor 25%, transparent);
+  }
+
+  &[data-format="flac"],
+  &[data-format="wav"],
+  &[data-format="alac"],
+  &[data-format="aiff"] {
+    color: var(--mat-sys-primary);
+  }
+
+  &[data-format="m4a"],
+  &[data-format="aac"] {
+    color: #fbbf24;
+  }
+
+  &[data-format="ogg"],
+  &[data-format="opus"] {
+    color: #c084fc;
+  }
+}

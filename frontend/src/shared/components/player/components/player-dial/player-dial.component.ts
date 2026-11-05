@@ -4,6 +4,7 @@ import { PlayerService } from '@app/services/player.service';
 import {MatButton} from "@angular/material/button";
 
 import { MatProgressSpinner } from '@angular/material/progress-spinner';
+import { formatDurationSeconds } from '@shared/pipes/duration.pipe';
 
 @Component({
     selector: 'app-player-dial',
@@ -61,7 +62,7 @@ export class PlayerDialComponent implements OnInit, OnDestroy {
         this.renderer.setStyle(this.progressCircle().nativeElement, 'stroke-dashoffset', `${offset}`);
 
         if (this.isHovered || this.isDragging) {
-            const text = `${this.formatTime(progress)} / ${this.formatTime(duration)}`;
+            const text = `${formatDurationSeconds(progress)} / ${formatDurationSeconds(duration)}`;
             if (this.lastText !== text) {
                 this.lastText = text;
                 this.renderer.setProperty(this.timerText().nativeElement, 'innerText', text);
@@ -115,11 +116,6 @@ export class PlayerDialComponent implements OnInit, OnDestroy {
         }
     }
 
-    private formatTime(seconds: number): string {
-        const mins = Math.floor(seconds / 60);
-        const secs = Math.floor(seconds % 60);
-        return `${mins}:${secs.toString().padStart(2, '0')}`;
-    }
 
     protected onMouseEnter(): void {
         this.isHovered = true;

@@ -25,6 +25,25 @@ const FORMATS_CONFIG: { format: AudioFormat; color: string }[] = [
     { format: AudioFormat.UNKNOWN, color: '#94a3b8' },
 ];
 
+const bucketTimestampsByDays = (
+    timestamps: (number | undefined | null)[],
+    now: Date,
+    days = 7
+): number[] => {
+    const counts = new Array(days).fill(0);
+    const nowTime = now.getTime();
+    for (const ts of timestamps) {
+        if (!ts) continue;
+        const date = new Date(ts * 1000);
+        date.setHours(0, 0, 0, 0);
+        const diffDays = Math.floor((nowTime - date.getTime()) / 86400000);
+        if (diffDays >= 0 && diffDays < days) {
+            counts[days - 1 - diffDays]++;
+        }
+    }
+    return counts;
+};
+
 @Injectable({ providedIn: 'root' })
 export class DashboardViewState {
     private readonly _api = inject(DashboardViewService);
@@ -83,33 +102,13 @@ export class DashboardViewState {
         const now = new Date();
         now.setHours(0, 0, 0, 0);
 
-        const downloadCounts = new Array(7).fill(0);
-        const deleteCounts = new Array(7).fill(0);
-
-        for (const t of tracks) {
-            if (!t.createdAt) continue;
-            const trackDate = new Date(t.createdAt * 1000);
-            trackDate.setHours(0, 0, 0, 0);
-            const diffDays = Math.floor((now.getTime() - trackDate.getTime()) / 86400000);
-            if (diffDays >= 0 && diffDays < 7) {
-                downloadCounts[6 - diffDays]++;
-            }
-        }
-
-        for (const d of deleted) {
-            if (!d.deletedAt) continue;
-            const delDate = new Date(d.deletedAt * 1000);
-            delDate.setHours(0, 0, 0, 0);
-            const diffDays = Math.floor((now.getTime() - delDate.getTime()) / 86400000);
-            if (diffDays >= 0 && diffDays < 7) {
-                deleteCounts[6 - diffDays]++;
-            }
-        }
+        const downloadCounts = bucketTimestampsByDays(tracks.map(t => t.createdAt), now);
+        const deleteCounts = bucketTimestampsByDays(deleted.map(d => d.deletedAt), now);
 
         const max = Math.max(...downloadCounts, ...deleteCounts, 1);
 
         return downloadCounts.map((dlCount, i) => {
-            const delCount = deleteCounts[i];
+            const delCount = deleteCounts[i] ?? 0;
             const date = new Date(now.getTime() - (6 - i) * 86400000);
             return {
                 label: date.toLocaleDateString('en-US', { weekday: 'short' }),

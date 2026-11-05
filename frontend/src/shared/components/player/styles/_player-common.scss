@@ -1,0 +1,8 @@
+button {
+  color: var(--mat-sys-on-surface-variant);
+  transition: color 0.2s ease;
+
+  &:hover {
+    color: var(--mat-sys-on-surface);
+  }
+}

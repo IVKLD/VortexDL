@@ -7,6 +7,13 @@ import { FieldTree, FormField, submit } from "@angular/forms/signals";
   imports: [MatSlideToggle, FormField],
   templateUrl: "./settings-switch-card.component.html",
   styleUrl: "./settings-switch-card.component.scss",
+  host: {
+    role: "button",
+    tabindex: "0",
+    "(click)": "toggle()",
+    "(keydown.space)": "$event.preventDefault(); toggle()",
+    "(keydown.enter)": "toggle()",
+  },
 })
 export class SettingsSwitchCardComponent {
   public readonly title = input.required<string>();

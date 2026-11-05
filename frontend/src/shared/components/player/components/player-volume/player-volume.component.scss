@@ -1,3 +1,5 @@
+@use '../../styles/player-common';
+
 :host {
   width: 100%;
   display: flex;
@@ -5,15 +7,6 @@
   justify-content: center;
   gap: 8px;
   padding: 0 16px;
-
-  button {
-    color: var(--mat-sys-on-surface-variant);
-    transition: color 0.2s ease;
-
-    &:hover {
-      color: var(--mat-sys-on-surface);
-    }
-  }
 
   mat-slider {
     flex: 1;

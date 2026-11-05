@@ -6,7 +6,7 @@ export interface StorageHistoryHelper {
 }
 
 export const createStorageHistory = (key: string, maxItems = 10): StorageHistoryHelper => ({
-    load: (): string[] => {
+    load(): string[] {
         try {
             const stored = localStorage.getItem(key);
             return stored ? JSON.parse(stored) : [];
@@ -14,7 +14,7 @@ export const createStorageHistory = (key: string, maxItems = 10): StorageHistory
             return [];
         }
     },
-    add: (current: string[], item: string): string[] => {
+    add(current: string[], item: string): string[] {
         const trimmed = item.trim();
         if (!trimmed) return current;
 
@@ -29,7 +29,7 @@ export const createStorageHistory = (key: string, maxItems = 10): StorageHistory
 
         return updated;
     },
-    remove: (current: string[], item: string): string[] => {
+    remove(current: string[], item: string): string[] {
         const updated = current.filter(i => i !== item);
         try {
             localStorage.setItem(key, JSON.stringify(updated));
@@ -38,7 +38,7 @@ export const createStorageHistory = (key: string, maxItems = 10): StorageHistory
         }
         return updated;
     },
-    clear: (): string[] => {
+    clear(): string[] {
         try {
             localStorage.removeItem(key);
         } catch {
@@ -48,9 +48,26 @@ export const createStorageHistory = (key: string, maxItems = 10): StorageHistory
     },
 });
 
-const searchHistory = createStorageHistory('search_history', 10);
+import { signal, WritableSignal } from '@angular/core';
 
-export const loadSearchHistory = searchHistory.load;
-export const addToSearchHistory = searchHistory.add;
-export const removeFromSearchHistory = searchHistory.remove;
-export const clearSearchHistory = searchHistory.clear;
+export abstract class BaseStorageHistoryService {
+    private readonly _storage: StorageHistoryHelper;
+    public readonly history: WritableSignal<string[]>;
+
+    protected constructor(key: string, maxItems = 10) {
+        this._storage = createStorageHistory(key, maxItems);
+        this.history = signal<string[]>(this._storage.load());
+    }
+
+    public add(item: string): void {
+        this.history.update(current => this._storage.add(current, item));
+    }
+
+    public remove(item: string): void {
+        this.history.update(current => this._storage.remove(current, item));
+    }
+
+    public clear(): void {
+        this.history.set(this._storage.clear());
+    }
+}

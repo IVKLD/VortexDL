@@ -9,10 +9,9 @@
   align-items: center;
   gap: 20px;
   padding: 0.6em;
-  background: rgba(30, 30, 30, 0.02);
-  backdrop-filter: blur(4px);
-  -webkit-backdrop-filter: blur(20px);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: color-mix(in srgb, var(--mat-sys-surface-container) 80%, transparent);
+  backdrop-filter: blur(20px);
+  border: 1px solid var(--mat-sys-outline-variant);
   border-radius: 20em;
   box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
 
@@ -27,22 +26,8 @@
 }
 
 .actions {
-  display: flex;
-
-  button {
-    mat-icon {
-      margin: 0;
-    }
-
-    --mat-button-filled-horizontal-padding: 0px;
-
-    &:first-child {
-      --mat-button-filled-container-shape: 10em 0 0 10em;
-    }
-
-    &:last-child {
-      --mat-button-filled-container-shape: 0 10em 10em 0;
-    }
+  button mat-icon {
+    margin: 0;
   }
 }
 

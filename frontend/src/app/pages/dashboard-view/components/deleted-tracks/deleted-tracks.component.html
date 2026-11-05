@@ -19,11 +19,11 @@
         @for (track of recentDeleted(); track (track.id + '-' + track.deletedAt)) {
             <mat-list-item>
                 <mat-icon matListItemIcon>music_off</mat-icon>
-                <div matListItemTitle>{{ track.title || 'Unknown Title' }}</div>
-                <div matListItemLine>{{ track.artist || 'Unknown Artist' }}</div>
+                <div matListItemTitle class="truncate">{{ track.title || 'Unknown Title' }}</div>
+                <div matListItemLine class="truncate">{{ track.artist || 'Unknown Artist' }}</div>
                 <div matListItemMeta>
                     @if (track.format) {
-                        <em>{{ track.format }}</em>
+                        <app-format-badge [format]="track.format" />
                     }
                     <span>{{ track.size | fileSize }}</span>
                     <time>{{ track.deletedAt * 1000 | date:'MMM d, HH:mm' }}</time>

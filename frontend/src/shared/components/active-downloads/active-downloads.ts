@@ -11,6 +11,9 @@ import {ActiveDownloadItemComponent} from './components/active-download-item/act
     selector: 'app-active-downloads',
     templateUrl: './active-downloads.html',
     styleUrls: ['./active-downloads.scss'],
+    host: {
+        '[style.display]': 'items().length > 0 ? "flex" : "none"',
+    },
     imports: [
         RxVirtualFor,
         FixedSizeVirtualScrollStrategy,

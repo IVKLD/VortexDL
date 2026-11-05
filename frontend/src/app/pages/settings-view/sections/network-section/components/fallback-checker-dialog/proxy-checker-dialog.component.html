@@ -43,7 +43,7 @@
                 <div class="container">
                     <rx-virtual-scroll-viewport [itemSize]="33">
                         <div *rxVirtualFor="let status of importStatuses(); trackBy: 'url'" class="log-row">
-                            <span class="log-proxy-name">{{ status.url }}</span>
+                            <span class="log-proxy-name truncate">{{ status.url }}</span>
                             <span class="status-icon-wrapper">
                                 @if (status.loading) {
                                     <mat-icon class="status-icon loading-icon rotating">sync</mat-icon>
@@ -87,7 +87,7 @@
                     @for (proxy of workingProxies(); track proxy) {
                         <div class="working-item">
                             <mat-icon class="item-icon">verified</mat-icon>
-                            <span class="working-url">{{ proxy }}</span>
+                            <span class="working-url truncate">{{ proxy }}</span>
                         </div>
                     }
                 </div>

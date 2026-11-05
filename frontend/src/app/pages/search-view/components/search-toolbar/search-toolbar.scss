@@ -43,25 +43,17 @@
 
   .filter-chip {
     &.youtube {
-      background: rgba(255, 0, 0, 0.2);
-      border-color: rgba(255, 60, 60, 0.4);
-      color: #ff6b6b;
+      background: var(--vortex-platform-youtube-bg);
+      border-color: var(--vortex-platform-youtube-border);
+      color: var(--vortex-platform-youtube);
       opacity: .5;
-
-      .chip-icon {
-        color: #ff5252;
-      }
     }
 
     &.soundcloud {
-      background: rgba(255, 85, 0, 0.2);
-      border-color: rgba(255, 120, 0, 0.4);
-      color: #ff8c33;
+      background: var(--vortex-platform-soundcloud-bg);
+      border-color: var(--vortex-platform-soundcloud-border);
+      color: var(--vortex-platform-soundcloud);
       opacity: .5;
-
-      .chip-icon {
-        color: #ff7700;
-      }
     }
 
     &:hover {
@@ -84,35 +76,15 @@
 
   .filter-chip.sort-chip {
     background: rgba(255, 255, 255, 0.05);
-    border: 1px solid var(--mat-sys-outline-variant, rgba(255, 255, 255, 0.08));
-    color: var(--mat-sys-on-surface-variant, rgba(255, 255, 255, 0.7));
+    border: 1px solid var(--mat-sys-outline-variant);
+    color: var(--mat-sys-on-surface-variant);
     font-size: 12px;
     font-weight: 500;
     transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
 
-    .chip-icon {
-      color: var(--mat-sys-on-surface-variant, rgba(255, 255, 255, 0.6));
-      transition: color 0.2s ease;
-    }
-
-    .arrow-icon {
-      font-size: 18px;
-      width: 18px;
-      height: 18px;
-      line-height: 18px;
-      margin-left: 2px;
-      color: var(--mat-sys-on-surface-variant, rgba(255, 255, 255, 0.45));
-      transition: color 0.2s ease;
-    }
-
     &:hover {
       background: rgba(255, 255, 255, 0.09);
-      color: var(--mat-sys-on-surface, #ffffff);
-
-      .chip-icon,
-      .arrow-icon {
-        color: var(--mat-sys-on-surface, #ffffff);
-      }
+      color: var(--mat-sys-on-surface);
     }
 
     &.active {
@@ -120,11 +92,6 @@
       border-color: color-mix(in srgb, var(--mat-sys-primary) 40%, transparent);
       color: var(--mat-sys-primary);
       font-weight: 600;
-
-      .chip-icon,
-      .arrow-icon {
-        color: var(--mat-sys-primary);
-      }
     }
   }
 }

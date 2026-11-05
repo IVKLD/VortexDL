@@ -22,6 +22,7 @@
     display: flex;
     align-items: center;
     justify-content: center;
+    background: color-mix(in srgb, currentColor 15%, transparent);
 
     mat-icon {
       font-size: 30px;
@@ -30,22 +31,18 @@
     }
 
     &.tracks {
-      background: color-mix(in srgb, var(--mat-sys-primary) 15%, transparent);
       color: var(--mat-sys-primary);
     }
 
     &.storage {
-      background: color-mix(in srgb, var(--mat-sys-tertiary) 15%, transparent);
       color: var(--mat-sys-tertiary);
     }
 
     &.downloaded {
-      background: color-mix(in srgb, var(--mat-sys-secondary) 15%, transparent);
       color: var(--mat-sys-secondary);
     }
 
     &.deleted {
-      background: color-mix(in srgb, var(--mat-sys-error) 15%, transparent);
       color: var(--mat-sys-error);
     }
 

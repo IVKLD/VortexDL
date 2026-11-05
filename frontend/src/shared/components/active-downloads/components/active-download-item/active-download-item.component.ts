@@ -10,6 +10,10 @@ import {MatIconButton} from "@angular/material/button";
     imports: [MatIcon, MatProgressBar, NgOptimizedImage, MatIconButton],
     templateUrl: './active-download-item.component.html',
     styleUrl: './active-download-item.component.scss',
+    host: {
+        '[class.failed]': 'item().status === DownloadStatus.Failed',
+        '[style.--progress-width.%]': 'progressPercent',
+    },
 })
 export class ActiveDownloadItemComponent {
     public readonly item = input.required<DownloadItem>();

@@ -2,13 +2,6 @@
   display: block;
 }
 
-app-list-view-shell {
-  display: flex;
-  flex-direction: column;
-  flex: 1;
-  width: 100%;
-}
-
 app-music-card {
   width: 100%;
   margin: 0 auto;
@@ -40,46 +33,12 @@ app-music-card {
     gap: 1em;
     margin-right: 1em;
 
-    strong {
-      font-size: 0.7rem;
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: 0.05em;
-      padding: .1em .8em;
-      border-radius: 2em;
-      background: rgba(255, 255, 255, 0.05);
-      color: rgba(255, 255, 255, 0.85);
-      border: 1px solid rgba(255, 255, 255, 0.05);
-
-      &[data-format="flac"],
-      &[data-format="wav"],
-      &[data-format="alac"],
-      &[data-format="aiff"] {
-        color: #64ffda;
-        background: rgba(100, 255, 218, 0.05);
-        border-color: rgba(100, 255, 218, 0.1);
-      }
-
-      &[data-format="m4a"],
-      &[data-format="aac"] {
-        color: #fbbf24;
-        background: rgba(251, 191, 36, 0.05);
-        border-color: rgba(251, 191, 36, 0.1);
-      }
-
-      &[data-format="ogg"],
-      &[data-format="opus"] {
-        color: #c084fc;
-        background: rgba(192, 132, 252, 0.05);
-        border-color: rgba(192, 132, 252, 0.1);
-      }
-    }
-
     span {
       font-size: 0.8rem;
-      color: rgba(255, 255, 255, 0.85);
+      font-weight: 450;
+      color: var(--mat-sys-on-surface-variant);
       font-variant-numeric: tabular-nums;
-      letter-spacing: .12em;
+      letter-spacing: .04em;
     }
   }
 

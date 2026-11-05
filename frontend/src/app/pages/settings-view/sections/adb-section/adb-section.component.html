@@ -1,10 +1,10 @@
-<header class="section-header">
+<header>
     <h2>
         <mat-icon>android</mat-icon>
         Android Debug Bridge (ADB)
     </h2>
     <button (click)="state.refreshDevices()" [disabled]="state.isRefreshing()" mat-icon-button type="button">
-        <mat-icon [class.spinning]="state.isRefreshing()">sync</mat-icon>
+        <mat-icon [class.rotating]="state.isRefreshing()">sync</mat-icon>
     </button>
 </header>
 

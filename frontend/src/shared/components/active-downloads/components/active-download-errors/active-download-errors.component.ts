@@ -11,6 +11,7 @@ import { timer } from 'rxjs';
     imports: [MatIcon, MatDivider, MatTooltip, MatButton],
     templateUrl: './active-download-errors.component.html',
     styleUrl: './active-download-errors.component.scss',
+    host: { class: 'slide-in' },
 })
 export class ActiveDownloadErrorsComponent {
     public readonly errors = input.required<string[]>();

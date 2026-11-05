@@ -8,14 +8,26 @@
   --vortex-device-hover-border: rgba(255, 255, 255, 0.10);
 
   --vortex-success: #4caf50;
-  --vortex-success-bg: rgba(76, 175, 80, 0.1);
-  --vortex-success-border: rgba(76, 175, 80, 0.2);
+  --vortex-success-bg: color-mix(in srgb, var(--vortex-success) 10%, transparent);
+  --vortex-success-border: color-mix(in srgb, var(--vortex-success) 20%, transparent);
 
   --vortex-error: #f44336;
-  --vortex-error-bg: rgba(244, 67, 54, 0.1);
-  --vortex-error-border: rgba(244, 67, 54, 0.2);
+  --vortex-error-bg: color-mix(in srgb, var(--vortex-error) 10%, transparent);
+  --vortex-error-border: color-mix(in srgb, var(--vortex-error) 20%, transparent);
+
+  --vortex-info: #3b82f6;
+  --vortex-info-bg: color-mix(in srgb, var(--vortex-info) 10%, transparent);
+  --vortex-info-border: color-mix(in srgb, var(--vortex-info) 25%, transparent);
 
   --vortex-text-primary: rgba(255, 255, 255, 0.9);
   --vortex-text-secondary: rgba(255, 255, 255, 0.45);
   --vortex-divider: rgba(255, 255, 255, 0.08);
+
+  --vortex-platform-youtube: #ff5252;
+  --vortex-platform-youtube-bg: color-mix(in srgb, var(--vortex-platform-youtube) 15%, transparent);
+  --vortex-platform-youtube-border: color-mix(in srgb, var(--vortex-platform-youtube) 35%, transparent);
+
+  --vortex-platform-soundcloud: #ff7700;
+  --vortex-platform-soundcloud-bg: color-mix(in srgb, var(--vortex-platform-soundcloud) 15%, transparent);
+  --vortex-platform-soundcloud-border: color-mix(in srgb, var(--vortex-platform-soundcloud) 35%, transparent);
 }

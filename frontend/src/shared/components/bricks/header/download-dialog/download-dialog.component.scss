@@ -1,6 +1,3 @@
-:host {
-}
-
 mat-dialog-content {
     > mat-form-field {
         width: 100%;
@@ -11,7 +8,7 @@ mat-dialog-content {
 
         h3 {
             font-size: 0.9rem;
-            color: rgba(255, 255, 255, 0.6);
+            color: var(--mat-sys-on-surface-variant);
             margin-bottom: 8px;
             text-transform: uppercase;
             letter-spacing: 0.5px;
@@ -19,9 +16,8 @@ mat-dialog-content {
 
         mat-list {
             max-height: 200px;
-            overflow-y: scroll;
-            scrollbar-width: thin;
-            background: rgba(255, 255, 255, 0.05);
+            overflow-y: auto;
+            background: var(--mat-sys-surface-container);
             padding: 0.6em;
             border-radius: 2em;
 
@@ -31,12 +27,9 @@ mat-dialog-content {
                 border-radius: 20em;
                 padding: 1em 0.4em 1em 1em;
 
-                &:hover {
-                    background: rgba(255, 255, 255, 0.1);
-                }
-
+                &:hover,
                 &.active {
-                    background: rgba(255, 255, 255, 0.1);
+                    background: var(--mat-sys-surface-container-high);
                 }
 
                 .item {
@@ -47,9 +40,7 @@ mat-dialog-content {
 
                     .url-text {
                         flex: 1;
-                        overflow: hidden;
-                        text-overflow: ellipsis;
-                        white-space: nowrap;
+                        min-width: 0;
                     }
                 }
             }

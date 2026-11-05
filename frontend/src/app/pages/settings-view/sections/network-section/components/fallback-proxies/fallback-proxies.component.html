@@ -34,26 +34,26 @@
                  [class.item-failed]="proxyStatuses()[proxy]?.valid === false">
                 <div class="proxy-url-container">
                     <mat-icon class="proxy-icon">network_ping</mat-icon>
-                    <span class="proxy-url" [title]="proxy">{{ proxy }}</span>
+                    <span class="proxy-url truncate" [title]="proxy">{{ proxy }}</span>
                 </div>
                 <div class="proxy-actions">
                     @if (proxyStatuses()[proxy]?.loading) {
-                        <span class="status-badge checking">
-                                <mat-icon class="rotating">sync</mat-icon> Checking...
-                            </span>
+                        <app-status-badge variant="checking" icon="sync" rotating>
+                            Checking...
+                        </app-status-badge>
                     } @else if (proxyStatuses()[proxy]?.valid === true) {
-                        <span class="status-badge success">
-                                <mat-icon>check_circle</mat-icon> Working
-                            </span>
+                        <app-status-badge variant="success" icon="check_circle">
+                            Working
+                        </app-status-badge>
                     } @else if (proxyStatuses()[proxy]?.valid === false) {
-                        <span class="status-badge failed"
+                        <app-status-badge variant="error" icon="error"
                               [matTooltip]="proxyStatuses()[proxy]?.error || 'Verification failed'">
-                                <mat-icon>error</mat-icon> Failed
-                            </span>
+                            Failed
+                        </app-status-badge>
                     } @else {
-                        <span class="status-badge idle">
-                                <mat-icon>help_outline</mat-icon> Untested
-                            </span>
+                        <app-status-badge variant="idle" icon="help_outline">
+                            Untested
+                        </app-status-badge>
                     }
 
                     <button mat-icon-button type="button" (click)="testIndividualProxy(proxy)"
@@ -70,8 +70,8 @@
         }
     </div>
 } @else {
-    <div class="empty-state">
-        <mat-icon class="empty-icon">dns</mat-icon>
-        <p>No fallback proxies configured. Click "Open Proxy Checker" to paste and test a list of proxies!</p>
-    </div>
+    <app-empty-pane
+        icon="dns"
+        heading="No fallback proxies configured"
+        description="Click &quot;Open Proxy Checker&quot; to paste and test a list of proxies!" />
 }

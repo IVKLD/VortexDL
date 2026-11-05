@@ -6,7 +6,7 @@
             <app-platform-chip [platform]="platform"/>
         }
         @if (track().genre && track().genre?.toLowerCase() !== 'youtube' && track().genre?.toLowerCase() !== 'soundcloud') {
-            <span class="genre">{{ track().genre }}</span>
+            <span class="genre truncate">{{ track().genre }}</span>
         }
         @if (track().duration) {
             <span class="duration">{{ track().duration | duration }}</span>

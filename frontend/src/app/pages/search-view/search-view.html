@@ -14,7 +14,7 @@
         </rx-virtual-scroll-viewport>
 
         @if (state.loading() && state.results().length > 0) {
-            <div class="load-more-indicator">
+            <div class="load-more-indicator fade-in">
                 <mat-spinner diameter="22" />
                 <span>Loading more tracks...</span>
             </div>
@@ -25,7 +25,7 @@
 
     <ng-container initial>
         <app-empty-pane icon="travel_explore" heading="Search Tracks"
-            description="Find music across YouTube & SoundCloud to stream and download" [accent]="true" />
+            description="Find music across YouTube & SoundCloud to stream and download" accent />
     </ng-container>
 </app-list-view-shell>
 

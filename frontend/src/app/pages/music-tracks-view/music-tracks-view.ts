@@ -21,6 +21,7 @@ import {MatIconButton} from '@angular/material/button';
 import {DragSelectDirective} from '@shared/directives/drag-select/drag-select.directive';
 import {PlatformChipComponent} from '@shared/components/platform-chip/platform-chip.component';
 import {PlatformPipe} from '@shared/pipes/platform.pipe';
+import {FormatBadgeComponent} from '@shared/components/format-badge/format-badge.component';
 
 @Component({
     selector: 'app-music-tracks-view',
@@ -41,6 +42,7 @@ import {PlatformPipe} from '@shared/pipes/platform.pipe';
         DragSelectDirective,
         PlatformChipComponent,
         PlatformPipe,
+        FormatBadgeComponent,
     ],
     templateUrl: './music-tracks-view.html',
     styleUrl: './music-tracks-view.scss',

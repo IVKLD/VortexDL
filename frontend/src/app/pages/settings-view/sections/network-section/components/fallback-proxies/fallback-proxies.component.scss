@@ -57,15 +57,6 @@
   }
 }
 
-.chip-input-section {
-  display: flex;
-
-  .grow {
-    flex: 1;
-  }
-}
-
-
 .proxy-items {
   display: flex;
   flex-direction: column;
@@ -73,10 +64,6 @@
   max-height: 280px;
   overflow-y: auto;
   padding-right: 4px;
-
-  &.select-items {
-    max-height: 200px;
-  }
 }
 
 .proxy-item {
@@ -118,12 +105,9 @@
   }
 
   .proxy-url {
-    font-family: 'Outfit', monospace;
+    font-family: monospace;
     font-size: 13px;
     color: var(--vortex-text-secondary);
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
   }
 
   .proxy-actions {
@@ -133,88 +117,4 @@
   }
 }
 
-.empty-state {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: 32px 16px;
-  text-align: center;
-  background: var(--vortex-card-bg);
-  border-radius: 12px;
-  border: 1px dashed var(--vortex-device-border);
-
-  .empty-icon {
-    font-size: 40px;
-    width: 40px;
-    height: 40px;
-    color: var(--vortex-text-secondary);
-    margin-bottom: 8px;
-    opacity: 0.6;
-  }
-
-  p {
-    margin: 0;
-    font-size: 13px;
-    color: var(--vortex-text-secondary);
-    max-width: 300px;
-  }
-}
-
-.rotating {
-  animation: rotate 2s linear infinite;
-}
-
-@keyframes rotate {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
-}
-
-.status-badge {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 11px;
-  font-weight: 600;
-  padding: 4px 10px;
-  border-radius: 20px;
-  border: 1px solid transparent;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-
-  mat-icon {
-    font-size: 14px;
-    width: 14px;
-    height: 14px;
-  }
-
-  &.checking {
-    background: hsla(210, 100%, 50%, 0.15);
-    color: #3b82f6;
-    border-color: rgba(59, 130, 246, 0.3);
-  }
-
-  &.success {
-    background: var(--vortex-success-bg);
-    color: var(--vortex-success);
-    border-color: var(--vortex-success-border);
-  }
-
-  &.failed {
-    background: var(--vortex-error-bg);
-    color: var(--vortex-error);
-    border-color: var(--vortex-error-border);
-    cursor: help;
-  }
-
-  &.idle {
-    background: hsla(0, 0%, 50%, 0.1);
-    color: var(--vortex-text-secondary);
-    border-color: var(--vortex-divider);
-  }
-}
 

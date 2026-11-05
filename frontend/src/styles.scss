@@ -1,6 +1,8 @@
 @use "@angular/material" as mat;
 @use "styles/variables";
 @use "styles/base";
+@use "styles/animations";
+@use "styles/utilities";
 @use "styles/overrides";
 
 @include mat.theme((color:(primary: mat.$azure-palette,

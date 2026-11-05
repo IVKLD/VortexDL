@@ -18,7 +18,7 @@
                     }
                     <span>{{ track.size | fileSize }}</span>
                     @if (track.format && track.format !== AudioFormat.UNKNOWN) {
-                        <strong [attr.data-format]="track.format">{{ track.format }}</strong>
+                        <app-format-badge [format]="track.format" />
                     }
                 </aside>
 

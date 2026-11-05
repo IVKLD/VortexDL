@@ -15,7 +15,6 @@
   width: calc(100% - 24px);
   background: rgba(30, 30, 30, 0.65);
   backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
   border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: 16px;
   cursor: pointer;
@@ -64,9 +63,6 @@
     }
   }
 
-  &:active {
-  }
-
   &.dismissing {
     opacity: 0;
     transform: translateY(-6px);
@@ -100,19 +96,19 @@
 
   &.success {
     mat-icon {
-      color: #10b981;
+      color: var(--vortex-success);
     }
   }
 
   &.error {
     mat-icon {
-      color: #f43f5e;
+      color: var(--vortex-error);
     }
   }
 
   &.info {
     mat-icon {
-      color: #3b82f6;
+      color: var(--vortex-info);
     }
   }
 
