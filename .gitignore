@@ -31,6 +31,8 @@ yarn.lock.new
 # Database, Local Storage & Downloads
 *.redb
 vortex.redb
+*.db
+vortex.db
 downloads/
 music/
 audio_output/
