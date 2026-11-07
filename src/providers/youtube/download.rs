@@ -1,4 +1,4 @@
-use yt_audio_downloader::{AudioFormat, ProgressEvent, YoutubeAudioDownloader};
+use yt_audio_downloader::AudioFormat;
 
 use crate::{
     downloader::DownloadTask,
@@ -12,21 +12,13 @@ impl YouTubeProvider {
         url_or_id: &str,
         on_progress: Option<ProgressCallback>,
     ) -> Result<(), ProviderError> {
-        YoutubeAudioDownloader::new()
-            .output_file(&task.file_path)
-            .format(AudioFormat::Mp3)
-            .on_progress(move |event| {
-                if let ProgressEvent::Downloading {
-                    bytes_downloaded,
-                    total_bytes,
-                    ..
-                } = event
-                    && let Some(ref cb) = on_progress
-                {
-                    cb(bytes_downloaded, total_bytes);
-                }
-            })
-            .download(url_or_id)
+        self.client
+            .download(
+                url_or_id,
+                &task.file_path,
+                AudioFormat::Mp3,
+                on_progress.as_ref(),
+            )
             .await?;
 
         Ok(())

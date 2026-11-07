@@ -9,7 +9,10 @@ use crate::{
     cli::{self, Args},
     infra,
     library::{Library, LibraryService},
-    providers::soundcloud::ClientBuilder,
+    providers::{
+        soundcloud::ClientBuilder as SoundCloudClientBuilder,
+        youtube::ClientBuilder as YouTubeClientBuilder,
+    },
     settings::SettingsManager,
     terminal,
 };
@@ -52,17 +55,29 @@ pub async fn init_app(args: &Args) -> Result<AppState> {
     settings.downloads.output_path = output_dir.to_string_lossy().to_string();
     fs::create_dir_all(&output_dir)?;
 
-    let pb = terminal::create_standalone_spinner("Initializing SoundCloud...");
+    let pb_sc = terminal::create_standalone_spinner("Initializing SoundCloud...");
     let library = Arc::new(RwLock::new(Library::default()));
     let settings_manager = SettingsManager::new(settings.clone());
     let library_service = LibraryService::new(library, settings_manager.clone());
-    let client = ClientBuilder::new(&settings)
+    let soundcloud_client = SoundCloudClientBuilder::new(&settings)
         .with_settings_manager(settings_manager.clone())
         .build()
         .await?;
-    pb.finish_with_message("SoundCloud ready");
+    pb_sc.finish_with_message("SoundCloud ready");
 
-    let state = AppState::new(client, library_service, settings_manager);
+    let pb_yt = terminal::create_standalone_spinner("Initializing YouTube...");
+    let youtube_client = YouTubeClientBuilder::new(&settings)
+        .with_settings_manager(settings_manager.clone())
+        .build()
+        .await?;
+    pb_yt.finish_with_message("YouTube ready");
+
+    let state = AppState::new(
+        soundcloud_client,
+        youtube_client,
+        library_service,
+        settings_manager,
+    );
 
     let pb_idx = terminal::create_standalone_spinner("Indexing local library...");
     state.library_service().reindex().await;

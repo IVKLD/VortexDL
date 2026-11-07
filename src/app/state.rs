@@ -1,6 +1,7 @@
 use std::sync::Arc;
 
 use soundcloud_rs::Client as SoundcloudClient;
+use yt_audio_downloader::Client as YoutubeClient;
 
 use crate::{
     devices::DeviceService,
@@ -16,6 +17,7 @@ use crate::{
 #[derive(Clone)]
 pub struct AppState {
     pub soundcloud: Arc<SoundcloudClient>,
+    pub youtube: Arc<YoutubeClient>,
     pub library: LibraryService,
     pub download_queue: Arc<DownloadQueue>,
     pub events: EventBus,
@@ -28,6 +30,7 @@ pub struct AppState {
 impl AppState {
     pub fn new(
         soundcloud: SoundcloudClient,
+        youtube: YoutubeClient,
         library: LibraryService,
         settings: SettingsManager,
     ) -> Self {
@@ -36,6 +39,7 @@ impl AppState {
 
         Self {
             soundcloud: Arc::new(soundcloud),
+            youtube: Arc::new(youtube),
             library,
             download_queue,
             events,
@@ -92,7 +96,11 @@ impl AppState {
     }
 
     pub fn youtube_provider(&self) -> YouTubeProvider {
-        YouTubeProvider::new(self.settings.clone(), self.http_clients.clone())
+        YouTubeProvider::new(
+            self.youtube.clone(),
+            self.settings.clone(),
+            self.http_clients.clone(),
+        )
     }
 
     pub fn events(&self) -> &EventBus {
