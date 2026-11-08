@@ -6,6 +6,7 @@ use url::Url;
 use crate::{
     domain::{AudioFormat, DiscoveredTrack, SourcePlatform},
     downloader::{cancellation, error::DownloadError, types::DownloadTask},
+    infra::FileService,
     providers::{ProgressCallback, ProviderError, SoundCloudProvider, YouTubeProvider},
 };
 
@@ -40,9 +41,8 @@ impl TrackDownloader {
 
         match result {
             Some(Ok(())) => {
-                let size = tokio::fs::metadata(&task.file_path)
+                let size = FileService::file_size(&task.file_path)
                     .await
-                    .map(|m| m.len())
                     .unwrap_or(0);
                 let format = AudioFormat::from_path(&task.file_path);
                 Ok(Some(DownloadedTrackInfo {
@@ -53,9 +53,7 @@ impl TrackDownloader {
             }
             Some(Err(err)) => Err(err),
             None => {
-                if task.file_path.exists() {
-                    let _ = tokio::fs::remove_file(&task.file_path).await;
-                }
+                let _ = FileService::remove_file_if_exists(&task.file_path).await;
                 Ok(None)
             }
         }

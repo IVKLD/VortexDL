@@ -1,7 +1,5 @@
 use std::path::Path;
 
-use tracing::instrument;
-
 use crate::{
     backup::{
         BackupAction, BackupBackend, BackupError, BackupSnapshot, BackupTarget,
@@ -16,11 +14,10 @@ pub struct BackupService<B = ()> {
 }
 
 fn create_temp_backup_file() -> Result<tempfile::NamedTempFile, BackupError> {
-    tempfile::Builder::new()
+    Ok(tempfile::Builder::new()
         .prefix("vortex_backup_")
         .suffix(".json")
-        .tempfile()
-        .map_err(BackupError::FileSystem)
+        .tempfile()?)
 }
 
 impl<B: BackupBackend> BackupService<B> {
@@ -35,19 +32,16 @@ impl<B: BackupBackend> BackupService<B> {
         }
     }
 
-    #[instrument(skip(self))]
     pub async fn export(&self) -> Result<(), BackupError> {
         let temp_file = create_temp_backup_file()?;
         self.do_export(temp_file.path()).await
     }
 
-    #[instrument(skip(self))]
     pub async fn import(&self) -> Result<(), BackupError> {
         let temp_file = create_temp_backup_file()?;
         self.do_import(temp_file.path()).await
     }
 
-    #[instrument(skip(self))]
     async fn do_export(&self, tmp: &Path) -> Result<(), BackupError> {
         let snapshot = BackupService::create_snapshot()?;
 
@@ -59,7 +53,6 @@ impl<B: BackupBackend> BackupService<B> {
         Ok(())
     }
 
-    #[instrument(skip(self))]
     async fn do_import(&self, tmp: &Path) -> Result<(), BackupError> {
         self.backend.download(tmp).await?;
 
@@ -74,7 +67,6 @@ impl<B: BackupBackend> BackupService<B> {
 }
 
 impl BackupService<()> {
-    #[instrument]
     pub fn create_snapshot() -> Result<BackupSnapshot, BackupError> {
         let mut settings = SettingsRepo::get()?;
         settings.webdav.password.clear();
@@ -93,7 +85,6 @@ impl BackupService<()> {
         })
     }
 
-    #[instrument(skip(snapshot))]
     pub fn apply_snapshot(mut snapshot: BackupSnapshot) -> Result<(), BackupError> {
         if snapshot.settings.webdav.password.is_empty() {
             let current = SettingsRepo::get()?;

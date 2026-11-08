@@ -1,6 +1,6 @@
 use std::path::{Path, PathBuf};
 
-use tracing::{debug, instrument};
+use tracing::debug;
 
 use crate::backup::{backend::BackupBackend, error::BackupError};
 
@@ -35,7 +35,6 @@ impl LocalBackend {
 }
 
 impl BackupBackend for LocalBackend {
-    #[instrument(skip(self), fields(remote = %self.remote_path.display()))]
     async fn upload(&self, src: &Path) -> Result<(), BackupError> {
         self.validate_path()?;
         debug!(
@@ -53,7 +52,6 @@ impl BackupBackend for LocalBackend {
         Ok(())
     }
 
-    #[instrument(skip(self), fields(remote = %self.remote_path.display()))]
     async fn download(&self, dest: &Path) -> Result<(), BackupError> {
         self.validate_path()?;
         debug!(

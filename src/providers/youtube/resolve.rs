@@ -1,18 +1,20 @@
+use yt_audio_downloader::AudioStreamResponse;
+
 use crate::{
     infra::net,
     providers::{
-        ProviderError, ResolvedStreamInfo,
+        ProviderError,
         youtube::{YouTubeProvider, client::ClientBuilder},
     },
 };
 
 impl YouTubeProvider {
-    pub async fn resolve_stream(&self, target: &str) -> Result<ResolvedStreamInfo, ProviderError> {
+    pub async fn resolve_stream(
+        &self,
+        target: &str,
+    ) -> Result<(AudioStreamResponse, Option<String>), ProviderError> {
         match self.client.resolve_stream(target).await {
-            Ok(info) => Ok(ResolvedStreamInfo {
-                stream_url: info.stream_url,
-                proxy_used: self.client.current_proxy_url().await,
-            }),
+            Ok(info) => Ok((info, self.client.current_proxy_url().await)),
             Err(direct_err) => {
                 let settings = self.settings.read().await.clone();
                 if !settings.network.use_proxy || settings.network.fallback_proxies.is_empty() {
@@ -38,16 +40,12 @@ impl YouTubeProvider {
                         }
                     },
                 )
-                .await
-                .map_err(ProviderError::Other)?;
+                .await?;
 
                 self.http_clients
                     .set_active_fallback_proxy(Some(used_proxy.clone()));
 
-                Ok(ResolvedStreamInfo {
-                    stream_url: info.stream_url,
-                    proxy_used: Some(used_proxy),
-                })
+                Ok((info, Some(used_proxy)))
             }
         }
     }
@@ -55,11 +53,9 @@ impl YouTubeProvider {
 
 #[cfg(test)]
 mod tests {
-    use yt_audio_downloader::ClientBuilder;
-
     #[tokio::test]
     async fn test_resolve_youtube() {
-        let client = ClientBuilder::new().build().await.unwrap();
+        let client = yt_audio_downloader::Client::new().unwrap();
         let res = client
             .resolve_stream("dQw4w9WgXcQ")
             .await

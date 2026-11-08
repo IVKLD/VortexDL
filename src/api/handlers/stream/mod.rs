@@ -4,7 +4,7 @@ use axum::{
 };
 use serde::Deserialize;
 
-use crate::{api::errors::ApiError, app::AppState};
+use crate::{app::AppState, stream::StreamError};
 
 #[derive(Debug, Deserialize, Clone)]
 pub struct StreamQuery {
@@ -28,6 +28,6 @@ pub async fn stream_audio(
     Path(id): Path<i64>,
     Query(params): Query<StreamQuery>,
     req: Request,
-) -> Result<Response, ApiError> {
+) -> Result<Response, StreamError> {
     state.stream_service().serve(id, params.url, req).await
 }

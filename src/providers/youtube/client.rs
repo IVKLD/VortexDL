@@ -48,7 +48,7 @@ impl<'a> ClientBuilder<'a> {
             builder = builder.with_proxy_provider(provider);
         }
 
-        let client = builder.build().await?;
+        let client = builder.build()?;
         Ok(client)
     }
 }

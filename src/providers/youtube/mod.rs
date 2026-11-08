@@ -3,6 +3,7 @@ pub mod discovery;
 pub mod download;
 pub mod resolve;
 pub mod search;
+pub mod stream;
 
 use std::sync::Arc;
 

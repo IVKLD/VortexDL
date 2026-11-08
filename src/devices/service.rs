@@ -28,9 +28,7 @@ impl DeviceService {
     }
 
     pub async fn get_device_storages(&self, device: &str) -> Result<Vec<StorageInfo>, DeviceError> {
-        let mut storages = get_device_storages(device)
-            .await
-            .map_err(DeviceError::Other)?;
+        let mut storages = get_device_storages(device).await?;
 
         let configured_path = {
             let settings = self.settings.read().await;

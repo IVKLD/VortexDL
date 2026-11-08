@@ -1,3 +1,5 @@
+use std::time::Instant;
+
 use axum::{
     body::Body,
     extract::Request,
@@ -5,25 +7,23 @@ use axum::{
     response::{IntoResponse, Response},
 };
 use reqwest::{
-    Client, Response as ReqwestResponse,
-    header::{ACCEPT_RANGES, CONTENT_LENGTH, CONTENT_RANGE, CONTENT_TYPE, RANGE, USER_AGENT},
+    Client,
+    header::{ACCEPT_RANGES, CONTENT_LENGTH, CONTENT_RANGE, CONTENT_TYPE},
 };
 use tower::ServiceExt;
 use tower_http::services::ServeFile;
-use yt_audio_downloader::select_user_agent_for_url;
+use yt_audio_downloader::AudioStreamResponse;
 
 use crate::{
-    api::errors::ApiError,
     domain::SourcePlatform,
     infra::net::HttpClientPool,
     library::LibraryService,
-    providers::{
-        HlsPlaylist, ProviderError, ResolvedStreamInfo, SoundCloudProvider, YouTubeProvider,
-    },
+    providers::{ByteRange, HlsPlaylist, SoundCloudProvider, YouTubeProvider},
     search::cache::SearchCache,
     stream::{
-        cache::{CachedStream, StreamCache},
-        hls::{HlsStreamOutcome, HlsStreamer},
+        cache::{CachedStream, StreamCache, StreamTarget},
+        error::StreamError,
+        hls::HlsStreamer,
     },
 };
 
@@ -61,7 +61,7 @@ impl StreamService {
         id: i64,
         url_param: Option<String>,
         req: Request,
-    ) -> Result<Response, ApiError> {
+    ) -> Result<Response, StreamError> {
         if let Some(track) = self.library.get_track(id).await
             && track.path.exists()
         {
@@ -69,195 +69,175 @@ impl StreamService {
             return Ok(res.into_response());
         }
 
-        let range_header = req.headers().get(header::RANGE).cloned();
-        let response = self.proxy_remote(id, url_param, range_header).await?;
-        Ok(response)
+        let range_header = req.headers().get(header::RANGE);
+        self.stream_remote(id, url_param.as_deref(), range_header).await
     }
 
-    pub async fn proxy_remote(
+    async fn stream_remote(
         &self,
         id: i64,
-        url_param: Option<String>,
-        range_header: Option<HeaderValue>,
-    ) -> Result<Response, ProviderError> {
-        let mut cached = self.resolve_stream(id, url_param.clone()).await?;
-
-        if let Some(ref playlist) = cached.hls_playlist {
-            let client = self.http_clients.get_or_create(cached.proxy.clone());
-            if let Some(res) = self
-                .stream_hls_playlist(id, client, playlist.clone(), range_header.as_ref())
-                .await?
-            {
-                return Ok(res);
-            }
-            cached = self.resolve_stream(id, url_param.clone()).await?;
+        url: Option<&str>,
+        range: Option<&HeaderValue>,
+    ) -> Result<Response, StreamError> {
+        if let Ok(res) = self.dispatch(id, url, range).await {
+            return Ok(res);
         }
 
-        let mut active_client = self.http_clients.get_or_create(cached.proxy.clone());
-        let mut active_url = cached.url.clone();
-        let mut upstream_res = self
-            .fetch_upstream(&active_client, &active_url, range_header.as_ref())
-            .await?;
-
-        if matches!(upstream_res.status().as_u16(), 401 | 403 | 404 | 410) {
-            self.cache.remove(id);
-            if let Ok(fresh) = self.resolve_stream(id, url_param).await {
-                let fresh_client = self.http_clients.get_or_create(fresh.proxy);
-                if let Ok(res) = self
-                    .fetch_upstream(&fresh_client, &fresh.url, range_header.as_ref())
-                    .await
-                    && (res.status().is_success() || res.status().as_u16() == 206)
-                {
-                    active_client = fresh_client;
-                    active_url = fresh.url;
-                    upstream_res = res;
-                }
-            }
-        }
-
-        if HlsPlaylist::is_hls_response(&upstream_res, &active_url) {
-            if range_header.is_some() {
-                upstream_res =
-                    Self::send_upstream_request(&active_client, &active_url, None).await?;
-            }
-
-            let playlist =
-                HlsStreamer::resolve_playlist(&active_client, upstream_res, &active_url).await?;
-            self.cache.set_hls_playlist(id, playlist.clone());
-
-            if let Some(res) = self
-                .stream_hls_playlist(id, active_client, playlist, range_header.as_ref())
-                .await?
-            {
-                return Ok(res);
-            }
-            return Err(ProviderError::InvalidStream(
-                "Upstream HLS stream expired immediately after resolution".to_string(),
-            ));
-        }
-
-        Self::build_passthrough_response(upstream_res)
+        self.cache.remove(id);
+        self.dispatch(id, url, range).await
     }
 
-    async fn stream_hls_playlist(
+    async fn dispatch(
         &self,
         id: i64,
+        url: Option<&str>,
+        range: Option<&HeaderValue>,
+    ) -> Result<Response, StreamError> {
+        let cached = self.resolve_stream(id, url).await?;
+
+        match cached.target {
+            StreamTarget::YouTube(yt) => self.stream_youtube(&yt, range).await,
+            StreamTarget::SoundCloud(playlist) => {
+                let client = self.http_clients.get_or_create(cached.proxy.clone());
+                self.stream_soundcloud(client, playlist, range).await
+            }
+        }
+    }
+
+    async fn stream_youtube(
+        &self,
+        info: &AudioStreamResponse,
+        range_header: Option<&HeaderValue>,
+    ) -> Result<Response, StreamError> {
+        let total = info.content_length.unwrap_or(0);
+        let range_str = range_header.and_then(|h| h.to_str().ok());
+        let byte_range = if total > 0 {
+            ByteRange::parse(range_str, total)
+        } else {
+            ByteRange::Full
+        };
+
+        let (start, end, status) = match byte_range {
+            ByteRange::Partial(s, e) => (s, Some(e), StatusCode::PARTIAL_CONTENT),
+            ByteRange::Unsatisfiable => {
+                let res = Response::builder()
+                    .status(StatusCode::RANGE_NOT_SATISFIABLE)
+                    .header(CONTENT_RANGE, format!("bytes */{total}"))
+                    .body(Body::empty())?;
+                return Ok(res);
+            }
+            ByteRange::Full => (0, total.checked_sub(1), StatusCode::OK),
+        };
+
+        let mime = if info.mime_type.is_empty() {
+            "audio/webm"
+        } else {
+            &info.mime_type
+        };
+
+        let stream = self.youtube.stream(info, start, end).await?;
+
+        let mut builder = Response::builder()
+            .status(status)
+            .header(CONTENT_TYPE, mime)
+            .header(ACCEPT_RANGES, "bytes");
+
+        if let Some(end) = end {
+            builder = builder.header(CONTENT_LENGTH, (end - start + 1).to_string());
+            if total > 0 && status == StatusCode::PARTIAL_CONTENT {
+                builder = builder.header(CONTENT_RANGE, format!("bytes {start}-{end}/{total}"));
+            }
+        }
+
+        let res = builder.body(Body::from_stream(stream))?;
+        Ok(res)
+    }
+
+    async fn stream_soundcloud(
+        &self,
         client: Client,
         playlist: HlsPlaylist,
         range: Option<&HeaderValue>,
-    ) -> Result<Option<Response>, ProviderError> {
-        match HlsStreamer::new(client, playlist).stream(range).await? {
-            HlsStreamOutcome::Response(res) => Ok(Some(res)),
-            HlsStreamOutcome::Expired => {
-                self.cache.remove(id);
-                Ok(None)
-            }
-        }
+    ) -> Result<Response, StreamError> {
+        let res = HlsStreamer::new(client, playlist).stream(range).await?;
+        Ok(res)
     }
 
-    async fn fetch_upstream(
-        &self,
-        client: &Client,
-        url: &str,
-        range: Option<&HeaderValue>,
-    ) -> Result<ReqwestResponse, ProviderError> {
-        let req_range = if HlsPlaylist::is_hls_url(url) {
-            None
-        } else {
-            range
-        };
-        Self::send_upstream_request(client, url, req_range).await
-    }
-
-    pub async fn resolve_stream(
+    async fn resolve_stream(
         &self,
         id: i64,
-        url_param: Option<String>,
-    ) -> Result<CachedStream, ProviderError> {
+        url_param: Option<&str>,
+    ) -> Result<CachedStream, StreamError> {
         if let Some(cached) = self.cache.get(id) {
             return Ok(cached);
         }
 
-        let target_url = if let Some(u) = url_param {
-            Some(u)
+        let cached = match self.detect_platform(id, url_param).await {
+            SourcePlatform::YouTube => self.resolve_youtube(id, url_param).await?,
+            SourcePlatform::SoundCloud => self.resolve_soundcloud(id).await?,
+            SourcePlatform::Local => {
+                return Err(StreamError::UnsupportedPlatform(id));
+            }
+        };
+
+        self.cache.insert(id, cached.clone());
+        Ok(cached)
+    }
+
+    async fn detect_platform(&self, id: i64, url: Option<&str>) -> SourcePlatform {
+        if let Some(url) = url {
+            return SourcePlatform::detect_from_url_str(url);
+        }
+        if self.search_cache.get_youtube_id(id).is_some() {
+            return SourcePlatform::YouTube;
+        }
+        if self.search_cache.get_soundcloud_track(id).is_some() {
+            return SourcePlatform::SoundCloud;
+        }
+        if let Some(track) = self.library.get_track(id).await {
+            return SourcePlatform::detect_from_optional_url(track.metadata.source_url.as_deref());
+        }
+        SourcePlatform::Local
+    }
+
+    async fn resolve_youtube(
+        &self,
+        id: i64,
+        url_param: Option<&str>,
+    ) -> Result<CachedStream, StreamError> {
+        let url = if let Some(u) = url_param {
+            u.to_string()
         } else if let Some(vid) = self.search_cache.get_youtube_id(id) {
-            Some(format!("https://www.youtube.com/watch?v={vid}"))
+            format!("https://www.youtube.com/watch?v={vid}")
+        } else if let Some(track) = self.library.get_track(id).await
+            && let Some(src) = track.metadata.source_url
+        {
+            src
         } else {
-            self.library
-                .get_track(id)
-                .await
-                .and_then(|t| t.metadata.source_url)
+            return Err(StreamError::TrackNotFound(id));
         };
 
-        let resolved = match target_url
-            .as_deref()
-            .map(SourcePlatform::detect_from_url_str)
-        {
-            Some(SourcePlatform::YouTube) => {
-                let u = target_url.as_deref().unwrap();
-                self.youtube.resolve_stream(u).await?
-            }
-            _ => {
-                let cached_track = self.search_cache.get_soundcloud_track(id);
-                let stream = self
-                    .soundcloud
-                    .resolve_stream(cached_track.as_ref(), id)
-                    .await?;
-                ResolvedStreamInfo {
-                    stream_url: stream.url,
-                    proxy_used: stream.proxy_url,
-                }
-            }
-        };
-
-        self.cache
-            .insert(id, resolved.stream_url.clone(), resolved.proxy_used.clone());
-
-        self.cache
-            .get(id)
-            .ok_or_else(|| ProviderError::InvalidStream("Failed to cache stream".to_string()))
+        let (info, proxy) = self.youtube.resolve_stream(&url).await?;
+        Ok(CachedStream {
+            target: StreamTarget::YouTube(Box::new(info)),
+            proxy,
+            instant: Instant::now(),
+        })
     }
 
-    pub async fn send_upstream_request(
-        client: &Client,
-        url: &str,
-        range_header: Option<&HeaderValue>,
-    ) -> Result<ReqwestResponse, ProviderError> {
-        let mut req = client
-            .get(url)
-            .header(USER_AGENT, select_user_agent_for_url(url));
+    async fn resolve_soundcloud(&self, id: i64) -> Result<CachedStream, StreamError> {
+        let cached_track = self.search_cache.get_soundcloud_track(id);
+        let stream = self
+            .soundcloud
+            .resolve_stream(cached_track.as_ref(), id)
+            .await?;
+        let client = self.http_clients.get_or_create(stream.proxy_url.clone());
+        let playlist = HlsStreamer::fetch_playlist(&client, &stream.url).await?;
 
-        if let Some(range) = range_header
-            && let Ok(range_str) = range.to_str()
-        {
-            req = req.header(RANGE, range_str);
-        }
-
-        Ok(req.send().await?)
-    }
-
-    fn build_passthrough_response(
-        upstream_res: ReqwestResponse,
-    ) -> Result<Response, ProviderError> {
-        let status = StatusCode::from_u16(upstream_res.status().as_u16()).unwrap_or(StatusCode::OK);
-        let mut response_builder = Response::builder().status(status);
-
-        for (name, value) in upstream_res.headers() {
-            if matches!(
-                name,
-                &CONTENT_TYPE | &CONTENT_LENGTH | &CONTENT_RANGE | &ACCEPT_RANGES
-            ) {
-                response_builder = response_builder.header(name.as_str(), value.as_bytes());
-            }
-        }
-
-        if upstream_res.headers().get(ACCEPT_RANGES).is_none() {
-            response_builder = response_builder.header(ACCEPT_RANGES, "bytes");
-        }
-
-        let body = Body::from_stream(upstream_res.bytes_stream());
-        response_builder
-            .body(body)
-            .map_err(|e| ProviderError::InvalidStream(e.to_string()))
+        Ok(CachedStream {
+            target: StreamTarget::SoundCloud(playlist),
+            proxy: stream.proxy_url,
+            instant: Instant::now(),
+        })
     }
 }

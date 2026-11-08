@@ -1,4 +1,9 @@
+use std::io;
+
+use axum::response::{IntoResponse, Response};
 use thiserror::Error;
+
+use crate::{api::errors::ApiError, infra::AudioVerifyError, settings::SettingsError};
 
 #[derive(Debug, Error)]
 pub enum ProviderError {
@@ -12,7 +17,7 @@ pub enum ProviderError {
     Network(#[from] reqwest::Error),
 
     #[error("I/O error: {0}")]
-    Io(#[from] std::io::Error),
+    Io(#[from] io::Error),
 
     #[error("Invalid URL: {0}")]
     UrlParse(#[from] url::ParseError),
@@ -23,8 +28,17 @@ pub enum ProviderError {
     #[error("Unsupported music URL: '{0}'. Supported platforms: SoundCloud and YouTube.")]
     UnsupportedPlatform(String),
 
+    #[error("HTTP error: {0}")]
+    Http(#[from] axum::http::Error),
+
     #[error("{0}")]
     InvalidStream(String),
+
+    #[error(transparent)]
+    AudioVerify(#[from] AudioVerifyError),
+
+    #[error(transparent)]
+    Settings(#[from] SettingsError),
 
     #[error(transparent)]
     Other(#[from] anyhow::Error),
@@ -33,5 +47,11 @@ pub enum ProviderError {
 impl ProviderError {
     pub fn is_expired_status(&self) -> bool {
         matches!(self, Self::UpstreamStatus(401 | 403 | 404 | 410))
+    }
+}
+
+impl IntoResponse for ProviderError {
+    fn into_response(self) -> Response {
+        ApiError::from(self).into_response()
     }
 }

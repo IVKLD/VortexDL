@@ -1,9 +1,11 @@
+pub mod error;
 mod index;
 pub mod metadata;
 mod scanner;
 pub mod service;
 mod types;
 
+pub use error::LibraryError;
 pub use index::Library;
 pub use service::{LibraryService, RegisterDownloadedTrackArgs};
 pub use types::{LibraryStats, LibraryTrack};

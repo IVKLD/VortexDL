@@ -1,6 +1,5 @@
 use std::path::Path;
 
-use anyhow::Result;
 use id3::{
     Content, TagLike, Version,
     frame::{Frame, Picture, PictureType},
@@ -10,6 +9,7 @@ use url::Url;
 use crate::{
     domain::SourcePlatform,
     library::metadata::{
+        error::MetadataError,
         id3::{get_tag, set_txxx},
         tags::{TAG_ARTWORK_URL, TAG_PLATFORM, TAG_SOURCE_URL, TAG_TRACK_ID},
     },
@@ -29,7 +29,7 @@ pub struct SaveTrackArgs<'a> {
 /// Flow: Called by `finalize_single_track` after downloading completes.
 /// Why:  Ensures downloaded tracks have consistent artist/title tags, embedded album artwork,
 ///       and custom metadata (like track ID) so VortexDL can recognize them on future rescans.
-pub fn save_track_info(args: SaveTrackArgs) -> Result<()> {
+pub fn save_track_info(args: SaveTrackArgs) -> Result<(), MetadataError> {
     let mut tag = get_tag(args.path)?;
 
     tag.set_title(args.title);

@@ -1,7 +1,7 @@
 use std::path::Path;
 
 use reqwest::{Client, StatusCode};
-use tracing::{debug, instrument};
+use tracing::debug;
 
 use crate::backup::{backend::BackupBackend, error::BackupError};
 
@@ -27,7 +27,6 @@ impl BackupBackend for HttpUrlBackend {
         ))
     }
 
-    #[instrument(skip(self))]
     async fn download(&self, dest: &Path) -> Result<(), BackupError> {
         debug!("URL download to {}", dest.display());
 

@@ -1,8 +1,8 @@
 use crate::{
-    api::errors::{ApiError, ErrorCode},
     providers::{SoundCloudProvider, YouTubeProvider},
     search::{
         cache::SearchCache,
+        error::SearchError,
         types::{
             SearchDurationFilter, SearchProviderParam, SearchQuery, SearchResponse, SearchTrackItem,
         },
@@ -29,11 +29,9 @@ impl SearchService {
         }
     }
 
-    pub async fn search(&self, params: SearchQuery) -> Result<SearchResponse, ApiError> {
+    pub async fn search(&self, params: SearchQuery) -> Result<SearchResponse, SearchError> {
         let trimmed = params.query.trim();
-        let query = (!trimmed.is_empty()).then_some(trimmed).ok_or_else(|| {
-            ApiError::bad_request("Search query cannot be empty").with_code(ErrorCode::BadRequest)
-        })?;
+        let query = (!trimmed.is_empty()).then_some(trimmed).ok_or(SearchError::EmptyQuery)?;
 
         let limit = (params.limit.unwrap_or(20).max(1) as usize).min(100);
         let offset = params.offset.unwrap_or(0).max(0) as usize;
@@ -54,7 +52,7 @@ impl SearchService {
         limit: usize,
         offset: usize,
         duration: SearchDurationFilter,
-    ) -> Result<SearchResponse, ApiError> {
+    ) -> Result<SearchResponse, SearchError> {
         if offset == 0
             && self.youtube.is_youtube_url(query)
             && let Some(meta) = self.youtube.fetch_metadata(query).await
@@ -84,19 +82,16 @@ impl SearchService {
         let has_more = next_token.is_some();
         self.cache.set_continuation(query, next_token);
 
-        let mut tracks = Vec::new();
-        for meta in videos {
-            if !duration.matches(meta.duration_seconds) {
-                continue;
-            }
-
-            let (id, vid, item) = SearchTrackItem::from_youtube_meta(&meta);
-            self.cache.insert_youtube_id(id, vid);
-            tracks.push(item);
-            if tracks.len() >= limit {
-                break;
-            }
-        }
+        let tracks = videos
+            .into_iter()
+            .filter(|meta| duration.matches(meta.duration_seconds))
+            .take(limit)
+            .map(|meta| {
+                let (id, vid, item) = SearchTrackItem::from_youtube_meta(&meta);
+                self.cache.insert_youtube_id(id, vid);
+                item
+            })
+            .collect();
 
         Ok(SearchResponse { tracks, has_more })
     }
@@ -106,7 +101,7 @@ impl SearchService {
         query: &str,
         limit: usize,
         offset: usize,
-    ) -> Result<SearchResponse, ApiError> {
+    ) -> Result<SearchResponse, SearchError> {
         let sc_results = self.soundcloud.search_tracks(query, limit, offset).await?;
 
         let has_more = sc_results.next_href.is_some();

@@ -1,12 +1,15 @@
 use std::{
     collections::HashMap,
     sync::{Arc, Mutex},
+    time::Duration,
 };
 
-use reqwest::Client;
-use yt_audio_downloader::create_http_client_with_proxy;
+use reqwest::{Client, Proxy};
 
 use crate::infra::MutexExt;
+
+pub const DEFAULT_USER_AGENT: &str =
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36";
 
 #[derive(Default, Clone)]
 pub struct HttpClientPool {
@@ -18,8 +21,8 @@ impl HttpClientPool {
     pub fn get_or_create(&self, proxy: Option<String>) -> Client {
         self.clients
             .lock_unpoisoned()
-            .entry(proxy.clone())
-            .or_insert_with(|| create_http_client_with_proxy(proxy.as_deref()))
+            .entry(proxy)
+            .or_insert_with_key(|p| Self::build_client(p.as_deref()))
             .clone()
     }
 
@@ -29,5 +32,19 @@ impl HttpClientPool {
 
     pub fn set_active_fallback_proxy(&self, proxy: Option<String>) {
         *self.active_fallback.lock_unpoisoned() = proxy;
+    }
+
+    fn build_client(proxy: Option<&str>) -> Client {
+        let mut builder = Client::builder()
+            .user_agent(DEFAULT_USER_AGENT)
+            .timeout(Duration::from_secs(30));
+
+        if let Some(url) = proxy
+            && let Ok(p) = Proxy::all(url)
+        {
+            builder = builder.proxy(p);
+        }
+
+        builder.build().unwrap_or_default()
     }
 }

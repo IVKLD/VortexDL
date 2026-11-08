@@ -5,18 +5,18 @@ use std::{
     time::SystemTime,
 };
 
-use anyhow::Result;
 use tokio::sync::RwLock;
 use url::Url;
 
 use crate::{
     domain::{AudioFormat, SourcePlatform, TrackMetadata},
     infra::{
+        FileService,
         db::{CachedTrack, DeletedTrackRecord, StatsRepo, TrackCacheRepo},
         system_time_to_secs,
     },
     library::{
-        Library, LibraryStats,
+        Library, LibraryError, LibraryStats,
         metadata::{self, SaveTrackArgs},
         scanner::scan_directory,
         types::LibraryTrack,
@@ -84,13 +84,9 @@ impl LibraryService {
     ) -> Vec<(i64, LibraryTrack)> {
         let storage = self.inner.read().await;
 
-        let mut tracks: Vec<(i64, LibraryTrack)> = storage
-            .iter()
-            .map(|(&id, track)| (id, track.clone()))
-            .collect();
-
+        let mut tracks: Vec<_> = storage.iter().map(|(&id, track)| (id, track)).collect();
         let sort_by = sort.unwrap_or("date");
-        let order_by = order.unwrap_or("desc");
+        let desc = order.unwrap_or("desc") == "desc";
 
         tracks.sort_by(|(id_a, a), (id_b, b)| {
             let cmp = match sort_by {
@@ -100,22 +96,21 @@ impl LibraryService {
                     .to_lowercase()
                     .cmp(&b.metadata.title.to_lowercase()),
                 _ => a.created_at.cmp(&b.created_at),
-            };
+            }
+            .then_with(|| id_a.cmp(id_b));
 
-            let cmp = cmp.then_with(|| id_a.cmp(id_b));
-
-            if order_by == "desc" {
+            if desc {
                 cmp.reverse()
             } else {
                 cmp
             }
         });
 
-        if let Some(limit) = limit {
-            tracks.truncate(limit);
+        let iter = tracks.into_iter().map(|(id, track)| (id, track.clone()));
+        match limit {
+            Some(lim) => iter.take(lim).collect(),
+            None => iter.collect(),
         }
-
-        tracks
     }
 
     pub async fn get_stats(&self) -> LibraryStats {
@@ -147,12 +142,12 @@ impl LibraryService {
         }
     }
 
-    pub async fn clear_deleted_stats(&self) -> Result<()> {
+    pub async fn clear_deleted_stats(&self) -> Result<(), LibraryError> {
         tokio::task::spawn_blocking(StatsRepo::clear_deleted_history).await??;
         Ok(())
     }
 
-    pub async fn remove_tracks(&self, ids: Vec<i64>) -> Result<Vec<LibraryTrack>> {
+    pub async fn remove_tracks(&self, ids: Vec<i64>) -> Result<Vec<LibraryTrack>, LibraryError> {
         let removed = self.inner.write().await.remove_tracks(&ids);
         if removed.is_empty() {
             return Ok(removed);
@@ -163,9 +158,7 @@ impl LibraryService {
         let mut audit_records = Vec::with_capacity(removed.len());
 
         for track in &removed {
-            if track.path.exists() {
-                let _ = tokio::fs::remove_file(&track.path).await;
-            }
+            let _ = FileService::remove_file_if_exists(&track.path).await;
             to_remove_cache.insert(track.path.to_string_lossy().into_owned());
 
             let format = AudioFormat::from_path(&track.path).to_string();
@@ -179,7 +172,7 @@ impl LibraryService {
             });
         }
 
-        tokio::task::spawn_blocking(move || -> Result<()> {
+        tokio::task::spawn_blocking(move || -> Result<(), LibraryError> {
             TrackCacheRepo::update_batch(&HashMap::new(), &to_remove_cache)?;
             StatsRepo::record_deleted_tracks(&audit_records)?;
             Ok(())
@@ -192,13 +185,10 @@ impl LibraryService {
     pub async fn register_downloaded_track(
         &self,
         args: RegisterDownloadedTrackArgs,
-    ) -> Result<TrackMetadata> {
+    ) -> Result<TrackMetadata, LibraryError> {
         let now = system_time_to_secs(SystemTime::now());
-        let mtime = tokio::fs::metadata(&args.path)
+        let mtime = FileService::mtime_secs(&args.path)
             .await
-            .ok()
-            .and_then(|m| m.modified().ok())
-            .map(system_time_to_secs)
             .unwrap_or(now);
 
         let platform =
@@ -226,7 +216,7 @@ impl LibraryService {
         let metadata_clone = metadata.clone();
         let size = args.size;
 
-        tokio::task::spawn_blocking(move || -> Result<()> {
+        tokio::task::spawn_blocking(move || -> Result<(), LibraryError> {
             metadata::save_track_info(SaveTrackArgs {
                 path: &file_path,
                 sc_id: &track_id_str,

@@ -1,4 +1,9 @@
+use std::io;
+
+use axum::response::{IntoResponse, Response};
 use thiserror::Error;
+
+use crate::api::errors::ApiError;
 
 #[derive(Debug, Error)]
 pub enum BackupError {
@@ -15,7 +20,7 @@ pub enum BackupError {
     HttpStatus(reqwest::StatusCode),
 
     #[error("File system error: {0}")]
-    FileSystem(#[from] std::io::Error),
+    FileSystem(#[from] io::Error),
 
     #[error("Serialization error: {0}")]
     Serialization(#[from] serde_json::Error),
@@ -25,4 +30,10 @@ pub enum BackupError {
 
     #[error("Operation not supported: {0}")]
     OperationNotSupported(String),
+}
+
+impl IntoResponse for BackupError {
+    fn into_response(self) -> Response {
+        ApiError::from(self).into_response()
+    }
 }

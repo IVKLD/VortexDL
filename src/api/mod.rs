@@ -9,6 +9,7 @@ use anyhow::Result;
 use axum::{
     Router,
     routing::{delete, get, post},
+    serve,
 };
 use handlers::{
     devices::{
@@ -135,7 +136,7 @@ pub async fn run_server(state: AppState, args: &Args) -> Result<()> {
     let listener = TcpListener::bind(addr).await?;
 
     tracing::info!("VortexDL running on http://{}", addr);
-    axum::serve(listener, router).await?;
+    serve(listener, router).await?;
     Ok(())
 }
 

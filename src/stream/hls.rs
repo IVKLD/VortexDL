@@ -7,19 +7,14 @@ use axum::{
 };
 use futures::{Stream, StreamExt};
 use reqwest::{
-    Client, Response as ReqwestResponse,
-    header::{ACCEPT_RANGES, CONTENT_LENGTH, CONTENT_RANGE, CONTENT_TYPE},
+    Client,
+    header::{ACCEPT_RANGES, CONTENT_LENGTH, CONTENT_RANGE, CONTENT_TYPE, USER_AGENT},
 };
 
 use crate::{
+    infra::net::DEFAULT_USER_AGENT,
     providers::{ByteRange, HlsPlaylist, HlsSegment, ProviderError},
-    stream::service::StreamService,
 };
-
-pub enum HlsStreamOutcome {
-    Response(Response),
-    Expired,
-}
 
 type SegmentByteStream = Pin<Box<dyn Stream<Item = Result<Bytes, reqwest::Error>> + Send>>;
 
@@ -42,20 +37,25 @@ impl HlsStreamer {
         Self { client, playlist }
     }
 
-    pub async fn resolve_playlist(
-        client: &Client,
-        initial_res: ReqwestResponse,
-        playlist_url: &str,
-    ) -> Result<HlsPlaylist, ProviderError> {
-        let manifest_text = initial_res.text().await?;
-        let mut playlist = HlsPlaylist::parse(&manifest_text, playlist_url)?;
+    async fn fetch_manifest(client: &Client, url: &str) -> Result<String, ProviderError> {
+        let manifest = client
+            .get(url)
+            .header(USER_AGENT, DEFAULT_USER_AGENT)
+            .send()
+            .await?
+            .text()
+            .await?;
+        Ok(manifest)
+    }
+
+    pub async fn fetch_playlist(client: &Client, url: &str) -> Result<HlsPlaylist, ProviderError> {
+        let manifest = Self::fetch_manifest(client, url).await?;
+        let mut playlist = HlsPlaylist::parse(&manifest, url)?;
 
         if let Some(nested_url) = playlist.single_nested_playlist_url() {
             let nested_url = nested_url.to_string();
-            let nested_res =
-                StreamService::send_upstream_request(client, &nested_url, None).await?;
-            let nested_text = nested_res.text().await?;
-            playlist = HlsPlaylist::parse(&nested_text, &nested_url)?;
+            let nested_manifest = Self::fetch_manifest(client, &nested_url).await?;
+            playlist = HlsPlaylist::parse(&nested_manifest, &nested_url)?;
         }
 
         Ok(playlist)
@@ -64,18 +64,16 @@ impl HlsStreamer {
     pub async fn stream(
         self,
         range_header: Option<&HeaderValue>,
-    ) -> Result<HlsStreamOutcome, ProviderError> {
+    ) -> Result<Response, ProviderError> {
         let range_str = range_header.and_then(|h| h.to_str().ok());
         let (req_range, status) = match self.playlist.total_size {
             Some(ts) => match ByteRange::parse(range_str, ts) {
                 ByteRange::Partial(start, end) => (Some((start, end)), StatusCode::PARTIAL_CONTENT),
                 ByteRange::Unsatisfiable => {
-                    let res = Response::builder()
+                    return Ok(Response::builder()
                         .status(StatusCode::RANGE_NOT_SATISFIABLE)
                         .header(CONTENT_RANGE, format!("bytes */{ts}"))
-                        .body(Body::empty())
-                        .map_err(|e| ProviderError::InvalidStream(e.to_string()))?;
-                    return Ok(HlsStreamOutcome::Response(res));
+                        .body(Body::empty())?);
                 }
                 ByteRange::Full => (None, StatusCode::OK),
             },
@@ -84,28 +82,27 @@ impl HlsStreamer {
 
         let segments = match req_range {
             Some((start, end)) => self.playlist.segments_in_range(start, end),
-            None => self.playlist.segments.clone(),
+            None => self.playlist.segments,
         };
-
-        let mut segments_iter = segments.into_iter();
-        let first_seg = segments_iter.next();
 
         let mut state = HlsStreamState {
             client: self.client,
-            segments: segments_iter,
+            segments: segments.into_iter(),
             current_stream: None,
             current_offset: 0,
             req_range,
         };
 
-        let first_chunk = match state.poll_first_chunk(first_seg).await {
+        let first_chunk = match state.poll_first_chunk().await {
             Ok(Some(chunk)) => chunk,
             Ok(None) => Bytes::new(),
             Err(e)
                 if e.status()
                     .is_some_and(|s| s.as_u16() == 403 || s.as_u16() == 401) =>
             {
-                return Ok(HlsStreamOutcome::Expired);
+                return Err(ProviderError::InvalidStream(
+                    "HLS stream expired".to_string(),
+                ));
             }
             Err(e) => return Err(e.into()),
         };
@@ -133,21 +130,13 @@ impl HlsStreamer {
             builder = builder.header(CONTENT_LENGTH, total_size.to_string());
         }
 
-        let body = Body::from_stream(stream);
-        let res = builder
-            .body(body)
-            .map_err(|e| ProviderError::InvalidStream(e.to_string()))?;
-
-        Ok(HlsStreamOutcome::Response(res))
+        Ok(builder.body(Body::from_stream(stream))?)
     }
 }
 
 impl HlsStreamState {
-    async fn poll_first_chunk(
-        &mut self,
-        first_seg: Option<HlsSegment>,
-    ) -> Result<Option<Bytes>, reqwest::Error> {
-        let Some(seg) = first_seg else {
+    async fn poll_first_chunk(&mut self) -> Result<Option<Bytes>, reqwest::Error> {
+        let Some(seg) = self.segments.next() else {
             return Ok(None);
         };
 
@@ -187,16 +176,11 @@ impl HlsStreamState {
                         }
                     }
 
-                    match state.segments.next() {
-                        Some(next_seg) => {
-                            match fetch_segment_stream(&state.client, &next_seg).await {
-                                Ok(stream) => {
-                                    state.current_stream = Some(stream);
-                                }
-                                Err(e) => return Some((Err(e), (state, None))),
-                            }
-                        }
-                        None => return None,
+                    let next_seg = state.segments.next()?;
+
+                    match fetch_segment_stream(&state.client, &next_seg).await {
+                        Ok(stream) => state.current_stream = Some(stream),
+                        Err(e) => return Some((Err(e), (state, None))),
                     }
                 }
             },
@@ -220,11 +204,7 @@ impl HlsStreamState {
         let slice_start = req_start.saturating_sub(chunk_start) as usize;
         let slice_end = ((req_end + 1).min(chunk_end) - chunk_start) as usize;
 
-        if slice_start < slice_end && slice_end <= chunk.len() {
-            Some(chunk.slice(slice_start..slice_end))
-        } else {
-            None
-        }
+        (slice_start < slice_end).then(|| chunk.slice(slice_start..slice_end))
     }
 }
 

@@ -1,4 +1,7 @@
+use axum::response::{IntoResponse, Response};
 use thiserror::Error;
+
+use crate::api::errors::ApiError;
 
 #[derive(Debug, Error)]
 pub enum DeviceError {
@@ -8,4 +11,10 @@ pub enum DeviceError {
     AlreadyInProgress,
     #[error(transparent)]
     Other(#[from] anyhow::Error),
+}
+
+impl IntoResponse for DeviceError {
+    fn into_response(self) -> Response {
+        ApiError::from(self).into_response()
+    }
 }

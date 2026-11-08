@@ -1,12 +1,13 @@
 use std::path::Path;
 
-use anyhow::Result;
 use id3::{
     Content, Error as Id3Error, ErrorKind as Id3ErrorKind, Tag, TagLike,
     frame::{ExtendedText, Frame},
 };
 
-pub fn get_tag(path: impl AsRef<Path>) -> Result<Tag> {
+use crate::library::metadata::error::MetadataError;
+
+pub fn get_tag(path: impl AsRef<Path>) -> Result<Tag, MetadataError> {
     let path = path.as_ref();
     match Tag::read_from_path(path) {
         Ok(tag) => Ok(tag),
@@ -14,14 +15,7 @@ pub fn get_tag(path: impl AsRef<Path>) -> Result<Tag> {
             kind: Id3ErrorKind::NoTag,
             ..
         }) => Ok(Tag::new()),
-        Err(e) => {
-            tracing::warn!(
-                path = %path.display(),
-                error = %e,
-                "Failed to read ID3 tag, starting fresh",
-            );
-            Ok(Tag::new())
-        }
+        Err(e) => Err(MetadataError::Id3(e)),
     }
 }
 

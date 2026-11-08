@@ -4,13 +4,20 @@ use std::{
     time::{Duration, Instant},
 };
 
+use yt_audio_downloader::AudioStreamResponse;
+
 use crate::{infra::MutexExt, providers::HlsPlaylist};
 
 #[derive(Clone, Debug)]
+pub enum StreamTarget {
+    YouTube(Box<AudioStreamResponse>),
+    SoundCloud(HlsPlaylist),
+}
+
+#[derive(Clone, Debug)]
 pub struct CachedStream {
-    pub url: String,
+    pub target: StreamTarget,
     pub proxy: Option<String>,
-    pub hls_playlist: Option<HlsPlaylist>,
     pub instant: Instant,
 }
 
@@ -26,22 +33,8 @@ impl StreamCache {
         (entry.instant.elapsed() < Duration::from_secs(3 * 3600)).then(|| entry.clone())
     }
 
-    pub fn insert(&self, id: i64, url: String, proxy: Option<String>) {
-        self.streams.lock_unpoisoned().insert(
-            id,
-            CachedStream {
-                url,
-                proxy,
-                hls_playlist: None,
-                instant: Instant::now(),
-            },
-        );
-    }
-
-    pub fn set_hls_playlist(&self, id: i64, playlist: HlsPlaylist) {
-        if let Some(entry) = self.streams.lock_unpoisoned().get_mut(&id) {
-            entry.hls_playlist = Some(playlist);
-        }
+    pub fn insert(&self, id: i64, stream: CachedStream) {
+        self.streams.lock_unpoisoned().insert(id, stream);
     }
 
     pub fn remove(&self, id: i64) {

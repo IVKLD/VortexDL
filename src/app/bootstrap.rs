@@ -1,4 +1,4 @@
-use std::{fs, sync::Arc};
+use std::sync::Arc;
 
 use anyhow::Result;
 use tokio::sync::RwLock;
@@ -53,7 +53,7 @@ pub async fn init_app(args: &Args) -> Result<AppState> {
     let mut settings = infra::db::SettingsRepo::get()?;
     let output_dir = args.resolve_output_dir(&settings);
     settings.downloads.output_path = output_dir.to_string_lossy().to_string();
-    fs::create_dir_all(&output_dir)?;
+    infra::FileService::ensure_dir_sync(&output_dir)?;
 
     let pb_sc = terminal::create_standalone_spinner("Initializing SoundCloud...");
     let library = Arc::new(RwLock::new(Library::default()));

@@ -4,7 +4,7 @@ use reqwest::{
     Client, Method, StatusCode,
     header::{AUTHORIZATION, CONTENT_TYPE},
 };
-use tracing::{debug, instrument};
+use tracing::debug;
 
 use crate::backup::{backend::BackupBackend, error::BackupError};
 
@@ -69,7 +69,6 @@ impl WebDavBackend {
 }
 
 impl BackupBackend for WebDavBackend {
-    #[instrument(skip(self))]
     async fn upload(&self, src: &Path) -> Result<(), BackupError> {
         debug!("WebDAV upload to {}", self.file_url);
 
@@ -94,7 +93,6 @@ impl BackupBackend for WebDavBackend {
         }
     }
 
-    #[instrument(skip(self))]
     async fn download(&self, dest: &Path) -> Result<(), BackupError> {
         debug!("WebDAV download from {}", self.file_url);
 

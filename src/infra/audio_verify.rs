@@ -1,29 +1,35 @@
 use std::{fs::File, io::ErrorKind, path::Path};
 
-use anyhow::{Result, anyhow};
 use symphonia::core::{errors::Error, io::MediaSourceStream, probe::Hint};
+use crate::infra::{FileService, error::AudioVerifyError};
 
-pub async fn verify_audio_file(path: impl AsRef<Path>, expected_size: u64) -> Result<()> {
+pub async fn verify_audio_file(
+    path: impl AsRef<Path>,
+    expected_size: u64,
+) -> Result<(), AudioVerifyError> {
     let path = path.as_ref();
-    let final_size = tokio::fs::metadata(path).await?.len();
+    let final_size = FileService::file_size(path).await?;
 
-    if final_size < 10_000 || (expected_size > 0 && final_size != expected_size) {
-        tokio::fs::remove_file(path).await.ok();
-        return Err(anyhow!(
-            "Integrity check failed: expected {expected_size} bytes, got on disk {final_size}"
-        ));
+    if final_size < 10_000 {
+        let _ = FileService::remove_file_if_exists(path).await;
+        return Err(AudioVerifyError::TooSmall {
+            actual: final_size,
+            min: 10_000,
+        });
+    }
+
+    if expected_size > 0 && final_size != expected_size {
+        let _ = FileService::remove_file_if_exists(path).await;
+        return Err(AudioVerifyError::SizeMismatch {
+            expected: expected_size,
+            actual: final_size,
+        });
     }
 
     let path_buf = path.to_path_buf();
-    let is_valid = tokio::task::spawn_blocking(move || verify_format(&path_buf))
-        .await
-        .unwrap_or(false);
-
-    if !is_valid {
-        tokio::fs::remove_file(path).await.ok();
-        return Err(anyhow!(
-            "Audio integrity check failed: file is corrupted or truncated"
-        ));
+    if !tokio::task::spawn_blocking(move || verify_format(&path_buf)).await.unwrap_or(false) {
+        let _ = FileService::remove_file_if_exists(path).await;
+        return Err(AudioVerifyError::CorruptedOrTruncated);
     }
 
     Ok(())

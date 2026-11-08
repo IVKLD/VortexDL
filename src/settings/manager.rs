@@ -1,9 +1,11 @@
 use std::sync::Arc;
 
-use anyhow::Result;
 use tokio::sync::{RwLock, RwLockReadGuard, watch};
 
-use crate::{infra::db, settings::types::UserSettings};
+use crate::{
+    infra::db,
+    settings::{error::SettingsError, types::UserSettings},
+};
 
 #[derive(Clone)]
 pub struct SettingsManager {
@@ -31,7 +33,7 @@ impl SettingsManager {
             .and_then(|s| s.network.get_proxy_url().map(String::from))
     }
 
-    pub async fn update(&self, new_settings: UserSettings) -> Result<()> {
+    pub async fn update(&self, new_settings: UserSettings) -> Result<(), SettingsError> {
         db::SettingsRepo::update(&new_settings)?;
         *self.inner.write().await = new_settings;
         let _ = self.change_tx.send(());
