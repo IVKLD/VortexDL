@@ -26,6 +26,12 @@ pkgs.stdenv.mkDerivation rec {
   installPhase = ''
     install -m755 -D $src $out/bin/vortex-dl
     wrapProgram $out/bin/vortex-dl \
-      --prefix PATH : ${pkgs.lib.makeBinPath [ pkgs.yt-dlp pkgs.ffmpeg pkgs.android-tools ]}
+      --prefix PATH : ${pkgs.lib.makeBinPath [
+        pkgs.yt-dlp
+        pkgs.ffmpeg
+        pkgs.android-tools
+        pkgs.deno
+        pkgs.python3
+      ]}
   '';
 }
