@@ -99,11 +99,7 @@ impl LibraryService {
             }
             .then_with(|| id_a.cmp(id_b));
 
-            if desc {
-                cmp.reverse()
-            } else {
-                cmp
-            }
+            if desc { cmp.reverse() } else { cmp }
         });
 
         let iter = tracks.into_iter().map(|(id, track)| (id, track.clone()));
@@ -187,9 +183,7 @@ impl LibraryService {
         args: RegisterDownloadedTrackArgs,
     ) -> Result<TrackMetadata, LibraryError> {
         let now = system_time_to_secs(SystemTime::now());
-        let mtime = FileService::mtime_secs(&args.path)
-            .await
-            .unwrap_or(now);
+        let mtime = FileService::mtime_secs(&args.path).await.unwrap_or(now);
 
         let platform =
             SourcePlatform::detect_from_optional_url(args.source_url.as_ref().map(|u| u.as_str()))

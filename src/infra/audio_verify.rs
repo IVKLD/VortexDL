@@ -1,6 +1,7 @@
 use std::{fs::File, io::ErrorKind, path::Path};
 
 use symphonia::core::{errors::Error, io::MediaSourceStream, probe::Hint};
+
 use crate::infra::{FileService, error::AudioVerifyError};
 
 pub async fn verify_audio_file(
@@ -27,7 +28,10 @@ pub async fn verify_audio_file(
     }
 
     let path_buf = path.to_path_buf();
-    if !tokio::task::spawn_blocking(move || verify_format(&path_buf)).await.unwrap_or(false) {
+    if !tokio::task::spawn_blocking(move || verify_format(&path_buf))
+        .await
+        .unwrap_or(false)
+    {
         let _ = FileService::remove_file_if_exists(path).await;
         return Err(AudioVerifyError::CorruptedOrTruncated);
     }

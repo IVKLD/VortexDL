@@ -37,4 +37,3 @@ impl IntoResponse for StreamError {
         ApiError::from(self).into_response()
     }
 }
-

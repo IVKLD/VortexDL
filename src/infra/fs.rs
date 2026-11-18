@@ -39,7 +39,10 @@ impl FileService {
     pub async fn mtime_secs(path: &Path) -> Option<u64> {
         let meta = fs::metadata(path).await.ok()?;
         let modified = meta.modified().ok()?;
-        modified.duration_since(UNIX_EPOCH).ok().map(|d| d.as_secs())
+        modified
+            .duration_since(UNIX_EPOCH)
+            .ok()
+            .map(|d| d.as_secs())
     }
 
     /// Copy a file, ensuring the target's parent directory exists.

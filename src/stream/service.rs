@@ -70,7 +70,8 @@ impl StreamService {
         }
 
         let range_header = req.headers().get(header::RANGE);
-        self.stream_remote(id, url_param.as_deref(), range_header).await
+        self.stream_remote(id, url_param.as_deref(), range_header)
+            .await
     }
 
     async fn stream_remote(

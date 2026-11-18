@@ -171,9 +171,11 @@ impl From<ProviderError> for ApiError {
             ProviderError::InvalidStream(msg) => {
                 Self::new(StatusCode::BAD_GATEWAY, ErrorCode::NetworkError, msg)
             }
-            ProviderError::AudioVerify(e) => {
-                Self::new(StatusCode::BAD_GATEWAY, ErrorCode::NetworkError, e.to_string())
-            }
+            ProviderError::AudioVerify(e) => Self::new(
+                StatusCode::BAD_GATEWAY,
+                ErrorCode::NetworkError,
+                e.to_string(),
+            ),
             ProviderError::Http(e) => e.into(),
             ProviderError::Settings(e) => e.into(),
             ProviderError::Other(e) => e.into(),
@@ -274,9 +276,11 @@ impl From<LibraryError> for ApiError {
             LibraryError::Io(e) => e.into(),
             LibraryError::Metadata(e) => Self::internal(e.to_string()),
             LibraryError::Id3(e) => Self::internal(e.to_string()),
-            LibraryError::Database(e) => {
-                Self::new(StatusCode::INTERNAL_SERVER_ERROR, ErrorCode::DatabaseError, e.to_string())
-            }
+            LibraryError::Database(e) => Self::new(
+                StatusCode::INTERNAL_SERVER_ERROR,
+                ErrorCode::DatabaseError,
+                e.to_string(),
+            ),
             LibraryError::TaskJoin(e) => Self::internal(e.to_string()),
             LibraryError::TrackNotFound(id) => {
                 Self::not_found(format!("Track {id} not found")).with_code(ErrorCode::TrackNotFound)
@@ -290,9 +294,11 @@ impl From<SettingsError> for ApiError {
     fn from(err: SettingsError) -> Self {
         match err {
             SettingsError::Serialization(e) => Self::bad_request(e.to_string()),
-            SettingsError::Database(e) => {
-                Self::new(StatusCode::INTERNAL_SERVER_ERROR, ErrorCode::DatabaseError, e.to_string())
-            }
+            SettingsError::Database(e) => Self::new(
+                StatusCode::INTERNAL_SERVER_ERROR,
+                ErrorCode::DatabaseError,
+                e.to_string(),
+            ),
             SettingsError::Other(e) => Self::internal(format!("{e:#}")),
         }
     }

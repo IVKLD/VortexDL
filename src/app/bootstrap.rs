@@ -66,6 +66,7 @@ pub async fn init_app(args: &Args) -> Result<AppState> {
     pb_sc.finish_with_message("SoundCloud ready");
 
     let pb_yt = terminal::create_standalone_spinner("Initializing YouTube...");
+    yt_audio_downloader::ensure_youtube_cookies_available().await;
     let youtube_client = YouTubeClientBuilder::new(&settings)
         .with_settings_manager(settings_manager.clone())
         .build()

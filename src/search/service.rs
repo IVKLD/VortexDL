@@ -31,7 +31,9 @@ impl SearchService {
 
     pub async fn search(&self, params: SearchQuery) -> Result<SearchResponse, SearchError> {
         let trimmed = params.query.trim();
-        let query = (!trimmed.is_empty()).then_some(trimmed).ok_or(SearchError::EmptyQuery)?;
+        let query = (!trimmed.is_empty())
+            .then_some(trimmed)
+            .ok_or(SearchError::EmptyQuery)?;
 
         let limit = (params.limit.unwrap_or(20).max(1) as usize).min(100);
         let offset = params.offset.unwrap_or(0).max(0) as usize;

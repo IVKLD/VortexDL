@@ -41,9 +41,7 @@ impl TrackDownloader {
 
         match result {
             Some(Ok(())) => {
-                let size = FileService::file_size(&task.file_path)
-                    .await
-                    .unwrap_or(0);
+                let size = FileService::file_size(&task.file_path).await.unwrap_or(0);
                 let format = AudioFormat::from_path(&task.file_path);
                 Ok(Some(DownloadedTrackInfo {
                     file_path: task.file_path.clone(),
