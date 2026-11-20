@@ -85,11 +85,16 @@ impl HlsStreamer {
             None => self.playlist.segments,
         };
 
+        let initial_offset = segments
+            .first()
+            .and_then(|seg| seg.byte_range)
+            .map_or(0, |(start, _)| start);
+
         let mut state = HlsStreamState {
             client: self.client,
             segments: segments.into_iter(),
             current_stream: None,
-            current_offset: 0,
+            current_offset: initial_offset,
             req_range,
         };
 

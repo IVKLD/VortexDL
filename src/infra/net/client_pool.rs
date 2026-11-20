@@ -36,7 +36,8 @@ impl HttpClientPool {
     fn build_client(proxy: Option<&str>) -> Client {
         let mut builder = Client::builder()
             .user_agent(DEFAULT_USER_AGENT)
-            .timeout(Duration::from_secs(30));
+            .connect_timeout(Duration::from_secs(10))
+            .read_timeout(Duration::from_secs(30));
 
         if let Some(url) = proxy
             && let Ok(p) = Proxy::all(url)

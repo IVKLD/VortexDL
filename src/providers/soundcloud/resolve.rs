@@ -28,7 +28,7 @@ impl SoundCloudProvider {
             Ok((url, stream_type)) => Ok(StreamSource {
                 url,
                 stream_type,
-                proxy_url: self.client.proxy_url.clone(),
+                proxy_url: self.client.current_proxy_url().await,
             }),
             Err(direct_err) => {
                 let direct_err = ProviderError::from(direct_err);

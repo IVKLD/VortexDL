@@ -2,6 +2,7 @@ use yt_audio_downloader::AudioFormat;
 
 use crate::{
     downloader::DownloadTask,
+    infra,
     providers::{ProgressCallback, ProviderError, youtube::YouTubeProvider},
 };
 
@@ -21,6 +22,7 @@ impl YouTubeProvider {
             )
             .await?;
 
+        infra::verify_audio_file(&task.file_path, 0).await?;
         Ok(())
     }
 }

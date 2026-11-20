@@ -70,8 +70,8 @@ impl DownloadQueue {
         let id = task.id;
         let item = DownloadItem::from(task);
         let mut state = self.state.lock_unpoisoned();
-        let initial = state.canceled_ids.contains(&id);
-        let (tx, rx) = watch::channel(initial);
+        state.canceled_ids.remove(&id);
+        let (tx, rx) = watch::channel(false);
         state.cancel_senders.insert(id, tx);
         state.tasks.insert(id, item.clone());
         drop(state);
@@ -191,7 +191,6 @@ impl DownloadQueue {
             if let Some(tx) = state.cancel_senders.remove(&id) {
                 let _ = tx.send(true);
             }
-            state.canceled_ids.remove(&id);
             let Some(mut item) = state.tasks.remove(&id) else {
                 return;
             };
