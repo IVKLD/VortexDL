@@ -2,11 +2,11 @@
 
 pkgs.stdenv.mkDerivation rec {
   pname = "vortex-dl";
-  version = "0.4.25";
+  version = "0.4.26";
 
   src = pkgs.fetchurl {
     url = "https://github.com/IVKLD/VortexDL/releases/download/v${version}/vortex-dl";
-    hash = "sha256-FBlROGH20R75TfIJ+vdGLP97xDbk3xAYkCeKDeA/fy4=";
+    hash = "sha256-EEn1V5anMaOPmSfvOiszVZyS52HOy+LSxy9p8btnBOA=";
   };
 
   dontUnpack = true;
